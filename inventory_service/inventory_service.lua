@@ -3,10 +3,10 @@
 require('string')
 require('math')
 require('pack')
-read_container = require('reading_lib')
-res = read_container('resources_serv')
+read_container = require('reading')
+res = read_container('resources_service')
 packet = require('packet')
-share_container = require('sharing_lib')
+share_container = require('sharing')
 bit = require('bit')
 
 function blank_item_table(slot)

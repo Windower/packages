@@ -1,11 +1,8 @@
 <package>
-  <name>equipment_serv</name>
+  <name>resources_service</name>
   <version>0</version> <!-- 2nd 3rd and 4th numbers are optional, can also have an optional tag string suffix -->
   <type>service</type> <!-- can also be "service" or "addon" -->
   <dependencies>
-    <dependency>resources_serv</dependency>
-    <dependency>reading_lib</dependency>
-    <dependency>sharing_lib</dependency>
-    <dependency>pack</dependency>
+    <dependency>sharing</dependency>
   </dependencies>
 </package>

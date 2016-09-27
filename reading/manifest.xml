@@ -1,5 +1,5 @@
 <package>
-  <name>reading_lib</name>
+  <name>reading</name>
   <version>0</version> <!-- 2nd 3rd and 4th numbers are optional, can also have an optional tag string suffix -->
   <type>library</type> <!-- can also be "service" or "addon" -->
   <dependencies>
