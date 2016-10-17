@@ -1,5 +1,4 @@
 -- reading_lib
-
 local shared = require('shared')
 require('os')
 
@@ -108,7 +107,7 @@ local function make_reading_metamethods(name,userdata,userdata_type)
         end
         
         local function with(data,key,val,limit)
-            limit = limit and limit < 300 or 300 -- Need the real value for this at some point
+            limit = limit and limit < 300 or 300 -- REVISIT: Need the real value for this at some point
             local results = {}
             for i,v in pairs(data) do
                 if rawget(v,key) and (not val or rawget(v,key) == val) then
@@ -121,7 +120,7 @@ local function make_reading_metamethods(name,userdata,userdata_type)
                 return results
             end
             
-            return false
+            return {false}
         end
         
         -- REVISIT
@@ -152,8 +151,9 @@ local function read_container(addon_name)
     if type(addon_name) ~= 'string' then return end
     
     local meta,shared_objects = {},{}
+    
     function meta.__index(t,k)
-        if type(k) ~= 'string' then return end
+        k = tostring(k) -- Shared object names are stored in strings
         
         if shared_objects[k] then
             -- Shared object reference has already been acquired by this addon
@@ -178,8 +178,23 @@ local function read_container(addon_name)
             return ok
         end
     end
+
+    local events_exist,events = shared.get(addon_name,'new_event')
+    
+    
+    function meta.new_event(t,k)
+        if events_exist then -- Events will not exist if the other side is not using the sharing lib
+            k = tostring(k)
+            if events[k] then
+                return events[k]
+            else
+                return {register=function() end,unregister=function() end}
+            end
+        end
+    end
+    
     function meta.__newindex(t,k)
-        -- No assignment allowed.
+        -- No more assignment allowed.
     end
     
     return setmetatable({},meta)

@@ -8,5 +8,6 @@
     <dependency>inventory_service</dependency>
     <dependency>equipment_service</dependency>
     <dependency>player_service</dependency>
+    <dependency>monster_array_service</dependency>
   </dependencies>
 </package>

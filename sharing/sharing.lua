@@ -1,22 +1,31 @@
 -- sharing_lib
 -- Requirements:
 --   type(shared.data) has to be constant.
+--   objects and new_event cannot be first level keys.
 
 local shared = require('shared')
+local event = require('event')
 
 local default_env = {pairs=pairs,ipairs=ipairs,print=print,next=next,type=type,rawget=rawget,unpack=unpack}
 
 local function make_shared(name,data,env)
     -- Users currently cannot alter env
     local userdata = shared.new(name)
-    
-    -- REVISIT: The below exception is currently not handled
-    -- Can it even happen?
-    if not userdata then return false end
+    local shared_event = event.new()
+    local event_running = true
+    local event_waiting = false
     
     local const_type = type(data)
     userdata.data = data or {}
     userdata.env = env or default_env
+    
+    local function call_event()
+        if event_running then
+            shared_event:trigger(userdata.data)
+        else
+            event_waiting = true
+        end
+    end
     
     local sharing_metamethods = {}
 
@@ -26,7 +35,10 @@ local function make_shared(name,data,env)
     end
     
     function sharing_metamethods.__newindex(t,k,v)
-        userdata.data[k] = v
+        if userdata.data[k] ~= v then
+            userdata.data[k] = v
+            call_event()
+        end
     end
     
     function sharing_metamethods:type()
@@ -41,19 +53,32 @@ local function make_shared(name,data,env)
         return i
     end
     
+    function sharing_metamethods:notify_changed(bool)
+        if bool and not event_running and event_waiting then
+            -- The event was paused and is being unpaused and the service wanted to call it while it was paused
+            shared_event:trigger(userdata.data)
+            event_waiting = false
+        end
+        event_running = bool
+    end
+    
     function sharing_metamethods:value()
         return userdata.data
     end
     
     function sharing_metamethods:assign(v)
-        userdata.data = v
+        if userdata.data ~= v then
+            userdata.data = v
+            call_event()
+        end
     end
 
-    return setmetatable({},sharing_metamethods)
+    return setmetatable({},sharing_metamethods),shared_event
 end
 
 local function share_container()
-    local list = make_shared('list')
+    local objects = make_shared('objects')
+    local shared_events = make_shared('new_event')
     local shared_objects = {}
     
     local meta = {}
@@ -62,8 +87,8 @@ local function share_container()
         k = tostring(k)
         
         if not shared_objects[k] then
-            shared_objects[k] = make_shared(k,v)
-            list[list:len()+1] = k
+            shared_objects[k],shared_events[k] = make_shared(k,v)
+            objects[objects:len()+1] = k
         elseif shared_objects[k]:type() == type(v) then
             shared_objects[k]:assign(v)
         else

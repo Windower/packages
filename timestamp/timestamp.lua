@@ -29,13 +29,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ]]
 
 chat = require('chat')
+command = require('command')
 require('os')
+require('string')
 
 chat.text_added:register(function(obj)
-    local time = '[%H:%M:%S] '
+    local time = '\u{F7C9}[%H:%M:%S]\u{F601} '
     if obj.indented then
         obj.indented = false
         time = time..'  '
     end
-    obj.text = os.date(time,os.time())..obj.text
+    time = os.date(time,os.time())
+    obj.text = time..obj.text:gsub(string.char(0x07,0x0A),string.char(0x07,0x0A)..time)
 end)
