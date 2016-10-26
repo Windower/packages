@@ -1,16 +1,25 @@
 local enumerable = {}
 
-enumerable.it = function(t)
+enumerable.enumerate = function(t)
     return function(t, k)
         local key, value = next(t, k)
         return value, key
     end, t, nil
 end
 
-enumerable.length = function(t)
+enumerable.count = function(t, ...)
     local count = 0
-    for _ in pairs(t) do
-        count = count + 1
+
+    if select('#', ...) == 0 or type(...) == 'table' then
+        for _ in pairs(t) do
+            count = count + 1
+        end
+    else
+        for _, el in pairs(t) do
+            if (...)(el) == true then
+                count = count + 1
+            end
+        end
     end
 
     return count
@@ -65,12 +74,48 @@ enumerable.to_table = function(t)
     return arr
 end
 
+enumerable.aggregate = function(t, fn, ...)
+    local initialized = select('#', ...) > 0
+    local res = ...
+
+    for key, el in pairs(t) do
+        if not initialized then
+            res = el
+            initialized = true
+        else
+            res = fn(res, el, key, t)
+        end
+    end
+
+    return res
+end
+
 local redirect = {
     add = {
         copy = function(constructor, add, t)
             local res = constructor()
             for _, el in pairs(t) do
                 add(res, el)
+            end
+
+            return res
+        end,
+        select = function(constructor, add, t, fn)
+            local res = constructor()
+
+            for key, el in pairs(t) do
+                add(res, fn(el, key, t))
+            end
+
+            return res
+        end,
+        where = function(constructor, add, t, fn)
+            local res = constructor()
+
+            for key, el in pairs(t) do
+                if fn(el, key, t) then
+                    add(res, el)
+                end
             end
 
             return res
@@ -94,10 +139,12 @@ local build_index = function(constructor, proxies)
         index[name] = fn
     end
 
-    for proxy_name, proxy in pairs(proxies) do
-        for name, fn in pairs(redirect[proxy_name]) do
-            index[name] = function(...)
-                return fn(constructor, proxy, ...)
+    if constructor ~= nil then
+        for proxy_name, proxy in pairs(proxies) do
+            for name, fn in pairs(redirect[proxy_name]) do
+                index[name] = function(...)
+                    return fn(constructor, proxy, ...)
+                end
             end
         end
     end
@@ -105,21 +152,17 @@ local build_index = function(constructor, proxies)
     return index
 end
 
-return function(constructor, add, remove)
-    local index = build_index(constructor, {
-        add = add,
-        remove = remove,
+return function(meta)
+    local index = build_index(meta.__create, {
+        add = meta.__add_element,
+        remove = meta.__remove_key,
     })
-
-    local meta = getmetatable(constructor())
 
     -- __index
     local original = meta.__index
     local index_type = type(original)
     if index_type == 'nil' then
-        meta.__index = function(t, k)
-            return index[k]
-        end
+        meta.__index = index
     elseif index_type == 'table' then
         meta.__index = function(t, k)
             return original[k] or index[k]
@@ -134,7 +177,7 @@ return function(constructor, add, remove)
 
     -- __len
     if meta.__len == nil then
-        meta.__len = meta.__index(nil, 'length')
+        meta.__len = type(meta.__index) == 'table' and meta.__index.count or meta.__index(nil, 'count')
     end
 end
 
