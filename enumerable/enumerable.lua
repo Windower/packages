@@ -172,7 +172,7 @@ return function(meta)
             return original(t, k) or index[k]
         end
     else
-        error(('Unknown indexing index_type: '):format(type))
+        error(('Unknown indexing index_type: %s'):format(type))
     end
 
     -- __len
