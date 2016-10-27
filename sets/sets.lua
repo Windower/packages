@@ -40,19 +40,27 @@ meta.__lt = function(s1, s2)
 end
 
 meta.__add = function(s1, s2)
-    return s1:copy():union(s2)
+    local res = s1:copy()
+    res:union(s2)
+    return res
 end
 
 meta.__mul = function(s1, s2)
-    return s1:copy():intersection(s2)
+    local res = s1:copy()
+    res:intersection(s2)
+    return res
 end
 
 meta.__sub = function(s1, s2)
-    return s1:copy():difference(s2)
+    local res = s1:copy()
+    res:difference(s2)
+    return res
 end
 
 meta.__pow = function(s1, s2)
-    return s1:copy():symmetric_difference(s2)
+    local res = s1:copy()
+    res:symmetric_difference(s2)
+    return res
 end
 
 meta.__tostring = function(s)
@@ -116,8 +124,6 @@ set.union = function(s1, s2)
     for el in pairs(s2) do
         s1.data[el] = el
     end
-
-    return s1
 end
 
 set.intersection = function(s1, s2)
@@ -126,16 +132,12 @@ set.intersection = function(s1, s2)
             s1.data[el] = nil
         end
     end
-
-    return s1
 end
 
 set.difference = function(s1, s2)
     for el in pairs(s2) do
         s1.data[el] = nil
     end
-
-    return s1
 end
 
 set.symmetric_difference = function(s1, s2)
@@ -146,8 +148,6 @@ set.symmetric_difference = function(s1, s2)
             s1.data[el] = el
         end
     end
-
-    return s1
 end
 
 -- Invoke enumerable library
