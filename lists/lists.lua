@@ -54,7 +54,7 @@ end
 
 meta.__concat = function(l1, l2)
     local res = l1:copy()
-    res:extend(l2)
+    res:append(l2)
     return res
 end
 
@@ -157,7 +157,7 @@ list.remove_element = function(l, el)
     end
 end
 
-list.extend = function(l1, l2)
+list.append = function(l1, l2)
     for k = 1, l2.count do
         rawset(l1, l1.count + k, rawget(l2, k))
     end
