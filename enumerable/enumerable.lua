@@ -1,10 +1,13 @@
 local enumerable = {}
 
+local enumerator_cache = setmetatable({}, {__mode = 'k'})
+
 enumerable.enumerate = function(t)
+    local iterator, table, key = pairs(t)
     return function(t, k)
-        local key, value = next(t, k)
+        local key, value = iterator(t, k)
         return value, key
-    end, t, nil
+    end, table, key
 end
 
 enumerable.count = function(t, ...)
@@ -63,7 +66,7 @@ enumerable.contains = function(t, search)
     return false
 end
 
-enumerable.to_table = function(t)
+enumerable.totable = function(t)
     local arr = {}
     local key = 0
     for _, el in pairs(t) do
@@ -90,32 +93,86 @@ enumerable.aggregate = function(t, fn, ...)
     return res
 end
 
-local redirect = {
-    add = {
-        copy = function(constructor, add, t)
-            local res = constructor()
-            for _, el in pairs(t) do
-                add(res, el)
-            end
+local lazy_functions = {
+    select = function(constructor, original, fn)
+        local res = constructor()
 
-            return res
-        end,
-        select = function(constructor, add, t, fn)
-            local res = constructor()
-
-            for key, el in pairs(t) do
-                add(res, fn(el, key, t))
-            end
-
-            return res
-        end,
-        where = function(constructor, add, t, fn)
-            local res = constructor()
-
-            for key, el in pairs(t) do
-                if fn(el, key, t) then
-                    add(res, el)
+        enumerator_cache[res] = function(res)
+            local iterator, table, key = pairs(original)
+            return function(t, k)
+                local key, value = iterator(t, k)
+                if key == nil then
+                    return nil, nil
                 end
+
+                return key, fn(value, key, original)
+            end, table, key
+        end
+
+        return res
+    end,
+    where = function(constructor, original, fn)
+        local res = constructor()
+
+        enumerator_cache[res] = function(res)
+            local iterator, table, key = pairs(original)
+            return function(t, k)
+                local key, value = iterator(t, k)
+                while key ~= nil and not fn(value, key, original) do
+                    key, value = iterator(t, key)
+                end
+
+                return key, value
+            end, table, key
+        end
+
+        return res
+    end,
+    take = function(constructor, original, max)
+        local res = constructor()
+
+        enumerator_cache[res] = function(res)
+            local iterator, table, key = pairs(original)
+            local count = 0
+            return function(t, k)
+                count = count + 1
+                if count > max then
+                    return nil, nil
+                end
+
+                return iterator(t, k)
+            end, table, key
+        end
+
+        return res
+    end,
+    skip = function(constructor, original, count)
+        local res = constructor()
+
+        enumerator_cache[res] = function(res)
+            local iterator, table, key = pairs(original)
+            local count = count
+            return function(t, k)
+                local key, value = iterator(t, k)
+                while count > 0 do
+                    count = count - 1
+                    key, value = iterator(t, key)
+                end
+
+                return key, value
+            end, table, key
+        end
+
+        return res
+    end,
+}
+
+local dependent_functions = {
+    add = {
+        copy = function(constructor, add, original)
+            local res = constructor()
+            for _, el in pairs(original) do
+                add(res, el)
             end
 
             return res
@@ -135,13 +192,23 @@ local redirect = {
 local build_index = function(constructor, proxies)
     local index = {}
 
+    for name, fn in pairs(proxies) do
+        index[name] = fn
+    end
+
     for name, fn in pairs(enumerable) do
         index[name] = fn
     end
 
     if constructor ~= nil then
+        for name, fn in pairs(lazy_functions) do
+            index[name] = function(...)
+                return fn(constructor, ...)
+            end
+        end
+
         for proxy_name, proxy in pairs(proxies) do
-            for name, fn in pairs(redirect[proxy_name]) do
+            for name, fn in pairs(dependent_functions[proxy_name]) do
                 index[name] = function(...)
                     return fn(constructor, proxy, ...)
                 end
@@ -152,11 +219,39 @@ local build_index = function(constructor, proxies)
     return index
 end
 
-return function(meta)
-    local index = build_index(meta.__create, {
-        add = meta.__add_element,
-        remove = meta.__remove_key,
+local evaluate = function(t, index)
+    if index == nil or enumerator_cache[t] == nil then
+        return index
+    end
+
+    for _ in pairs(t) do
+    end
+end
+
+local index_cache = {}
+return function(meta, name)
+    -- Create default/copy constructor if none available
+    if meta.__create == nil then
+        meta.__create = function(t)
+            local res = {}
+            local key = 0
+            for _, el in pairs(t or {}) do
+                key = key + 1
+                res[key] = el
+            end
+            return setmetatable(res, meta)
+        end
+    end
+
+    local constructor = meta.__create
+    local add = meta.__add_element
+    local remove = meta.__remove_key
+
+    local index = build_index(constructor, {
+        add = add,
+        remove = remove,
     })
+    index_cache[#index_cache + 1] = index
 
     -- __index
     local original = meta.__index
@@ -165,20 +260,46 @@ return function(meta)
         meta.__index = index
     elseif index_type == 'table' then
         meta.__index = function(t, k)
-            return original[k] or index[k]
+            return evaluate(t, original[k]) or index[k]
         end
     elseif index_type == 'function' then
         meta.__index = function(t, k)
-            return original(t, k) or index[k]
+            return evaluate(t, original(t, k)) or index[k]
         end
     else
         error(('Unknown indexing index_type: %s'):format(type))
     end
 
+    local get_index = function(key)
+        return type(meta.__index) == 'table' and meta.__index[key] or meta.__index(nil, key)
+    end
+
     -- __len
     if meta.__len == nil then
-        meta.__len = type(meta.__index) == 'table' and meta.__index.count or meta.__index(nil, 'count')
+        meta.__len = get_index('count')
     end
+
+    -- Lazy evaluation
+    -- If __pairs is not provided, it should default to pairs, but we can't use pairs itself
+    -- or it will go to the __pairs metamethod again and infinitely recurse, so we provide a
+    -- custom pairs implementation
+    local enumerator = meta.__pairs or function(t)
+        return next, t, nil
+    end
+    meta.__pairs = function(original)
+        return (enumerator_cache[original] or enumerator)(original)
+    end
+
+    -- Implement toX function as a constructor call
+    if name ~= nil then
+        local key = 'to' .. name
+        enumerable[key] = constructor
+        for _, index in pairs(index_cache) do
+            index[key] = constructor
+        end
+    end
+
+    return meta.__create
 end
 
 --[[

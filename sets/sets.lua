@@ -65,11 +65,14 @@ end
 
 meta.__tostring = function(s)
     local res = '{'
-    for key, el in pairs(s.data) do
-        res = res .. tostring(el)
-        if next(s.data, key) ~= nil then
+    local first = true
+    for key, el in pairs(s) do
+        if first then
+            first = false
+        else
             res = res .. ', '
         end
+        res = res .. tostring(el)
     end
     res = res .. '}'
 
@@ -89,14 +92,10 @@ meta.__pairs = function(s)
 end
 
 meta.__create = function(t)
-    t = t or {}
-
-    local s = { data = {} }
-
-    for _, val in pairs(t) do
-        s.data[val] = val
+    local s = { data = {}}
+    for _, el in pairs(t or {}) do
+        s.data[el] = el
     end
-
     return setmetatable(s, meta)
 end
 
@@ -115,10 +114,6 @@ set.contains = function(s, el)
 end
 
 -- Unique members
-
-set.add = meta.__add_element
-
-set.remove = meta.__remove_key
 
 set.union = function(s1, s2)
     for el in pairs(s2) do
@@ -152,9 +147,7 @@ end
 
 -- Invoke enumerable library
 
-require('enumerable')(meta)
-
-return meta.__create
+return require('enumerable')(meta, 'set')
 
 --[[
 Copyright © 2016, Windower
