@@ -1,6 +1,6 @@
 local enumerable = {}
 
-local enumerator_cache = {}
+local enumerator_cache = setmetatable({}, {__mode = 'k'})
 
 enumerable.enumerate = function(t)
     local iterator, table, key = pairs(t)
