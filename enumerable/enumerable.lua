@@ -1,10 +1,13 @@
 local enumerable = {}
 
+local eval_cache = {}
+
 enumerable.enumerate = function(t)
+    local iterator, table, key = pairs(t)
     return function(t, k)
-        local key, value = next(t, k)
+        local key, value = iterator(t, k)
         return value, key
-    end, t, nil
+    end, table, key
 end
 
 enumerable.count = function(t, ...)
@@ -63,7 +66,7 @@ enumerable.contains = function(t, search)
     return false
 end
 
-enumerable.to_table = function(t)
+enumerable.totable = function(t)
     local arr = {}
     local key = 0
     for _, el in pairs(t) do
@@ -135,6 +138,10 @@ local redirect = {
 local build_index = function(constructor, proxies)
     local index = {}
 
+    for name, fn in pairs(proxies) do
+        index[name] = fn
+    end
+
     for name, fn in pairs(enumerable) do
         index[name] = fn
     end
@@ -152,11 +159,26 @@ local build_index = function(constructor, proxies)
     return index
 end
 
-return function(meta)
+local evaluate = function(t, index)
+    if index == nil or eval_cache[t] == nil then
+        return index
+    end
+
+    for _ in pairs(t) do
+    end
+end
+
+local index_cache = {}
+return function(meta, name)
+    local constructor = meta.__create
+    local add = meta.__add_element
+    local remove = meta.__remove_key
+
     local index = build_index(meta.__create, {
-        add = meta.__add_element,
-        remove = meta.__remove_key,
+        add = add,
+        remove = remove,
     })
+    index_cache[#index_cache + 1] = index
 
     -- __index
     local original = meta.__index
@@ -165,20 +187,63 @@ return function(meta)
         meta.__index = index
     elseif index_type == 'table' then
         meta.__index = function(t, k)
-            return original[k] or index[k]
+            return evaluate(t, original[k]) or index[k]
         end
     elseif index_type == 'function' then
         meta.__index = function(t, k)
-            return original(t, k) or index[k]
+            return evaluate(t, original(t, k)) or index[k]
         end
     else
         error(('Unknown indexing index_type: %s'):format(type))
     end
 
+    local get_index = function(key)
+        return type(meta.__index) == 'table' and meta.__index[key] or meta.__index(nil, key)
+    end
+
     -- __len
     if meta.__len == nil then
-        meta.__len = type(meta.__index) == 'table' and meta.__index.count or meta.__index(nil, 'count')
+        meta.__len = get_index('count')
     end
+
+    -- Lazy evaluation
+    -- If __pairs is not provided, it should default to pairs, but we can't use pairs itself
+    -- or it will go to the __pairs metamethod again and infinitely recurse, so we provide a
+    -- custom pairs implementation
+    local enumerator = meta.__pairs or function(t)
+        return function(t, k)
+            local key = next(t, k)
+            return key, t[key]
+        end, t, nil
+    end
+    meta.__pairs = function(original)
+        local cache = eval_cache[original]
+        if cache == nil then
+            return enumerator(original)
+        end
+
+        local fn, args = unpack(cache)
+        local iterator, table, key = pairs(args)
+        return function(t, k)
+            local key, value = iterator(t, k)
+            if key == nil then
+                return nil, nil
+            end
+            fn(original, value, key)
+            return key, value
+        end, table, key
+    end
+
+    -- Implement toX function as a constructor call
+    if name ~= nil then
+        local key = 'to' .. name
+        enumerable[key] = constructor
+        for _, index in pairs(index_cache) do
+            index[key] = constructor
+        end
+    end
+
+    return meta.__create
 end
 
 --[[

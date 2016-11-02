@@ -90,17 +90,13 @@ meta.__pairs = function(l)
 end
 
 meta.__create = function(t)
-    t = t or {}
-
-    local l = {}
-
-    local index = 0
-    for _, el in pairs(t) do
-        index = index + 1
-        l[index] = el
+    local l = { count = 0 }
+    local key = 0
+    for _, el in pairs(t or {}) do
+        key = key + 1
+        l[key] = el
     end
-
-    l.count = index
+    l.count = key
     return setmetatable(l, meta)
 end
 
@@ -133,10 +129,6 @@ end
 
 -- Unique members
 
-list.add = meta.__add_element
-
-list.remove = meta.__remove_key
-
 list.insert = function(l, i, el)
     i = make_key(l, i)
 
@@ -167,9 +159,7 @@ end
 
 -- Invoke enumerable library
 
-require('enumerable')(meta)
-
-return meta.__create
+return require('enumerable')(meta, 'list')
 
 --[[
 Copyright © 2016, Windower
