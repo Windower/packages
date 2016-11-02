@@ -65,11 +65,14 @@ end
 
 meta.__tostring = function(s)
     local res = '{'
+    local first = true
     for key, el in pairs(s) do
-        res = res .. tostring(el)
-        if next(s.data, key) ~= nil then
+        if first then
+            first = false
+        else
             res = res .. ', '
         end
+        res = res .. tostring(el)
     end
     res = res .. '}'
 
