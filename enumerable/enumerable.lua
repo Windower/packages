@@ -6,6 +6,10 @@ local no_args = function(...)
     return select('#', ...) == 0
 end
 
+local true_fn = function(...)
+    return true
+end
+
 enumerable.enumerate = function(t)
     local iterator, table, key = pairs(t)
     return function(t, k)
@@ -14,35 +18,28 @@ enumerable.enumerate = function(t)
     end, table, key
 end
 
-enumerable.count = function(t, ...)
+enumerable.count = function(t, fn)
     local count = 0
 
-    if no_args(...) or type(...) == 'table' then
-        for _ in pairs(t) do
+    -- The == t is there because Lua, for some reason, passes the table twice when using __len
+    if fn == nil or fn == t then
+        fn = true_fn
+    end
+
+    for _, v in pairs(t) do
+        if fn(v) == true then
             count = count + 1
-        end
-    else
-        for _, v in pairs(t) do
-            if (...)(v) == true then
-                count = count + 1
-            end
         end
     end
 
     return count
 end
 
-enumerable.any = function(t, ...)
-    if no_args(...) then
-        for _ in pairs(t) do
-            return true
-        end
-
-        return false
-    end
+enumerable.any = function(t, fn)
+    fn = fn or true_fn
 
     for _, v in pairs(t) do
-        if (...)(v) == true then
+        if fn(v) == true then
             return true
         end
     end
@@ -51,6 +48,8 @@ enumerable.any = function(t, ...)
 end
 
 enumerable.all = function(t, fn)
+    fn = fn or true_fn
+
     for _, v in pairs(t) do
         if fn(v) == false then
             return false
@@ -70,26 +69,11 @@ enumerable.contains = function(t, search)
     return false
 end
 
-enumerable.first = function(t, ...)
-    local v = enumerable.first_or_default(t, ...)
-    if v == nil then
-        error(('Sequence contains no %s.'):format(no_args(...) and 'elements' or 'matching element'))
-    end
-
-    return v
-end
-
-enumerable.first_or_default = function(t, ...)
-    if no_args(...) then
-        for _, v in pairs(t) do
-            return v
-        end
-
-        return nil
-    end
+enumerable.first = function(t, fn)
+    fn = fn or true_fn
 
     for k, v in pairs(t) do
-        if (...)(v, k, t) then
+        if fn(v, k, t) then
             return v
         end
     end
@@ -97,33 +81,13 @@ enumerable.first_or_default = function(t, ...)
     return nil
 end
 
-enumerable.single = function(t, ...)
-    local v = enumerable.single_or_default(t, ...)
-    if v == nil then
-        error(('Sequence contains no %s.'):format(no_args(...) and 'elements' or 'matching element'))
-    end
-
-    return v
-end
-
-enumerable.single_or_default = function(t, ...)
-    local res = nil
-    if no_args(...) then
-        for _, v in pairs(t) do
-            if res ~= nil then
-                error(('Sequence contains more than one %s.'):format(no_args(...) and 'element' or 'matching element'))
-            else
-                res = v
-            end
-        end
-
-        return res
-    end
+enumerable.single = function(t, fn)
+    fn = fn or true_fn
 
     for k, v in pairs(t) do
-        if (...)(v, k, t) then
+        if fn(v, k, t) then
             if res ~= nil then
-                errr(('Sequence contains more than one %s.'):format(no_args(...) and 'element' or 'matching element'))
+                return nil
             else
                 res = v
             end
