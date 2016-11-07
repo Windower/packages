@@ -2,6 +2,14 @@ local enumerable = {}
 
 local enumerator_cache = setmetatable({}, {__mode = 'k'})
 
+local no_args = function(...)
+    return select('#', ...) == 0
+end
+
+local true_fn = function(...)
+    return true
+end
+
 enumerable.enumerate = function(t)
     local iterator, table, key = pairs(t)
     return function(t, k)
@@ -10,35 +18,26 @@ enumerable.enumerate = function(t)
     end, table, key
 end
 
-enumerable.count = function(t, ...)
+enumerable.count = function(t, fn)
+    -- The == t is there because Lua, for some reason, passes the table twice when using __len
+    fn = (fn == nil or fn == t) and true_fn or fn
+
     local count = 0
 
-    if select('#', ...) == 0 or type(...) == 'table' then
-        for _ in pairs(t) do
+    for _, v in pairs(t) do
+        if fn(v) == true then
             count = count + 1
-        end
-    else
-        for _, el in pairs(t) do
-            if (...)(el) == true then
-                count = count + 1
-            end
         end
     end
 
     return count
 end
 
-enumerable.any = function(t, ...)
-    if select('#', ...) == 0 then
-        for _ in pairs(t) do
-            return true
-        end
-
-        return false
-    end
+enumerable.any = function(t, fn)
+    fn = fn == nil and true_fn or fn
 
     for _, v in pairs(t) do
-        if (...)(v) == true then
+        if fn(v) == true then
             return true
         end
     end
@@ -47,6 +46,8 @@ enumerable.any = function(t, ...)
 end
 
 enumerable.all = function(t, fn)
+    fn = fn == nil and true_fn or fn
+
     for _, v in pairs(t) do
         if fn(v) == false then
             return false
@@ -66,19 +67,37 @@ enumerable.contains = function(t, search)
     return false
 end
 
-enumerable.totable = function(t)
-    local arr = {}
-    local key = 0
-    for _, el in pairs(t) do
-        key = key + 1
-        arr[key] = el
+enumerable.first = function(t, fn)
+    fn = fn == nil and true_fn or fn
+
+    for k, v in pairs(t) do
+        if fn(v, k, t) == true then
+            return v
+        end
     end
 
-    return arr
+    return nil
+end
+
+enumerable.single = function(t, fn)
+    fn = fn == nil and true_fn or fn
+
+    local res
+    for k, v in pairs(t) do
+        if fn(v, k, t) == true then
+            if res ~= nil then
+                return nil
+            else
+                res = v
+            end
+        end
+    end
+
+    return res
 end
 
 enumerable.aggregate = function(t, fn, ...)
-    local initialized = select('#', ...) > 0
+    local initialized = not no_args(...)
     local res = ...
 
     for key, el in pairs(t) do
@@ -91,6 +110,18 @@ enumerable.aggregate = function(t, fn, ...)
     end
 
     return res
+end
+
+
+enumerable.totable = function(t)
+    local arr = {}
+    local key = 0
+    for _, el in pairs(t) do
+        key = key + 1
+        arr[key] = el
+    end
+
+    return arr
 end
 
 local lazy_functions = {
@@ -154,7 +185,7 @@ local lazy_functions = {
             local count = count
             return function(t, k)
                 local key, value = iterator(t, k)
-                while count > 0 do
+                while key ~= nil and count > 0 do
                     count = count - 1
                     key, value = iterator(t, key)
                 end
@@ -171,8 +202,8 @@ local dependent_functions = {
     add = {
         copy = function(constructor, add, original)
             local res = constructor()
-            for _, el in pairs(original) do
-                add(res, el)
+            for key, el in pairs(original) do
+                add(res, el, key)
             end
 
             return res
@@ -219,12 +250,17 @@ local build_index = function(constructor, proxies)
     return index
 end
 
-local evaluate = function(t, index)
-    if index == nil or enumerator_cache[t] == nil then
-        return index
+local find_index = function(t, k, index, original, constructor)
+    if original == nil then
+        return index[k]
     end
 
-    for _ in pairs(t) do
+    if enumerator_cache[t] == nil or type(original) ~= 'function' then
+        return original
+    end
+
+    return function(discard, ...)
+        return original(constructor(t), ...)
     end
 end
 
@@ -240,6 +276,20 @@ return function(meta, name)
                 res[key] = el
             end
             return setmetatable(res, meta)
+        end
+    end
+
+    -- Create default addition function
+    if meta.__add_element == nil then
+        meta.__add_element = function(t, v, k)
+            rawset(t, k, v)
+        end
+    end
+
+    -- Create default removal function
+    if meta.__remove_key == nil then
+        meta.__remove_key = function(t, k)
+            rawset(t, k, nil)
         end
     end
 
@@ -260,11 +310,11 @@ return function(meta, name)
         meta.__index = index
     elseif index_type == 'table' then
         meta.__index = function(t, k)
-            return evaluate(t, original[k]) or index[k]
+            return find_index(t, k, index, original[k], constructor)
         end
     elseif index_type == 'function' then
         meta.__index = function(t, k)
-            return evaluate(t, original(t, k)) or index[k]
+            return find_index(t, k, index, original(t, k), constructor)
         end
     else
         error(('Unknown indexing index_type: %s'):format(type))
