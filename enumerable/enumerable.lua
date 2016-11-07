@@ -19,12 +19,10 @@ enumerable.enumerate = function(t)
 end
 
 enumerable.count = function(t, fn)
-    local count = 0
-
     -- The == t is there because Lua, for some reason, passes the table twice when using __len
-    if fn == nil or fn == t then
-        fn = true_fn
-    end
+    fn = (fn == nil or fn == t) and true_fn or fn
+
+    local count = 0
 
     for _, v in pairs(t) do
         if fn(v) == true then
@@ -36,7 +34,7 @@ enumerable.count = function(t, fn)
 end
 
 enumerable.any = function(t, fn)
-    fn = fn or true_fn
+    fn = fn == nil and true_fn or fn
 
     for _, v in pairs(t) do
         if fn(v) == true then
@@ -48,7 +46,7 @@ enumerable.any = function(t, fn)
 end
 
 enumerable.all = function(t, fn)
-    fn = fn or true_fn
+    fn = fn == nil and true_fn or fn
 
     for _, v in pairs(t) do
         if fn(v) == false then
@@ -70,10 +68,10 @@ enumerable.contains = function(t, search)
 end
 
 enumerable.first = function(t, fn)
-    fn = fn or true_fn
+    fn = fn == nil and true_fn or fn
 
     for k, v in pairs(t) do
-        if fn(v, k, t) then
+        if fn(v, k, t) == true then
             return v
         end
     end
@@ -82,10 +80,11 @@ enumerable.first = function(t, fn)
 end
 
 enumerable.single = function(t, fn)
-    fn = fn or true_fn
+    fn = fn == nil and true_fn or fn
 
+    local res
     for k, v in pairs(t) do
-        if fn(v, k, t) then
+        if fn(v, k, t) == true then
             if res ~= nil then
                 return nil
             else
@@ -94,7 +93,7 @@ enumerable.single = function(t, fn)
         end
     end
 
-    return nil
+    return res
 end
 
 enumerable.aggregate = function(t, fn, ...)
