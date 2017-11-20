@@ -1,0 +1,8 @@
+<package>
+  <name>mime</name>
+  <version>3.0rc1</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>ltn12</dependency>
+  </dependencies>
+</package>
