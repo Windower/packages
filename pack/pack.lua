@@ -47,35 +47,6 @@ end
 
 local nul = string.char(0)
 
--- TODO remove
--- string.hex = function(str)
---     local res = ''
---     local boo = false
---     for char in str:gmatch('.') do
---         if boo then
---             res = res .. ' '
---         end
---         res = res .. ('%02X'):format(char:byte())
---         boo = true
---     end
---     return res
--- end
-
--- require('math')
--- local bin = function(num)
---     local v = {}
---     while num > 0 do
---         v[#v + 1] = bit.band(num, 1) ~= 0 and '1' or '0'
---         num = bit.rshift(num, 1)
---     end
-
---     local res = '0b'
---     for i = #v, 1, -1 do
---         res = res .. v[i]
---     end
---     return res
--- end
-
 string.pack = function(format, ...)
     local res = {}
     local index = 0
@@ -182,9 +153,6 @@ local unpack_value = function(data, index, info, count)
     elseif info.type == 'boolean' then
         return buffer[0] == true, new_index
 
-    elseif info.type == 'string' then
-        return tostring(ffi.string(buffer, size)), new_index
-
     end
 
     error('Unhandled valid code "' .. info.code .. '"')
@@ -242,7 +210,7 @@ string.unpack = function(data, format)
                 res[#res + 1] = tostring(ffi.string(data:sub(index, index + count - 1)))
                 index = index + count
             elseif info.code == 'z' then
-                res[#res + 1], index = tostring(ffi.string(data:sub(index)))
+                res[#res + 1] = tostring(ffi.string(data:sub(index)))
                 index = #data
                 term = true
             else
