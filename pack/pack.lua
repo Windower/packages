@@ -1,314 +1,229 @@
---[[/*
-* lpack.c
-* a Lua library for packing and unpacking binary data
-* Luiz Henrique de Figueiredo <lhf@tecgraf.puc-rio.br>
-* 29 Jun 2007 19:27:20
-* This code is hereby placed in the public domain.
-* with contributions from Ignacio Castaño <castanyo@yahoo.es> and
-* Roberto Ierusalimschy <roberto@inf.puc-rio.br>.
-*/
--- Conversion from C to lua by Angelo Yazar, 2013.
-]]
-local ffi = require "ffi"
-local bit = require "bit"
-local C = ffi.C
-local tonumber = tonumber
-local string = string
-local assert = assert
+require('string')
+require('table')
+require('bit')
+local ffi = require('ffi')
 
-ffi.cdef [[ 
-  int isdigit( int ch ); 
-]]
+local codes =
+{
+    c = {size = 1, type = 'number', ctype = 'signed char'},
+    h = {size = 2, type = 'number', ctype = 'signed short'},
+    i = {size = 4, type = 'number', ctype = 'signed int'},
+    C = {size = 1, type = 'number', ctype = 'unsigned char'},
+    H = {size = 2, type = 'number', ctype = 'unsigned short'},
+    I = {size = 4, type = 'number', ctype = 'unsigned int'},
+    f = {size = 4, type = 'number', ctype = 'float'},
+    d = {size = 8, type = 'number', ctype = 'double'},
+    B = {size = 1, type = 'boolean', ctype = 'bool'},
+    S = {size = 1, type = 'string', ctype = 'char', var_size = true},
+    z = {size = 1, type = 'string', ctype = 'char'},
+    b = {size = 0.125, type = 'number', var_size = true},
+    q = {size = 0.125, type = 'boolean'},
+    x = {size = 1, type = 'string', var_size = true},
+}
 
-local OP_ZSTRING    = 'z' --/* zero-terminated string */
-local OP_BSTRING    = 'p' --/* string preceded by length byte */
-local OP_WSTRING    = 'P' --/* string preceded by length word */
-local OP_SSTRING    = 'a' --/* string preceded by length size_t */
-local OP_STRING     = 'A' --/* string */
-local OP_FLOAT      = 'f' --/* float */
-local OP_DOUBLE     = 'd' --/* double */
-local OP_NUMBER     = 'n' --/* Lua number */
-local OP_CHAR     = 'c' --/* char */
---/* Custom: Changed OP_BYTE from 'b' to 'C'*/
-local OP_BYTE     = 'C' --/* byte = unsigned char */
-local OP_SHORT      = 'h' --/* short */
-local OP_USHORT     = 'H' --/* unsigned short */
-local OP_INT      = 'i' --/* int */
-local OP_UINT     = 'I' --/* unsigned int */
-local OP_LONG     = 'l' --/* long */
-local OP_ULONG      = 'L' --/* unsigned long */
-local OP_LITTLEENDIAN = '<' --/* little endian */
-local OP_BIGENDIAN    = '>' --/* big endian */
-local OP_NATIVE     = '=' --/* native endian */
-local OP_NONE     = function() end
---/* Custom <need to implement> */
-local OP_BIT        =  'b'     --/* Bits */
-local OP_BOOLBIT    =  'q'     --/* Bits representing a boolean */
-local OP_BOOL       =  'B'     --/* Boolean */
-local OP_FSTRING    =  'S'     --/* Fixed-length string (requires a length argument) */
-
-function badcode(c)
-  assert( false, "bad character code: '" .. tostring(c) .. "'" )
+for code, info in pairs(codes) do
+    info.code = code
 end
 
-local function isLittleEndian()
-  local x = ffi.new("short[1]", 0x1001)
-  local e = tonumber( ( ffi.new("char[1]", x[0]) )[0] )
-  if e == 1 then
-    return true
-  end
-  return false
+local pack_value = function(info, count, value)
+    local ctype = ('%s[%i]'):format(info.ctype, count)
+    return ffi.string(ffi.new(ctype, value), ffi.sizeof(ctype))
 end
 
-function doendian(c)
-  local e = isLittleEndian()
-  if c == OP_LITTLEENDIAN then
-    return not e
-  elseif c == OP_BIGENDIAN then
-    return e
-  elseif c == OP_NATIVE then 
-    return false
-  end
-  return false
-end
-
-function doswap(swap, a, T)
- if T == "byte" or T == "char" then
-  return a
- end
- if swap then
- -- if T == "double" or T == "float" then
-    -- this part makes me unhappy --
-    a = ffi.new(T.."[1]",a)
-    local m = ffi.sizeof(T)
-    local str = ffi.string( a, m )
-    str = str:reverse()
-    ffi.copy(a, str, m)
-    return tonumber( a[0] )
-  --else
-  --  return bit.bswap( a )
-  --end
- end
- return a
-end
-
-function isdigit(c)
-  --//CUSTOM BECAUSE ffi.C.isdigit currently doesn't work
-  return type(c) == 'number' and c > 0x29 and c < 0x3A
-  --return C.isdigit( string.byte(c) ) == 1
-end
-
-function l_unpack(s,f,init)
-  local len = #s
-  local i = (init or 1)
-  local n = 1
-  local N = 0
-  local cur = OP_NONE
-  local swap = false
-  --lua_pushnil(L);
-
-  local values = {}
-
-  local function push( value ) 
-    values[n] = value
-    n = n + 1
-  end
-
-  local function done()
-    return unpack(values) -- Removed for ease of use
-    --return i, unpack(values)
-  end
-
-  local endianOp = function(c)
-    swap = doendian(c)
-      -- N = 0 -- I don't think this is needed
-  end
-
-  local stringOp = function(c)
-    if i + N - 1 > len then
-      return done
+local convert_number = function(number, offset, limit)
+    local str = ''
+    while offset > limit do
+        str = str .. string.char(tonumber(number % 0x100))
+        number = bit.rshift(number, 8)
+        offset = offset - 8
     end
-    push( s:sub(i,i+N - 1) )
-    i = i + N
-    N = 0
-  end
-    
-  local zstringOp = function(c)
-    local l = 0
-    if i >= len then
-      return done
+
+    if offset >= 0 then
+        return str, offset, number
     end
-    local substr = s:sub(i)
-    l = substr:find('\0')
-    push( substr:sub(0, l) )
-    i = i + l
-  end
 
-  function unpackNumber(T)
-    return function()   
-      local m = ffi.sizeof(T)  
-      if i + m - 1 > len then return done end
-      local a = ffi.new(T.."[1]")
-      ffi.copy(a, s:sub(i,i+m), m)
-      push( doswap(swap, tonumber(a[0]), T) )
-      i = i + m 
-    end   
-  end
+    return str, 0, 0ULL
+end
 
-  function unpackString(T)
-    return function() 
-      local m = ffi.sizeof(T)   
-      if i + m > len then return done end
-      local l = ffi.new(T.."[1]")
-      ffi.copy(l, s:sub(i), m)
-      l = doswap(swap, tonumber(l[0]), T)
-      if i + m + l - 1 > len then return done end
-      i = i + m
-      push( s:sub(i,i+l-1) )
-      i = i + l
-    end     
-  end
+local nul = string.char(0)
 
-  local unpack_ops = {
-    [OP_LITTLEENDIAN] = endianOp,
-    [OP_BIGENDIAN] = endianOp,
-    [OP_NATIVE] = endianOp,
-    [OP_ZSTRING] = zstringOp,
-    [OP_STRING] = stringOp,
-    [OP_BSTRING] = unpackString("unsigned char"),
-    [OP_WSTRING] = unpackString("unsigned short"),
-    [OP_SSTRING] = unpackString("size_t"),
-    [OP_NUMBER] = unpackNumber("double"),
-    [OP_DOUBLE] = unpackNumber("double"),
-    [OP_FLOAT] = unpackNumber("float"),
-    [OP_CHAR] = unpackNumber("char"),
-    [OP_BYTE] = unpackNumber("unsigned char"),
-    [OP_SHORT] = unpackNumber("short"),
-    [OP_USHORT] = unpackNumber("unsigned short"),
-    [OP_INT] = unpackNumber("int"),
-    [OP_UINT] = unpackNumber("unsigned int"),
-    [OP_LONG] = unpackNumber("long"),
-    [OP_ULONG] = unpackNumber("unsigned long"),
-    [OP_NONE] = OP_NONE,
-    [' '] = OP_NONE,
-    [','] = OP_NONE,
-  }
+string.pack = function(format, ...)
+    local res = {}
+    local index = 0
+    local args = select('#', ...)
+    local current = 0ULL
+    local offset = 0
+    local term = false
 
-  for c in (f..'\0'):gmatch'.' do
-    if not isdigit( c ) then
-      if cur == OP_STRING then
-        if N == 0 then push("") else
-          if stringOp(cur) == done then
-            return done()
-          end
+    for code, count_str in format:gmatch('(%a)(%d*)') do
+        if term then
+            error('Packing cannot continue after "z" code')
         end
-      else
-        if N == 0 then N = 1 end
-        for k=1,N do
-          if unpack_ops[cur] then
-            if unpack_ops[cur](cur) == done then
-              return done()
+
+        local info = codes[code]
+        if info == nil then
+            error('Unknown code \'' .. code .. '\'')
+        end
+
+        if info.var_size and count_str == '' then
+            error('Missing length parameter for code "' .. info.code .. '"')
+        end
+
+        if offset > 0 and info.size >= 1 then
+            res[#res + 1], offset, current = convert_number(current, offset, 0)
+        end
+
+        local count = count_str ~= '' and tonumber(count_str) or 1
+
+        while count > 0 do
+            index = index + 1
+            if index > args then
+                error('Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got no value)')
             end
-          else 
-            badcode(cur)
-          end
+
+            local value = select(index, ...)
+            if type(value) ~= info.type then
+                error('Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got ' .. type(value) .. ')')
+            end
+
+            if offset >= 8 then
+                res[#res + 1], offset, current = convert_number(current, offset, 7)
+            end
+
+            if info.code == 'b' then
+                current = bit.bor(current, bit.lshift(bit.bor(0LL, value), offset))
+                offset = offset + count
+
+            elseif info.code == 'q' then
+                current = bit.bor(current, value == true and 2^offset or 0)
+                offset = offset + 1
+
+            elseif info.code == 'x' then
+                res[#res + 1] = value
+
+            elseif info.code == 'S' then
+                if #value > count then
+                    error('Unable to pack string ' .. value .. ' into a "' .. code .. count_str .. '" field')
+                end
+                res[#res + 1] = pack_value(info, count, value .. nul:rep(count - #value))
+
+            elseif info.code == 'z' then
+                if count > 1 then
+                    error('Code "z" cannot appear multiple times')
+                end
+                res[#res + 1] = pack_value(info, #value + 1, value .. nul)
+                term = true
+                break
+
+            else
+                res[#res + 1] = pack_value(info, 1, value)
+
+            end
+
+            if info.var_size then
+                break
+            end
+
+            count = count - 1
         end
-      end
-      cur = c
-      N = 0
-    else N = 10*N+tonumber(c) end
-  end
-  return done()
+    end
+
+    if index < args then
+        error('Bad argument #' .. tostring(index + 2) .. ' to \'pack\' (no value expected, got ' .. type(select(index + 2, ...)) .. ')')
+    end
+
+    if offset > 0 then
+        res[#res + 1] = convert_number(current, offset, 0)
+    end
+
+    return table.concat(res)
 end
 
-function l_pack(f,...)
-  local args = {f,...}
-  local i = 1
-  local N = 0
-  local swap = false
-  local b = ""
-  local cur = OP_NONE
+local unpack_value = function(data, index, info, count)
+    local ctype = ('%s[%i]'):format(info.ctype, info.var_size and count or 1)
+    local size = ffi.sizeof(ctype)
 
-  local pop = function()
-    i = i + 1
-    return args[i]
-  end
+    local buffer = ffi.new(ctype)
+    ffi.copy(buffer, data:sub(index, index + size - 1))
 
-  local endianOp = function(c)
-    swap = doendian(c)
-    -- N = 0 -- I don't think this is needed
-  end
+    local new_index = index + size
+    if info.type == 'number' then
+        return tonumber(buffer[0]), new_index
 
-  local stringOp = function(c)
-      b = b .. pop()
+    elseif info.type == 'boolean' then
+        return buffer[0] == true, new_index
 
-      if c == OP_ZSTRING then
-        b = b .. '\0'
-      end
-  end
+    end
 
-  function packNumber(T)
-    return function()
-      local a = pop()
-      a = doswap(swap, a, T)
-      a = ffi.new(T.."[1]",a)
-      b = b .. ffi.string( a, ffi.sizeof(T) )
-    end   
-  end
-
-  function packString(T)
-    return function()
-      local a = pop()
-      local l = #a
-      ll = doswap(swap, l, T)
-      ll = ffi.new(T.."[1]",ll)
-      b = b .. ffi.string( ll, ffi.sizeof(T) )
-      b = b .. a
-    end     
-  end
-
-  local pack_ops = {
-    [OP_LITTLEENDIAN] = endianOp,
-    [OP_BIGENDIAN] = endianOp,
-    [OP_NATIVE] = endianOp,
-    [OP_ZSTRING] = stringOp,
-    [OP_STRING] = stringOp,
-    [OP_BSTRING] = packString("unsigned char"),
-    [OP_WSTRING] = packString("unsigned short"),
-    [OP_SSTRING] = packString("size_t"),
-    [OP_NUMBER] = packNumber("double"),
-    [OP_DOUBLE] = packNumber("double"),
-    [OP_FLOAT] = packNumber("float"),
-    [OP_CHAR] = packNumber("char"),
-    [OP_BYTE] = packNumber("unsigned char"),
-    [OP_SHORT] = packNumber("short"),
-    [OP_USHORT] = packNumber("unsigned short"),
-    [OP_INT] = packNumber("int"),
-    [OP_UINT] = packNumber("unsigned int"),
-    [OP_LONG] = packNumber("long"),
-    [OP_ULONG] = packNumber("unsigned long"),
-    [OP_NONE] = OP_NONE,
-    [' '] = OP_NONE,
-    [','] = OP_NONE,
-  }
-  
-  for c in (f..'\0'):gmatch'.' do
-    if not isdigit( c ) then
-      if N == 0 then N = 1 end
-      for k=1,N do
-        if pack_ops[cur] then
-          pack_ops[cur](cur)
-        else 
-          badcode(cur)
-        end
-      end
-      cur = c
-      N = 0
-    else N = 10*N+tonumber(c) end
-  end
-
-  return b
+    error('Unhandled valid code "' .. info.code .. '"')
 end
 
-string.pack = l_pack
-string.unpack = l_unpack
+string.unpack = function(data, format)
+    local res = {}
+    local index = 1
+    local term = false
+    local offset = 0
+
+    for code, count_str in format:gmatch('(%a)(%d*)') do
+        if term then
+            error('Unpacking cannot continue after "z" code')
+        end
+
+        local info = codes[code]
+        if info == nil then
+            error('Unknown code \'' .. code .. '\'')
+        end
+
+        if info.var_size and count_str == '' then
+            error('Missing length parameter for code "' .. info.code .. '"')
+        end
+
+        if offset > 0 and info.size >= 1 then
+            index = index + math.ceil(offset / 8)
+            offset = 0
+        end
+
+        count = count_str ~= '' and tonumber(count_str) or 1
+
+        if index + info.size * count > #data + 1 then
+            error('Data to unpack too small for the provided format')
+        end
+
+        while count > 0 do
+            while offset >= 8 do
+                index = index + 1
+                offset = offset - 8
+            end
+
+            if info.code == 'q' then
+                res[#res + 1] = bit.band(bit.rshift(data:byte(index), offset), 0x01) == 1
+                offset = offset + 1
+            elseif info.code == 'b' then
+                local buffer = ffi.new('uint64_t[1]')
+                ffi.copy(buffer, data:sub(index, ffi.sizeof(buffer)))
+                res[#res + 1] = tonumber(bit.band(bit.rshift(buffer[0], offset), 2^count - 1))
+                offset = offset + count
+            elseif info.code == 'x' then
+                res[#res + 1] = data:sub(index, count)
+                index = index + count
+            elseif info.code == 'S' then
+                res[#res + 1] = tostring(ffi.string(data:sub(index, index + count - 1)))
+                index = index + count
+            elseif info.code == 'z' then
+                res[#res + 1] = tostring(ffi.string(data:sub(index)))
+                index = #data
+                term = true
+            else
+                res[#res + 1], index = unpack_value(data, index, info, count)
+            end
+
+            if info.var_size then
+                break
+            end
+
+            count = count - 1
+        end
+    end
+
+    return unpack(res)
+end
