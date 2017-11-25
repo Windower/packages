@@ -1,0 +1,30 @@
+version: "{build}"
+
+branches:
+  only:
+    - master
+
+skip_tags: true
+
+image: Visual Studio 2017
+
+environment:
+  BUILD_PATH: C:\build\
+  GITHUB_USERNAME: alphaONE2
+  GITHUB_NAME: alphaONE2
+  GITHUB_EMAIL: iryoku@windower.net
+  GITHUB_TOKEN:
+
+init:
+  - git config --global core.autocrlf input
+
+clone_depth: 2
+
+build_script:
+  - ps: .\build
+
+test_script:
+  - ps: .\test
+
+deploy_script:
+  - ps: .\deploy
