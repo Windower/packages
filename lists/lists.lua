@@ -3,12 +3,12 @@ local meta = {}
 
 local make_key = function(l, k)
     if type(k) ~= 'number' then
-        return nil
+        error('Invalid key ' .. tostring(k))
     end
 
     k = k < 0 and l.count + k + 1 or k
-    if k < 1 or k > l.count then
-        error('Index outside of list range (' .. tostring(k) .. '/' .. tostring(l.count) .. ').')
+    if k == 0 or k > l.count then
+        error('Invalid key ' .. tostring(k))
     end
 
     return k
@@ -21,21 +21,11 @@ meta.__index = function(l, k)
         return list[k]
     end
 
-    local key = make_key(l, k)
-    if key == nil then
-        return nil
-    end
-
-    return rawget(l, key)
+    return rawget(l, make_key(l, k))
 end
 
 meta.__newindex = function(l, k, v)
-    local key = make_key(l, k)
-    if key == nil then
-        return
-    end
-
-    rawset(l, key, v)
+    rawset(l, make_key(l, k), v)
 end
 
 meta.__eq = function(l1, l2)
@@ -106,10 +96,10 @@ meta.__add_element = function(l, el)
 end
 
 meta.__remove_key = function(l, i)
-    i = make_key(l, i)
-    local el = rawget(l, i)
+    local made = make_key(l, i)
+    local el = rawget(l, made)
 
-    for key = i, l.count do
+    for key = made, l.count do
         rawset(l, key, rawget(l, key + 1))
     end
     l.count = l.count - 1
@@ -130,10 +120,10 @@ end
 -- Unique members
 
 list.insert = function(l, i, el)
-    i = make_key(l, i)
-
     l.count = l.count + 1
-    for key = i, l.count do
+    local made = make_key(l, i)
+
+    for key = made, l.count do
         local next = el
         el = rawget(l, key)
         rawset(l, key, next)
@@ -159,10 +149,11 @@ end
 
 -- Invoke enumerable library
 
-return require('enumerable')(meta, 'list')
+local enumerable = require('enumerable')
+return enumerable.init_type(meta, 'list')
 
 --[[
-Copyright © 2016, Windower
+Copyright © 2017, Windower
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -173,4 +164,3 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL Windower BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ]]
-
