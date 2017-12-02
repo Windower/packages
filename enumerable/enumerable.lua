@@ -403,46 +403,48 @@ local dependent_functions = {
     },
 }
 
-local build_index = function(constructor, proxies)
-    local index = {}
+local build_index_table = function(constructor, proxies)
+    local index_table = {}
 
     for name, fn in pairs(proxies) do
-        index[name] = fn
+        index_table[name] = fn
     end
 
     for name, fn in pairs(enumerable) do
-        index[name] = fn
+        index_table[name] = fn
     end
 
-    if constructor ~= nil then
-        for name, fn in pairs(lazy_functions) do
-            index[name] = function(...)
-                return fn(constructor, ...)
-            end
-        end
-
-        for proxy_name, proxy in pairs(proxies) do
-            for name, fn in pairs(dependent_functions[proxy_name]) do
-                index[name] = function(...)
-                    return fn(constructor, proxy, ...)
-                end
-            end
+    for name, fn in pairs(lazy_functions) do
+        index_table[name] = function(...)
+            return fn(constructor, ...)
         end
     end
 
-    return index
+    for proxy_name, proxy in pairs(proxies) do
+        for name, fn in pairs(dependent_functions[proxy_name]) do
+            index_table[name] = function(...)
+                return fn(constructor, proxy, ...)
+            end
+        end
+    end
+
+    return index_table
 end
 
-local find_index = function(t, k, index, original, constructor)
-    if original == nil then
-        return index[k]
+local find_index = function(t, k, index_table, original, constructor)
+    if original == nil and index_table[k] ~= nil then
+        return index_table[k]
+    end
+
+    if original == nil and enumerator_cache[t] ~= nil then
+        return constructor(t)[k]
     end
 
     if type(original) ~= 'function' or enumerator_cache[t] == nil then
         return original
     end
 
-    return function(discard, ...)
+    return function(_, ...)
         return original(constructor(t), ...)
     end
 end
@@ -470,13 +472,14 @@ local operators = {
 }
 
 local index_cache = {}
-return function(meta, name)
+local configure_metatable = function(meta, name)
     -- Create default/copy constructor if none available
     if meta.__create == nil then
         meta.__create = function(t)
             local res = {}
             local key = 0
             for _, el in pairs(t or {}) do
+                -- Cannot use __add_element here for reasons I may some day remember
                 key = key + 1
                 res[key] = el
             end
@@ -502,36 +505,35 @@ return function(meta, name)
     local add = meta.__add_element
     local remove = meta.__remove_key
 
-    local index = build_index(constructor, {
+    local index_table = build_index_table(constructor, {
         add = add,
         remove = remove,
     })
-    index_cache[#index_cache + 1] = index
+    index_cache[#index_cache + 1] = index_table
 
     -- __index
-    local original = meta.__index
-    local index_type = type(original)
+    local original_index = meta.__index
+    local index_type = type(original_index)
+    --TODO: Cache find_index result? local table with __index metamethod that sets used keys?
     if index_type == 'nil' then
-        meta.__index = index
+        meta.__index = function(t, k)
+            return find_index(t, k, index_table, nil, constructor)
+        end
     elseif index_type == 'table' then
         meta.__index = function(t, k)
-            return find_index(t, k, index, original[k], constructor)
+            return find_index(t, k, index_table, original_index[k], constructor)
         end
     elseif index_type == 'function' then
         meta.__index = function(t, k)
-            return find_index(t, k, index, original(t, k), constructor)
+            return find_index(t, k, index_table, original_index(t, k), constructor)
         end
     else
-        error(('Unknown indexing index_type: %s'):format(type))
-    end
-
-    local get_index = function(key)
-        return type(meta.__index) == 'table' and meta.__index[key] or meta.__index(nil, key)
+        error(('Unknown index_type: %s'):format(type))
     end
 
     -- __len
     if meta.__len == nil then
-        meta.__len = get_index('count')
+        meta.__len = type(meta.__index) == 'table' and meta.__index['count'] or meta.__index(nil, 'count')
     end
 
     -- Lazy evaluation
@@ -541,22 +543,22 @@ return function(meta, name)
     local enumerator = meta.__pairs or function(t)
         return next, t, nil
     end
-    meta.__pairs = function(original)
-        return (enumerator_cache[original] or enumerator)(original)
+    meta.__pairs = function(t)
+        return (enumerator_cache[t] or enumerator)(t)
     end
 
     -- Implement toX function as a constructor call
     if name ~= nil then
         local key = 'to' .. name
         enumerable[key] = constructor
-        for _, index in pairs(index_cache) do
-            index[key] = constructor
+        for _, cached_index_table in pairs(index_cache) do
+            cached_index_table[key] = constructor
         end
     end
 
     -- Evaluate table for operators
     local is_native = function(fn)
-        for _, enumerable_fn in pairs(index) do
+        for _, enumerable_fn in pairs(index_table) do
             if enumerable_fn == fn then
                 return false
             end
@@ -595,8 +597,20 @@ return function(meta, name)
     return meta.__create
 end
 
+return {
+    init_type = configure_metatable,
+    wrap = function(t)
+        if getmetatable(t) ~= nil then
+            --TODO: Or just ignore existing metatable? Or copy? Or initialize fully?
+            error('Cannot wrap enumerable around existing metatable')
+        end
+
+        return init_meta({})(t)
+    end,
+}
+
 --[[
-Copyright © 2016, Windower
+Copyright © 2017, Windower
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -607,4 +621,3 @@ Redistribution and use in source and binary forms, with or without modification,
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL Windower BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ]]
-
