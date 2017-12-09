@@ -1,12 +1,34 @@
+require('table')
 require('io')
-require('string')
-share_container = require('sharing')
-windower = require('windower')
+local shared = require('shared')
+local windower = require('windower')
 
-resources = share_container()
+resources = shared.new('resources')
 
-for f in io.popen('dir "'..windower.addon_path..'\\res\\" /b'):lines() do
-    f = f:sub(1,-5) -- Removes extension.
-    local data = require('res.'..f)
-    resources[f] = data
+resources.data = {}
+
+--TODO: Temporary....
+for path in io.popen('dir "' .. windower.addon_path .. '\\res\\" /s/b'):lines() do
+    print('Loading...', path)
+    local res, slot_table = dofile(path)
+    local res_name = path:match('\\([%a_]+.lua)'):sub(1, -5)
+    print('Matched:', res_name)
+    resources.data[res_name] = res
 end
+
+-- Set id property and adjust language identifiers of each resource entry
+for _, resource in pairs(resources.data) do
+    for id, entry in pairs(resource) do
+        entry.id = id
+        entry.english = entry.en
+        entry.japanese = entry.jp
+        entry.en = nil
+        entry.jp = nil
+    end
+end
+
+resources.env = {
+    pairs = pairs,
+    next = next,
+    table = table,
+}

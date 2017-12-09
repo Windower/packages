@@ -1,0 +1,9 @@
+<package>
+  <name>resources</name>
+  <version>1.0.0.0</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>resources_service</dependency>
+    <dependency>enumerable</dependency>
+  </dependencies>
+</package>
