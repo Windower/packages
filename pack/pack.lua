@@ -139,12 +139,14 @@ string.pack = function(format, ...)
     return table.concat(res)
 end
 
+local cstring = ffi.typeof('char const*')
 local unpack_value = function(data, index, info, count)
     local ctype = ('%s[%i]'):format(info.ctype, info.var_size and count or 1)
     local size = ffi.sizeof(ctype)
 
     local buffer = ffi.new(ctype)
-    ffi.copy(buffer, data:sub(index, index + size - 1))
+    local cstr = cstring(data)
+    ffi.copy(buffer, cstr + index - 1, size)
 
     local new_index = index + size
     if info.type == 'number' then
