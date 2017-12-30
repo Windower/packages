@@ -56,18 +56,12 @@ string.pack = function(format, ...)
     local term = false
 
     for code, count_str in format:gmatch('(%a)(%d*)') do
-        if term then
-            error('Packing cannot continue after "z" code')
-        end
+        assert(not term, 'Packing cannot continue after "z" code')
 
         local info = codes[code]
-        if info == nil then
-            error('Unknown code \'' .. code .. '\'')
-        end
+        assert(info ~= nil, 'Unknown code \'' .. code .. '\'')
 
-        if info.var_size and count_str == '' then
-            error('Missing length parameter for code "' .. info.code .. '"')
-        end
+        assert(not info.var_size or count_str ~= '', 'Missing length parameter for code "' .. info.code .. '"')
 
         if offset > 0 and info.size >= 1 then
             res[#res + 1], offset, current = convert_number(current, offset, 0)
@@ -77,14 +71,10 @@ string.pack = function(format, ...)
 
         while count > 0 do
             index = index + 1
-            if index > args then
-                error('Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got no value)')
-            end
+            assert(index <= args, 'Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got no value)')
 
             local value = select(index, ...)
-            if type(value) ~= info.type then
-                error('Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got ' .. type(value) .. ')')
-            end
+            assert(type(value) == info.type, 'Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got ' .. type(value) .. ')')
 
             if offset >= 8 then
                 res[#res + 1], offset, current = convert_number(current, offset, 7)
@@ -102,15 +92,11 @@ string.pack = function(format, ...)
                 res[#res + 1] = value
 
             elseif info.code == 'S' then
-                if #value > count then
-                    error('Unable to pack string ' .. value .. ' into a "' .. code .. count_str .. '" field')
-                end
+                assert(#value <= count, 'Unable to pack string ' .. value .. ' into a "' .. code .. count_str .. '" field')
                 res[#res + 1] = pack_value(info, count, value .. nul:rep(count - #value))
 
             elseif info.code == 'z' then
-                if count > 1 then
-                    error('Code "z" cannot appear multiple times')
-                end
+                assert(count <= 1, 'Code "z" cannot appear multiple times')
                 res[#res + 1] = pack_value(info, #value + 1, value .. nul)
                 term = true
                 break
@@ -128,9 +114,7 @@ string.pack = function(format, ...)
         end
     end
 
-    if index < args then
-        error('Bad argument #' .. tostring(index + 2) .. ' to \'pack\' (no value expected, got ' .. type(select(index + 2, ...)) .. ')')
-    end
+    assert(index >= args, 'Bad argument #' .. tostring(index + 2) .. ' to \'pack\' (no value expected, got ' .. type(select(index + 2, ...)) .. ')')
 
     if offset > 0 then
         res[#res + 1] = convert_number(current, offset, 0)
@@ -167,18 +151,12 @@ string.unpack = function(data, format)
     local offset = 0
 
     for code, count_str in format:gmatch('(%a)(%d*)') do
-        if term then
-            error('Unpacking cannot continue after "z" code')
-        end
+        assert(not term, 'Unpacking cannot continue after "z" code')
 
         local info = codes[code]
-        if info == nil then
-            error('Unknown code \'' .. code .. '\'')
-        end
+        assert(info ~= nil, 'Unknown code \'' .. code .. '\'')
 
-        if info.var_size and count_str == '' then
-            error('Missing length parameter for code "' .. info.code .. '"')
-        end
+        assert(not info.var_size or count_str ~= '', 'Missing length parameter for code "' .. info.code .. '"')
 
         if offset > 0 and info.size >= 1 then
             index = index + math.ceil(offset / 8)
@@ -187,9 +165,7 @@ string.unpack = function(data, format)
 
         count = count_str ~= '' and tonumber(count_str) or 1
 
-        if index + info.size * count > #data + 1 then
-            error('Data to unpack too small for the provided format')
-        end
+        assert(index + info.size * count <= #data + 1, 'Data to unpack too small for the provided format')
 
         while count > 0 do
             while offset >= 8 do
