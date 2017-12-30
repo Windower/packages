@@ -602,10 +602,8 @@ local empty_constructor = configure_metatable({})
 local result = {
     init_type = configure_metatable,
     wrap = function(t)
-        if getmetatable(t) ~= nil then
-            --TODO: Or just ignore existing metatable? Or copy? Or initialize fully?
-            error('Cannot wrap enumerable around existing metatable')
-        end
+        --TODO: Or just ignore existing metatable? Or copy? Or initialize fully?
+        assert(getmetatable(t) == nil, 'Cannot wrap enumerable around existing metatable')
 
         return empty_constructor(t)
     end,
