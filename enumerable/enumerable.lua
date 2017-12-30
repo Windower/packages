@@ -533,7 +533,7 @@ local configure_metatable = function(meta, name)
 
     -- __len
     if meta.__len == nil then
-        meta.__len = type(meta.__index) == 'table' and meta.__index['count'] or meta.__index(nil, 'count')
+        meta.__len = enumerable.count
     end
 
     -- Lazy evaluation
@@ -587,7 +587,7 @@ local configure_metatable = function(meta, name)
     end
 
     -- Hack to remove second table argument to __len
-    do
+    if meta.__len ~= nil then
         local len = meta.__len
         meta.__len = function(t)
             return len(t)
@@ -605,7 +605,7 @@ return {
             error('Cannot wrap enumerable around existing metatable')
         end
 
-        return init_meta({})(t)
+        return configure_metatable({})(t)
     end,
 }
 
