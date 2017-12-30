@@ -354,7 +354,7 @@ local lazy_functions = {
 
         return res
     end,
-    concat = function(constructor, original, enumerable)
+    concat = function(constructor, original, other)
         local res = constructor()
 
         enumerator_cache[res] = function(res)
@@ -367,7 +367,7 @@ local lazy_functions = {
                     if not first then
                         return nil, nil
                     else
-                        iterator, table, key = pairs(enumerable)
+                        iterator, table, key = pairs(other)
                         first = false
                         key, value = iterator(table, key)
                     end
@@ -533,7 +533,7 @@ local configure_metatable = function(meta, name)
 
     -- __len
     if meta.__len == nil then
-        meta.__len = type(meta.__index) == 'table' and meta.__index['count'] or meta.__index(nil, 'count')
+        meta.__len = enumerable.count
     end
 
     -- Lazy evaluation
@@ -587,7 +587,7 @@ local configure_metatable = function(meta, name)
     end
 
     -- Hack to remove second table argument to __len
-    do
+    if meta.__len ~= nil then
         local len = meta.__len
         meta.__len = function(t)
             return len(t)
@@ -597,17 +597,29 @@ local configure_metatable = function(meta, name)
     return meta.__create
 end
 
-return {
+local empty_constructor = configure_metatable({})
+
+local result = {
     init_type = configure_metatable,
     wrap = function(t)
-        if getmetatable(t) ~= nil then
-            --TODO: Or just ignore existing metatable? Or copy? Or initialize fully?
-            error('Cannot wrap enumerable around existing metatable')
-        end
+        --TODO: Or just ignore existing metatable? Or copy? Or initialize fully?
+        assert(getmetatable(t) == nil, 'Cannot wrap enumerable around existing metatable')
 
-        return init_meta({})(t)
+        return empty_constructor(t)
     end,
 }
+
+for name, fn in pairs(enumerable) do
+    result[name] = fn
+end
+
+for name, fn in pairs(lazy_functions) do
+    result[name] = function(t, ...)
+        return fn(getmetatable(t).__create, t, ...)
+    end
+end
+
+return result
 
 --[[
 Copyright © 2017, Windower
