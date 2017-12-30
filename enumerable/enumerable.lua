@@ -354,7 +354,7 @@ local lazy_functions = {
 
         return res
     end,
-    concat = function(constructor, original, enumerable)
+    concat = function(constructor, original, other)
         local res = constructor()
 
         enumerator_cache[res] = function(res)
@@ -367,7 +367,7 @@ local lazy_functions = {
                     if not first then
                         return nil, nil
                     else
-                        iterator, table, key = pairs(enumerable)
+                        iterator, table, key = pairs(other)
                         first = false
                         key, value = iterator(table, key)
                     end
@@ -597,7 +597,9 @@ local configure_metatable = function(meta, name)
     return meta.__create
 end
 
-return {
+local empty_constructor = configure_metatable({})
+
+local result = {
     init_type = configure_metatable,
     wrap = function(t)
         if getmetatable(t) ~= nil then
@@ -605,9 +607,21 @@ return {
             error('Cannot wrap enumerable around existing metatable')
         end
 
-        return configure_metatable({})(t)
+        return empty_constructor(t)
     end,
 }
+
+for name, fn in pairs(enumerable) do
+    result[name] = fn
+end
+
+for name, fn in pairs(lazy_functions) do
+    result[name] = function(t, ...)
+        return fn(getmetatable(t).__create, t, ...)
+    end
+end
+
+return result
 
 --[[
 Copyright © 2017, Windower
