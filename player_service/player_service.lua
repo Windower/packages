@@ -20,13 +20,8 @@ player.env = {
   end
 
   local res_keys = {
-    spell_keys = keys(res.spells),
-    job_ability_keys = keys(res.job_abilities),
     jobs_keys = keys(res.jobs),
     skills_keys = keys(res.skills),
-    merit_points_keys = keys(res.merit_points),
-    job_points_keys = keys(res.job_points),
-    mounts_keys = keys(res.mounts),
   }  
   
 defaults = {
@@ -44,9 +39,6 @@ defaults = {
   superior_level = -1,
   experience_points = -1,
   required_experience_points = -1,
-  limit_points =-1,
-  merit_points =-1,
-  maximum_merits =-1,
   jobs = {},
   hp_max=1,
   hp=1,
@@ -84,11 +76,7 @@ defaults = {
     dark_resistance=0,
   },
 
-  known_spells = {},
-  available_spells = {},
-  available_abilities = {},
-  available_mounts = {},
-  buffs = {},
+
   linkshell1 = {
     red = -1,
     green = -1,
@@ -112,11 +100,6 @@ defaults = {
     name = '',
   },
 
-  indi = {
-    element_id = -1,
-    size = -1,
-    type = '',
-  },
 
   nation = {
     id = -1,
@@ -124,16 +107,11 @@ defaults = {
     points = -1,
   },
 
-  unity = {
-    id = -1,
-    points = -1,
-  },
 
   skills = {},
 
 }
 do
-
   for _,v in pairs(res_keys.skills_keys) do
     defaults.skills[v] = {
       level = -1,
@@ -145,16 +123,10 @@ do
   end
   defaults.jobs[defaults.main_job_id] = {
     level = -1,
-    capacity_points    = -1,
-    job_points         = -1,
-    spent_job_points   = -1,
   }
   for _,v in pairs(res_keys.jobs_keys) do
     defaults.jobs[v] = {
       level = -1,
-      capacity_points    = -1,
-      job_points         = -1,
-      spent_job_points   = -1,
     }
   end
   
@@ -277,17 +249,6 @@ incoming[0x037] = function(p)   -- Player Update
   player.data.linkshell1.blue               = p.data:byte(0x30)
 
   player.data.pet_index                    = bit.rshift(p.data:unpack('H',0x31),3)
-
-  local indi_byte                     = p.data:byte(0x56)
-  if indi_byte%128/64 == 0 then
-    player.data.indi.element_id = default.indi.element_id
-    player.data.indi.type = default.indi.type
-    player.data.indi.size = default.indi.size
-  else
-    player.data.indi.element_id = indi_byte%8
-    player.data.indi.size = math.floor((indi_byte%64)/16) + 1 -- Size range of 1~4
-    player.data.indi.type = ((indi_byte%16)/8 >= 1 and 'Debuff') or 'Buff'
-  end
 end 
 incoming[0x061] = function(p)   -- Char Stats
   player.data.main_job_id                  = p.data:byte(0x09)
@@ -334,9 +295,6 @@ incoming[0x061] = function(p)   -- Char Stats
 
   player.data.experience_points            = p.data:unpack('H',0x0D)
   player.data.required_experience_points   = p.data:unpack('H',0x0F)
-
-  player.data.unity.id                     = bit.band(p.data:byte(0x55),0x1F)
-  player.data.unity.points                 = math.floor(p.data:byte(0x56)/4) + p.data:byte(0x57)*2^6 + p.data:byte(0x58)*2^14 -- REVISIT: Incorrect
 end 
 incoming[0x062] = function(p)   -- Skill Update
   for _,v in pairs(res_keys.skills_keys) do
@@ -350,32 +308,7 @@ incoming[0x062] = function(p)   -- Skill Update
     end
   end
 end 
-incoming[0x063] = function(p)   -- Set Update
-  local packet_type = p.data:unpack('H',0x01)
-  if packet_type == 2 then
-    player.data.limit_points                 = p.data:unpack('H',0x05)
-    player.data.merit_points                 = p.data:byte(0x07)%128
-    player.data.maximum_merits               = p.data:byte(0x09)%128
-  elseif packet_type == 5 then
-    for i,v in pairs(res_keys.jobs_keys) do
-      player.data.jobs[v].capacity_points    = p.data:unpack('H',v*6+9)
-      player.data.jobs[v].job_points         = p.data:unpack('H',v*6+11)
-      player.data.jobs[v].spent_job_points   = p.data:unpack('H',v*6+13)
-    end
-  elseif packet_type == 9 then
-    for i=1,32 do
-      local buff_id = p.data:unpack('H',3+2*i)
-      if buff_id == 0 or buff_id == 255 then 
-        player.data.buffs[i] = nil
-      else
-        player.data.buffs[i] = {
-          id = buff_id,
-          ts = p.data:unpack('I',0x41+4*i) 
-        }
-      end
-    end
-  end
-end 
+
 incoming[0x0CC] = function(p)   -- Linkshell Message
   local linkshell_number = (bit.band(p.data:byte(2),0x40) == 0x40 and 2) or 1
   player.data['linkshell'..linkshell_number].message.text = p.data:unpack('z',5):gsub('\0','') --REVISIT: Arcon is changing 'z'
