@@ -40,15 +40,15 @@ defaults = {
   experience_points = -1,
   required_experience_points = -1,
   jobs = {},
-  hp_max=1,
-  hp=1,
-  hpp=100,
-  mp_max=1,
-  mp=1,
-  mpp=100,
-  tp=0,
-  attack=0,
-  defense=0,
+  hp_max=-1,
+  hp=-1,
+  hpp=-1,
+  mp_max=-1,
+  mp=-1,
+  mpp=-1,
+  tp=-1,
+  attack=-1,
+  defense=-1,
 
   stats = {
     str_base=0,
@@ -334,8 +334,8 @@ end
 incoming[0x0DF] = function(p)   -- Char Update
   if player.data.id == p.data:unpack('I',0x01) then
 
-    player.data.hp_current      = p.data:unpack('I',0x05)
-    player.data.mp_current      = p.data:unpack('I',0x09)
+    player.data.hp              = p.data:unpack('I',0x05)
+    player.data.mp              = p.data:unpack('I',0x09)
     player.data.tp              = p.data:unpack('I',0x0D)
     player.data.hpp             = p.data:byte(0x13)
     player.data.mpp             = p.data:byte(0x14)
@@ -350,8 +350,8 @@ end
 incoming[0x0E2] = function(p)   -- Char Info
   if player.data.id == p.data:unpack('I',0x01) then
 
-    player.data.hp_current      = p.data:unpack('I',0x05)
-    player.data.mp_current      = p.data:unpack('I',0x09)
+    player.data.hp              = p.data:unpack('I',0x05)
+    player.data.mp              = p.data:unpack('I',0x09)
     player.data.tp              = p.data:unpack('I',0x0D)
     player.data.hpp             = p.data:byte(0x1A)
     player.data.mpp             = p.data:byte(0x1B)
