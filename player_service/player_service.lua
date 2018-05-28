@@ -292,6 +292,7 @@ incoming[0x061] = function(p)   -- Char Stats
   player.data.nation.id                    = p.data:byte(0x4D)
 
   player.data.superior_level               = p.data:byte(0x4F)
+  player.data.item_level                   = p.data:byte(0x52)+player.data.main_job_level--54)
 
   player.data.experience_points            = p.data:unpack('H',0x0D)
   player.data.required_experience_points   = p.data:unpack('H',0x0F)
