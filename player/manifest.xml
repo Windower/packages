@@ -1,0 +1,10 @@
+<package>
+  <name>player</name>
+  <version>1.0.0.0</version>
+  <type>library</type>
+  <dependencies>  
+    <dependency>enumerable</dependency>   
+    <dependency>resources</dependency>	  
+    <dependency>player_service</dependency>   
+  </dependencies>
+</package>
