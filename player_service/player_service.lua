@@ -1,14 +1,16 @@
 require('bit')
-local pack   = require('pack')
+local pack = require('pack')
 local packet = require('packet')
+local packets = require('packets')
 local shared = require('shared')
-local res    = require('resources')
+local res = require('resources')
 
 player = shared.new('player')
 
 player.env = {
   next = next,
 }
+
   local function keys(t)
     local keys={}
     local i=0
@@ -297,69 +299,6 @@ incoming[0x061] = function(p)   -- Char Stats
   player.data.experience_points            = p.data:unpack('H',0x0D)
   player.data.required_experience_points   = p.data:unpack('H',0x0F)
 end 
-incoming[0x062] = function(p)   -- Skill Update
-  for _,v in pairs(res_keys.skills_keys) do
-    if res.skills[v].category == 'Synthesis' then 
-      player.data.skills[res.skills[v].id].level = bit.rshift(bit.band(p.data:unpack('H',0x7D + 2*v),32736),5)
-      player.data.skills[res.skills[v].id].rank_id = bit.band(p.data:unpack('H',0x7D + 2*v),31)
-      player.data.skills[res.skills[v].id].capped  = bit.band(p.data:unpack('H',0x7D + 2*v),32768) > 0
-    else
-      player.data.skills[res.skills[v].id].level = bit.band(p.data:unpack('H',0x7D + 2*v),32767)
-      player.data.skills[res.skills[v].id].capped  = bit.band(p.data:unpack('H',0x7D + 2*v),32768) > 0
-    end
-  end
-end 
-
-incoming[0x0CC] = function(p)   -- Linkshell Message
-  local linkshell_number = (bit.band(p.data:byte(2),0x40) == 0x40 and 2) or 1
-  player.data['linkshell'..linkshell_number].message.text = p.data:unpack('z',5):gsub('\0','') --REVISIT: Arcon is changing 'z'
-  player.data['linkshell'..linkshell_number].message.player_name = p.data:unpack('z',0x89):gsub('\0','') --REVISIT: Arcon is changing 'z'
-  player.data['linkshell'..linkshell_number].message.ts = p.data:unpack('I',0x85)
-  player.data['linkshell'..linkshell_number].message.permissions = p.data:unpack('I',0x95)
-
-  local name = ''
-  local ls_decode = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-  local field = p.data:sub(0x9D,0xAC)
-  for i=1,20 do
-    local bit_offset = (i-1)*6
-    local byte_offset = math.floor(bit_offset/8)+1
-    local short = bit.lshift(field:byte(byte_offset),8) + field:byte(byte_offset+1)
-    local char_val = bit.band(bit.rshift(short,10-bit_offset%8),0x3F)
-    if char_val ~= 0 then
-      name = name..ls_decode:sub(char_val,char_val)
-    end
-  end
-  player.data['linkshell'..linkshell_number].name = name
-
-end 
-incoming[0x0DF] = function(p)   -- Char Update
-  if player.data.id == p.data:unpack('I',0x01) then
-
-    player.data.hp              = p.data:unpack('I',0x05)
-    player.data.mp              = p.data:unpack('I',0x09)
-    player.data.tp              = p.data:unpack('I',0x0D)
-    player.data.hpp             = p.data:byte(0x13)
-    player.data.mpp             = p.data:byte(0x14)
-
-    player.data.index           = p.data:unpack('H',0x11)
-    player.data.main_job_id     = p.data:byte(0x1D)
-    player.data.main_job_level  = p.data:byte(0x1E)
-    player.data.sub_job_id      = p.data:byte(0x1F)
-    player.data.sub_job_level   = p.data:byte(0x20)
-  end
-end 
-incoming[0x0E2] = function(p)   -- Char Info
-  if player.data.id == p.data:unpack('I',0x01) then
-
-    player.data.hp              = p.data:unpack('I',0x05)
-    player.data.mp              = p.data:unpack('I',0x09)
-    player.data.tp              = p.data:unpack('I',0x0D)
-    player.data.hpp             = p.data:byte(0x1A)
-    player.data.mpp             = p.data:byte(0x1B)
-
-    player.data.index = p.data:unpack('H',0x15)
-  end
-end 
 
 incoming.handler = function(p)  -- function that selects id specific handler funcion
   if p.injected then return end
@@ -370,3 +309,64 @@ incoming.handler = function(p)  -- function that selects id specific handler fun
 end
 
 packet.incoming:register(incoming.handler)
+
+packets.incoming.register(0x062, function(p)
+    local data = player.data.skills
+    for i = 0x00, 0x30 do
+        local skill = data[i]
+        local packet = p.combat_skills[i]
+        skill.level = packet.level
+        skill.capped = packet.capped
+    end
+    for i = 0x00, 0x0A do
+        local skill = data[i]
+        local packet = p.combat_skills[i]
+        skill.level = packet.level
+        skill.rank_id = packet.rank_id
+        skill.capped = packet.capped
+    end
+end)
+
+packets.incoming.register(0x0CC, function(p)
+    local ls_number = bit.band(p.flags, 0x40) == 0x40 and 2 or 1
+    local data = player.data[('linkshell%u'):format(ls_number)]
+    data.name = p.linkshell_name
+    data.message.text = p.message
+    data.message.player_name = p.player_name
+    data.message.timestamp = p.timestamp
+    data.message.permissions = p.permissions
+end)
+
+packets.incoming.register(0x0DF, function(p)
+    local data = player.data
+    if data.id ~= p.id then
+        return
+    end
+
+    data.id = p.id
+    data.index = p.index
+    data.hp = p.hp
+    data.mp = p.mp
+    data.tp = p.tp
+    data.hpp = p.hpp
+    data.mpp = p.mpp
+    data.main_job = p.main_job
+    data.main_job_level = p.main_job_level
+    data.sub_job = p.sub_job
+    data.sub_job_level = p.sub_job_level
+end)
+
+packets.incoming.register(0x0E2, function(p)
+    local data = player.data
+    if data.id ~= p.id then
+        return
+    end
+
+    data.id = p.id
+    data.index = p.index
+    data.hp = p.hp
+    data.mp = p.mp
+    data.tp = p.tp
+    data.hpp = p.hpp
+    data.mpp = p.mpp
+end)

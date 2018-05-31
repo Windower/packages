@@ -7,8 +7,8 @@ local ffi = require('ffi')
 require('pack')
 
 local registry = {
-    incoming = {},
-    outgoing = {},
+    incoming = { all = {} },
+    outgoing = { all = {} },
 }
 
 local make_table = function(io)
@@ -68,8 +68,12 @@ packet.incoming:register(function(raw)
         ffi.copy(instance, char_ptr(dummy_header .. raw.data), ffi.sizeof(struct.cdef))
 
         for _, field in pairs(struct.fields) do
-            local data = instance[field.cname]
-            packet[field.label] = field.type.tolua ~= nil and field.type.tolua(data) or data
+            if field.type.cdef ~= nil then
+                local data = instance[field.cname]
+                packet[field.label] = field.type.tolua ~= nil and field.type.tolua(data) or data
+            else
+                packet[field.label] = raw.data:unpack('z', field.position - 4)
+            end
         end
     end
 

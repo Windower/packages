@@ -1,12 +1,13 @@
 local ffi = require('ffi')
 require('string')
+require('os')
+require('math')
+require('table')
 
 local fields = {
     incoming = {},
     outgoing = {},
 }
-
---[[ Type functions. All these functions should have return a function that can ]]
 
 local struct
 local make_type
@@ -26,6 +27,11 @@ do
         local index = 0x00
         local unknown_count = 1
         for _, field in ipairs(arranged) do
+            -- Can only happen with char*, should only appear at the end
+            if field.type.cdef == nil then
+                break;
+            end
+
             local diff = field.position - index
             if diff > 0 then
                 cdefs[#cdefs + 1] = ('char _unknown%u[%u]'):format(unknown_count, diff)
@@ -36,6 +42,8 @@ do
             local cdef
             if field.type.count then
                 cdef = ('%s %s[%u]'):format(field.type.cdef, field.cname, field.type.count)
+            elseif field.type.bits then
+                cdef = ('%s %s : %u'):format(field.type.cdef, field.cname, field.type.bits)
             else
                 cdef = ('%s %s'):format(field.type.cdef, field.cname)
             end
@@ -125,7 +133,7 @@ do
         end
 
         table.sort(arranged, function(field1, field2)
-            return field1.position < field2.position
+            return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
         end)
 
         local new = copy_type({cdef = make_cdef(arranged)})
@@ -152,8 +160,12 @@ do
     string_types = {}
 
     string = function(length)
+        if not length then
+            return { tag = 'string' }
+        end
+
         if not string_types[length] then
-            local new = copy_type({cdef = 'char'})[length]
+            local new = make_type('char')[length]
 
             new.tolua = function(raw)
                 return ffi.string(raw)
@@ -176,7 +188,7 @@ do
 
     data = function(length)
         if not data_types[length] then
-            local new = copy_type({cdef = 'char'})[length]
+            local new = make_type('char')[length]
 
             new.tolua = function(raw)
                 return ffi.string(raw, length)
@@ -206,23 +218,117 @@ local status = tag(uint8, 'status')
 local job = tag(uint8, 'job')
 local race = tag(uint8, 'race')
 local model = tag(uint16, 'model')
-local percent_char = tag(uint8, 'percent')
-local time = tag(uint32, 'time')
+local percent = tag(uint8, 'percent')
 local bag = tag(uint8, 'bag')
 local slot = tag(uint8, 'slot')
 local item = tag(uint16, 'item')
 local item_status = tag(uint8, 'item_status')
+local flags = tag(uint32, 'flags')
 
-local pc_name = string(16)
+local pc_name = string(0x10)
 
-local vitals = struct {
-    str = {0x00, int16},
-    dex = {0x02, int16},
-    vit = {0x04, int16},
-    agi = {0x06, int16},
-    int = {0x08, int16},
-    mnd = {0x0A, int16},
-    chr = {0x0C, int16},
+local time = tag(uint32, 'time')
+do
+    local now = os.time()
+    local off = os.difftime(now, os.time(os.date('!*t', now)))
+
+    time.tolua = function(ts)
+        return ts + off
+    end
+
+    time.toc = function(ts)
+        return ts - off
+    end
+end
+
+local encoded = function(size, bits, lookup_string)
+    local new = make_type('char')[size]
+    local pack_str = ('b%u'):format(bits):rep(math.floor(8 * size / bits))
+
+    local lua_lookup = {}
+    do
+        local index = 0
+        for char in lookup_string:gmatch('.') do
+            lua_lookup[index] = char
+            index = index + 1
+        end
+    end
+
+    local c_lookup = {}
+    for i, v in pairs(lua_lookup) do
+        c_lookup[v] = i
+    end
+
+    new.tolua = function()
+        return function(value)
+            local res = {}
+            for i, v in ipairs({value:unpack(pack_str)}) do
+                res[i] = lua_lookup[v]
+            end
+            return table.concat(res)
+        end
+    end
+
+    new.toc = function()
+        return function(value)
+            local res = {}
+            local index = 0
+            for c in value:gmatch('.') do
+                res[index] = c_lookup[c]
+                index = index + 1
+            end
+            return pack_str:pack(unpack(res))
+        end
+    end
+
+    return new
+end
+
+local bit = function(base, bits)
+    local new = copy_type(base)
+
+    new.bits = size
+
+    return new
+end
+
+local bit = function(base, bits)
+    local new = bit(base, bits)
+
+    new.tolua = function(value)
+        return value == 1
+    end
+
+    new.toc = function(value)
+        return value and 1 or 0
+    end
+
+    return new
+end
+
+local ls_name = encoded(0x10, 6, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+local item_inscription = encoded(0x0C, 6, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
+local ls_name_extdata = encoded(0x0C, 6, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+
+local stats = struct {
+    str                 = {0x00, int16},
+    dex                 = {0x02, int16},
+    vit                 = {0x04, int16},
+    agi                 = {0x06, int16},
+    int                 = {0x08, int16},
+    mnd                 = {0x0A, int16},
+    chr                 = {0x0C, int16},
+}
+
+local combat_skill = struct {
+    level               = {0x00, bit(int16, 15), offset=0},
+    capped              = {0x00, boolbit(int16, 1), offset=15},
+}
+
+local craft_skill = struct {
+    level               = {0x00, bit(int16, 5), offset=0},
+    rank_id             = {0x00, bit(int16, 10), offset=5},
+    capped              = {0x00, boolbit(int16, 1), offset=15},
 }
 
 -- Zone update
@@ -237,7 +343,7 @@ fields.incoming[0x00A] = struct {
     target_index        = {0x1A, entity_index},
     movement_speed      = {0x1C, uint8},
     animation_speed     = {0x1D, uint8},
-    hp_percent          = {0x1E, percent_char},
+    hpp                 = {0x1E, percent},
     status              = {0x1F, status},
     zone                = {0x30, zone},
     timestamp_1         = {0x38, time},
@@ -266,8 +372,8 @@ fields.incoming[0x00A] = struct {
     main_job            = {0xB4, job},
     sub_job             = {0xB7, job},
     job_levels          = {0xBC, job[0x10], lookup='jobs'},
-    vitals              = {0xCC, vitals},
-    vitals_bonus        = {0xDA, vitals},
+    stats               = {0xCC, stats},
+    stats_bonus         = {0xDA, stats},
     max_hp              = {0xE8, uint32},
     max_mp              = {0xEC, uint32},
 }
@@ -325,6 +431,49 @@ fields.incoming[0x050] = struct {
     bag_index           = {0x04, uint8},
     slot_id             = {0x05, slot},
     bag_id              = {0x06, bag},
+}
+
+-- Skills Update
+fields.incoming[0x062] = struct {
+    combat_skills       = {0x80, combat_skill[0x30], lookup='skills', lookup_index=0x00},
+    craft_skills        = {0xE0, craft_skill[0x0A], lookup='skills', lookup_index=0x30},
+}
+
+-- LS Message
+fields.incoming[0x0CC] = struct {
+    flags               = {0x04, flags},
+    message             = {0x08, string(0x80)},
+    timestamp           = {0x88, time},
+    player_name         = {0x8C, pc_name},
+    permissions         = {0x98, data(4)},
+    linkshell_name      = {0x9C, ls_name},
+}
+
+-- Char Update
+fields.incoming[0x0DF] = struct {
+    id                  = {0x04, entity},
+    hp                  = {0x08, uint32},
+    mp                  = {0x0C, uint32},
+    tp                  = {0x10, uint32},
+    index               = {0x14, entity_index},
+    hpp                 = {0x16, percent},
+    mpp                 = {0x17, percent},
+    main_job            = {0x20, job},
+    main_job_level      = {0x21, uint8},
+    sub_job             = {0x22, job},
+    sub_job_level       = {0x23, uint8},
+}
+
+-- Char Info
+fields.incoming[0x0E2] = struct {
+    id                  = {0x04, entity},
+    hp                  = {0x08, uint32},
+    mp                  = {0x0C, uint32},
+    tp                  = {0x10, uint32},
+    index               = {0x18, entity_index},
+    hpp                 = {0x1D, percent},
+    mpp                 = {0x1E, percent},
+    name                = {0x22, string()},
 }
 
 return fields
