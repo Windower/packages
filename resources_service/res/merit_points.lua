@@ -54,9 +54,9 @@ return {
     [388] = {id=388,en="Warcry Recast",ja="ウォークライ使用間隔",endesc="Shorten recast time by 10 seconds.",jadesc="能力値1で使用間隔を10秒短縮します。"},
     [390] = {id=390,en="Aggressor Recast",ja="アグレッサー使用間隔",endesc="Shorten recast time by 10 seconds.",jadesc="能力値1で使用間隔を10秒短縮します。"},
     [392] = {id=392,en="Double Attack Rate",ja="ダブルアタック確率",endesc="Increase double attack rate by 1 percent.",jadesc="能力値1でダブルアタック確率を1%アップします。"},
-    [448] = {id=448,en="Focus Recast",ja="集中使用間隔",endesc="Shorten recast time by 10 seconds.",jadesc="能力値1で使用間隔を10秒短縮します。"},
-    [450] = {id=450,en="Dodge Recast",ja="回避使用間隔",endesc="Shorten recast time by 10 seconds.",jadesc="能力値1で使用間隔を10秒短縮します。"},
-    [452] = {id=452,en="Chakra Recast",ja="チャクラ使用間隔",endesc="Shorten recast time by 10 seconds.",jadesc="能力値1で使用間隔を10秒短縮します。"},
+    [448] = {id=448,en="Focus Recast",ja="集中使用間隔",endesc="Shorten recast time by 4 seconds.",jadesc="能力値1で使用間隔を4秒短縮します。"},
+    [450] = {id=450,en="Dodge Recast",ja="回避使用間隔",endesc="Shorten recast time by 4 seconds.",jadesc="能力値1で使用間隔を4秒短縮します。"},
+    [452] = {id=452,en="Chakra Recast",ja="チャクラ使用間隔",endesc="Shorten recast time by 6 seconds.",jadesc="能力値1で使用間隔を6秒短縮します。"},
     [454] = {id=454,en="Counter Rate",ja="カウンター確率",endesc="Increase counter attack rate by 1 percent.",jadesc="能力値1でカウンター確率を1%アップします。"},
     [456] = {id=456,en="Kick Attack Rate",ja="蹴撃確率",endesc="Increase kick attack rate by 1 percent.",jadesc="能力値1で蹴撃確率を1%アップします。"},
     [512] = {id=512,en="Divine Seal Recast",ja="女神の印使用間隔",endesc="Shorten recast time by 20 seconds.",jadesc="能力値1で使用間隔を20秒短縮します。"},
@@ -280,7 +280,7 @@ return {
 }, {"id", "en", "ja", "endesc", "jadesc"}
 
 --[[
-Copyright © 2013-2016, Windower
+Copyright © 2013-2018, Windower
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:

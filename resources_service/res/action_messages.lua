@@ -762,10 +762,20 @@ return {
     [769] = {id=769,en="Skillchain: Radiance.${lb}${target} recovers ${number} hit points!",color="H"},
     [770] = {id=770,en="Skillchain: Umbra.${lb}${target} recovers ${number} hit points!",color="H"},
     [771] = {id=771,en="Congratulations! Your deeds of valor will ring throughout the ages, providing inspiration for generations to come.",color=1},
+    [772] = {id=772,en="${actor} stands resolute thanks to the power of the bonds that tie you!",color=1},
+    [773] = {id=773,en="You are unable to call forth your mount because your main job level is not at least ≺Possible Special Code: 12≻≺Possible Special Code: 00≻.",color=1},
+    [774] = {id=774,en="You already possess that item and are unable to receive your just reward!",color=1},
+    [775] = {id=775,en="A new objective has been added in the Contents > Content (Ambuscade) Records of Eminence category!",color=1},
+    [776] = {id=776,en="Additional effect: ${target} is chainbound.",color=1},
+    [777] = {id=777,en="You cannot mount at this time.",color=1},
+    [778] = {id=778,en="${actor} uses ${ability}.${lb}${actor} copies ${number} magical effects from ${target}.",color=1},
+    [779] = {id=779,en="${actor} uses ${ability}.${lb}A barrier begins to pulsate around ${target}.",color=1},
+    [780] = {id=780,en="${actor} uses ${ability}.${lb}${actor} takes aim at ${target}!",color=1},
+    [781] = {id=781,en="${target} retaliates, absorbing ${number} TP from ${actor}.",color=101},
 }, {"id", "en", "color", "suffix", "prefix"}
 
 --[[
-Copyright © 2013-2016, Windower
+Copyright © 2013-2018, Windower
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:

@@ -1,23 +1,23 @@
 -- Automatically generated file: Bags
 
 return {
-    [0] = {id=0,en="Inventory",access="Everywhere"},
-    [1] = {id=1,en="Safe",access="Mog House",command="bank"},
-    [2] = {id=2,en="Storage",access="Mog House",command="storage"},
-    [3] = {id=3,en="Temporary",access="Situational"},
-    [4] = {id=4,en="Locker",access="Mog House",command="locker"},
-    [5] = {id=5,en="Satchel",access="Everywhere",command="satchel"},
-    [6] = {id=6,en="Sack",access="Everywhere",command="sack"},
-    [7] = {id=7,en="Case",access="Everywhere",command="case"},
-    [8] = {id=8,en="Wardrobe",access="Everywhere",command="wardrobe"},
-    [9] = {id=9,en="Safe 2",access="Mog House",command="bank2"},
-    [10] = {id=10,en="Wardrobe 2",access="Everywhere",command="wardrobe2"},
-    [11] = {id=11,en="Wardrobe 3",access="Everywhere",command="wardrobe3"},
-    [12] = {id=12,en="Wardrobe 4",access="Everywhere",command="wardrobe4"},
-}, {"id", "en", "access", "command"}
+    [0] = {id=0,en="Inventory",access="Everywhere",command="inventory",equippable=true},
+    [1] = {id=1,en="Safe",access="Mog House",command="bank",equippable=false},
+    [2] = {id=2,en="Storage",access="Mog House",command="storage",equippable=false},
+    [3] = {id=3,en="Temporary",access="Situational",command="temporary",equippable=false},
+    [4] = {id=4,en="Locker",access="Mog House",command="locker",equippable=false},
+    [5] = {id=5,en="Satchel",access="Everywhere",command="satchel",equippable=false},
+    [6] = {id=6,en="Sack",access="Everywhere",command="sack",equippable=false},
+    [7] = {id=7,en="Case",access="Everywhere",command="case",equippable=false},
+    [8] = {id=8,en="Wardrobe",access="Everywhere",command="wardrobe",equippable=true},
+    [9] = {id=9,en="Safe 2",access="Mog House",command="bank2",equippable=false},
+    [10] = {id=10,en="Wardrobe 2",access="Everywhere",command="wardrobe2",equippable=true},
+    [11] = {id=11,en="Wardrobe 3",access="Everywhere",command="wardrobe3",equippable=true},
+    [12] = {id=12,en="Wardrobe 4",access="Everywhere",command="wardrobe4",equippable=true},
+}, {"id", "en", "access", "command", "equippable"}
 
 --[[
-Copyright © 2013-2016, Windower
+Copyright © 2013-2018, Windower
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
