@@ -144,17 +144,12 @@ local unpack_value = function(data, index, info, count)
     error('Unhandled valid code "' .. info.code .. '"')
 end
 
-string.unpack = function(data, format, index)
+string.unpack = function(data, format, index, offset)
+    index = index or 1
+    offset = offset or 0
+
     local res = {}
     local term = false
-    local offset = 0
-
-    index = not index and 1 or tonumber(index)
-
-    if not index then
-        error('The index argument was invalid.')
-    end
-
     for code, count_str in format:gmatch('(%a)(%d*)') do
         assert(not term, 'Unpacking cannot continue after "z" code')
 
