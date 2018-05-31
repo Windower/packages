@@ -9,10 +9,8 @@ resources.data = {}
 
 --TODO: Temporary....
 for path in io.popen('dir "' .. windower.addon_path .. '\\res\\" /s/b'):lines() do
-    print('Loading...', path)
     local res, slot_table = dofile(path)
     local res_name = path:match('\\([%a_]+.lua)'):sub(1, -5)
-    print('Matched:', res_name)
     resources.data[res_name] = res
 end
 
