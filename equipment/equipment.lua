@@ -22,11 +22,7 @@ local equip_meta = {
             end) or {}).id or index
         end
         
-        local success, data = fetch(indexer, index)
-
-        if not success then
-            error(data)
-        end
+        local success, data = assert(fetch(indexer, index))
 
         return data
     end,
@@ -37,15 +33,11 @@ local equip_meta = {
 
     __pairs = function(t)
         return function(t, index)
-            local success, data = fetch(iterator, index)
-
-            if not success then
-                error(data)
-            end
+            local success, data = assert(fetch(iterator, index))
 
             return unpack(data)
         end, t, nil
     end,
 }
 
-return enumerable(equip_meta)()
+return enumerable.init_type(equip_meta)()
