@@ -167,7 +167,7 @@ incoming[0x00D] = function(p)   -- PC entity update packet
   local id = p.data:unpack('I',0x01)
   if player.data.id ~= -1 and player.data.id == id then
     local pc_update = {}
-    pc_update[0] = function(key, p) --Handle pc location  update bit 0x0A
+    pc_update[0] = function(p) --Handle pc location  update bit 0x0A
       player.data.position.heading         = p.data:unpack('C',0x08)
       player.data.position.x               = p.data:unpack('f',0x09)
       player.data.position.z               = p.data:unpack('f',0x0D)
@@ -178,10 +178,10 @@ incoming[0x00D] = function(p)   -- PC entity update packet
       player.data.movement_speed           = p.data:unpack('C',0x19)
       player.data.animation_speed          = p.data:unpack('C',0x1A)
     end
-    pc_update[1] = function(key, p) --Not Used
+    pc_update[1] = function(p) --Not Used
 
     end
-    pc_update[2] = function(key, p) --Handle pc status    update bit 0x2A
+    pc_update[2] = function(p) --Handle pc status    update bit 0x2A
       player.data.hpp                     = p.data:unpack('C',0x1B)
       player.data.status                  = p.data:unpack('C',0x1C)
       player.data.flag                    = p.data:unpack('I',0x1D)
@@ -191,10 +191,10 @@ incoming[0x00D] = function(p)   -- PC entity update packet
       player.data.linkshell1.blue         = p.data:unpack('C',0x23)
 
     end
-    pc_update[3] = function(key, p) --Handle pc name      update bit 0x3A
+    pc_update[3] = function(p) --Handle pc name      update bit 0x3A
       player.data.name                    = p.data:unpack('z',0x57):gsub('\0','')
     end
-    pc_update[4] = function(key, p) --Handle pc model     update bit 0x4A
+    pc_update[4] = function(p) --Handle pc model     update bit 0x4A
       player.data.face                    = p.data:unpack('C',0x45)
       player.data.race                    = p.data:unpack('C',0x46)
       player.data.equipment = { --visible equipment
@@ -208,7 +208,7 @@ incoming[0x00D] = function(p)   -- PC entity update packet
         ranged                        = p.data:unpack('H',0x55),
       }
     end
-    pc_update[5] = function(key)    --Handle pc out of range update bit 0x5A
+    pc_update[5] = function(p)    --Handle pc out of range update bit 0x5A
     end
     local updates = {p.data:unpack('q8', 0x0A)}
     for k,v in pairs(updates) do
