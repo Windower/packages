@@ -72,11 +72,12 @@ Get-ChildItem $stagingDir -Directory -Recurse |
 
 function Get-PackageValid ([Parameter(Mandatory=$true)][string[]]$name) {
     $manifest = (Join-Path $name "manifest.xml")
-    (Test-Path $manifest) -or (([xml](Get-Content $manifest)).package.name -cne $name)
+    ([xml](Get-Content $manifest)).package.name -ceq $name
 }
 
 "Removing invalid packages..."
 Get-ChildItem $stagingDir -Directory -Exclude "`$symsrv" -Name |
+    Where-Object { Test-Path $_ } |
     Where-Object { -not (Get-PackageValid $_) } |
     ForEach-Object { Remove-Item -Recurse -Force $_ }
 
