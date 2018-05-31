@@ -1006,6 +1006,20 @@ return {
     [1010] = {id=1010,en="Preventer of the Second Coming",ja="再臨を食い止めし者"},
     [1011] = {id=1011,en="Lux Ex Tenebris",ja="ルックス・エクス・テネブリス"},
     [1012] = {id=1012,en="The Triumphant",ja="トライアンファント"},
+    [1013] = {id=1013,en="Fu Fighter",ja="フ・ファイター"},
+    [1014] = {id=1014,en="Kyou Killer",ja="キョウ・キラー"},
+    [1015] = {id=1015,en="Kei Combuster",ja="ケイ・コンバスター"},
+    [1016] = {id=1016,en="Gin Gagger",ja="ギン・ガッガー"},
+    [1017] = {id=1017,en="Kin Kicker",ja="キン・キッカー"},
+    [1018] = {id=1018,en="Ou Obliterator",ja="オウ・オビリテレーター"},
+    [1019] = {id=1019,en="Dynamis-San d'Oria [D] Trespasser",ja="デュナミス～サンドリア〔Ｄ〕の侵入者"},
+    [1020] = {id=1020,en="Dynamis-San d'Oria [D] Infiltrator",ja="デュナミス～サンドリア〔Ｄ〕の潜入者"},
+    [1022] = {id=1022,en="Dynamis-Bastok [D] Trespasser",ja="デュナミス～バストゥーク〔Ｄ〕の侵入者"},
+    [1023] = {id=1023,en="Dynamis-Bastok [D] Infiltrator",ja="デュナミス～バストゥーク〔Ｄ〕の潜入者"},
+    [1025] = {id=1025,en="Dynamis-Windurst [D] Trespasser",ja="デュナミス～ウィンダス〔Ｄ〕の侵入者"},
+    [1026] = {id=1026,en="Dynamis-Windurst [D] Infiltrator",ja="デュナミス～ウィンダス〔Ｄ〕の潜入者"},
+    [1028] = {id=1028,en="Dynamis-Jeuno [D] Trespasser",ja="デュナミス～ジュノ〔Ｄ〕の侵入者"},
+    [1029] = {id=1029,en="Dynamis-Jeuno [D] Infiltrator",ja="デュナミス～ジュノ〔Ｄ〕の潜入者"},
     [1044] = {id=1044,en="Vegetable Hero",ja="カリカリ救世主"},
     [1045] = {id=1045,en="Contributer from the Shadows",ja="陰の貢献者なのん"},
     [1046] = {id=1046,en="The Decider",ja="裁定者"},
@@ -1017,10 +1031,19 @@ return {
     [1116] = {id=1116,en="Raptor Wrangler",ja="爆速ラプトルライダー"},
     [1117] = {id=1117,en="Gardener for the Ages",ja="疾走ガーデンライダー"},
     [1118] = {id=1118,en="Lagoon Explorer",ja="伝説ラグーンライダー"},
+    [1119] = {id=1119,en="Servant to the Servant",ja="侍女と葉っぱに翻弄されし功労者"},
+    [1120] = {id=1120,en="Legendary Woodworker",ja="運斤成風の木彫師"},
+    [1121] = {id=1121,en="Legendary Blacksmith",ja="運斤成風の鍛冶師"},
+    [1122] = {id=1122,en="Legendary Goldsmith",ja="運斤成風の彫金師"},
+    [1123] = {id=1123,en="Legendary Weaver",ja="運斤成風の裁縫師"},
+    [1124] = {id=1124,en="Legendary Tanner",ja="運斤成風の革細工師"},
+    [1125] = {id=1125,en="Legendary Boneworker",ja="運斤成風の骨彫師"},
+    [1126] = {id=1126,en="Legendary Alchemist",ja="運斤成風の錬金術師"},
+    [1127] = {id=1127,en="Legendary Culinarian",ja="運斤成風の調理師"},
 }, {"id", "en", "ja"}
 
 --[[
-Copyright © 2013-2016, Windower
+Copyright © 2013-2018, Windower
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:

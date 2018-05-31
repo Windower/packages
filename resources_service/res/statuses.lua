@@ -7,6 +7,10 @@ return {
     [3] = {id=3,en="Engaged dead"},
     [4] = {id=4,en="Event"},
     [5] = {id=5,en="Chocobo"},
+    [8] = {id=8,en="Door Opening"},
+    [9] = {id=9,en="Door Closing"},
+    [10] = {id=10,en="Elevator Up"},
+    [11] = {id=11,en="Elevator Down"},
     [33] = {id=33,en="Resting"},
     [34] = {id=34,en="Locked"},
     [38] = {id=38,en="Fishing fighting"},
@@ -46,7 +50,7 @@ return {
 }, {"id", "en"}
 
 --[[
-Copyright © 2013-2016, Windower
+Copyright © 2013-2018, Windower
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
