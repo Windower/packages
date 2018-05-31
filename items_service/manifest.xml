@@ -5,5 +5,6 @@
   <dependencies>
     <dependency>pack</dependency>
     <dependency>resources</dependency>
+    <dependency>packets</dependency>
   </dependencies>
 </package>

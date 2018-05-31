@@ -1,5 +1,5 @@
 local shared = require('shared')
-local packet = require('packet')
+local packets = require('packets')
 local res = require('resources')
 require('pack')
 
@@ -108,24 +108,25 @@ local item_handlers = {
         local extdata = data:unpack('S24', 0x0E)
         update_item(bag, index, count, status, id, bazaar, extdata)
     end,
-
-    [0x050] = function(data)
-        local index = data:unpack('C', 0x01)
-        local equip_slot = data:unpack('C', 0x02)
-        local bag = data:unpack('C', 0x03)
-
-        if index == 0 then
-            equipment.data[equip_slot] = nil
-        else
-            if not items.data.bags[bag].contents[index] then
-                items.data.bags[bag].contents[index] = new_item(bag, index)
-            end
-            equipment.data[equip_slot] = items.data.bags[bag].contents[index]
-        end
-    end,
 }
 
-packet.incoming:register(function(p)
-    if p.injected then return end
-    if item_handlers[p.id] then item_handlers[p.id](p.data) end
+packets.incoming:register(function(p)
+    if p.injected then
+        return
+    end
+
+    if item_handlers[p.id] then
+        item_handlers[p.id](p.data)
+    end
+end)
+
+packets.incoming:register(0x050, function(p)
+    if p.inventory_index == 0 then
+        equipment.data[p.slot_id] = nil
+    else
+        if not items.data.bags[p.bag_id].contents[p.inventory_index] then
+            items.data.bags[p.bag_id].contents[p.inventory_index] = new_item(p.bag_id, p.inventory_index)
+        end
+        equipment.data[p.slot_id] = items.data.bags[p.bag_id].contents[p.inventory_index]
+    end
 end)
