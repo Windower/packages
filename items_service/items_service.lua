@@ -74,59 +74,31 @@ local update_item = function(bag, index, count, status, id, bazaar, extdata)
     if extdata then item.extdata = extdata end
 end
 
-local item_handlers = {
-    [0x01C] = function(data)
-        for i = 0, #items.data.bags do
-            items.data.bags[i].size = data:byte(0x01 + i) - 1
-        end
-    end,
-
-    [0x01E] = function(data)
-        local count = data:unpack('I', 0x01)
-        local bag = data:unpack('C', 0x05)
-        local index = data:unpack('C', 0x06)
-        local status = data:unpack('C', 0x07)
-        update_item(bag, index, count, status)
-    end,
-
-    [0x01F] = function(data)
-        local count = data:unpack('I', 0x01)
-        local item = data:unpack('H', 0x05)
-        local bag = data:unpack('C', 0x07)
-        local index = data:unpack('C', 0x08)
-        local status = data:unpack('C', 0x09)
-        update_item(bag, index, count, status, item)
-    end,
-
-    [0x020] = function(data)
-        local count = data:unpack('I', 0x01)
-        local bazaar = data:unpack('I', 0x05)
-        local id = data:unpack('H', 0x09)
-        local bag = data:unpack('C', 0x0B)
-        local index = data:unpack('C', 0x0C)
-        local status = data:unpack('C', 0x0D)
-        local extdata = data:unpack('S24', 0x0E)
-        update_item(bag, index, count, status, id, bazaar, extdata)
-    end,
-}
-
-packets.incoming:register(function(p)
-    if p.injected then
-        return
-    end
-
-    if item_handlers[p.id] then
-        item_handlers[p.id](p.data)
+packets.incoming.register(0x01C, function(p)
+    for i = 0, #items.data.bags do
+        items.data.bags[i].size = p.size[i] - 1
     end
 end)
 
-packets.incoming:register(0x050, function(p)
-    if p.inventory_index == 0 then
+packets.incoming.register(0x01E, function(p)
+    update_item(p.bag, p.bag_index, p.count, p.status)
+end)
+
+packets.incoming.register(0x01F, function(p)
+    update_item(p.bag, p.bag_index, p.count, p.status, p.item_id)
+end)
+
+packets.incoming.register(0x020, function(p)
+    update_item(p.bag, p.bag_index, p.count, p.status, p.item_id, p.bazaar, p.extdata)
+end)
+
+packets.incoming.register(0x050, function(p)
+    if p.bag_index == 0 then
         equipment.data[p.slot_id] = nil
     else
-        if not items.data.bags[p.bag_id].contents[p.inventory_index] then
-            items.data.bags[p.bag_id].contents[p.inventory_index] = new_item(p.bag_id, p.inventory_index)
+        if not items.data.bags[p.bag_id].contents[p.bag_index] then
+            items.data.bags[p.bag_id].contents[p.bag_index] = new_item(p.bag_id, p.bag_index)
         end
-        equipment.data[p.slot_id] = items.data.bags[p.bag_id].contents[p.inventory_index]
+        equipment.data[p.slot_id] = items.data.bags[p.bag_id].contents[p.bag_index]
     end
 end)

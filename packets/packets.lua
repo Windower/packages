@@ -14,7 +14,7 @@ local registry = {
 local make_table = function(io)
     local reg = registry[io]
     return {
-        register = function(_, id, fn)
+        register = function(id, fn)
             if type(id) == 'function' then
                 fn = id
                 id = 'all'
@@ -67,9 +67,9 @@ packet.incoming:register(function(raw)
         local instance = ffi.new(struct.cdef)
         ffi.copy(instance, char_ptr(dummy_header .. raw.data), ffi.sizeof(struct.cdef))
 
-        for label, meta in pairs(struct.fields) do
-            local name = meta.keyword and instance[label]:sub(2) or instance[label]
-            packet[label] = meta.tolua ~= nil and meta.tolua(name) or name
+        for _, field in pairs(struct.fields) do
+            local data = instance[field.cname]
+            packet[field.label] = field.type.tolua ~= nil and field.type.tolua(data) or data
         end
     end
 

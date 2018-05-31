@@ -35,16 +35,15 @@ do
 
             local cdef
             if field.type.count then
-                cdef = ('%s %s[%u]'):format(field.type.cdef, field.label, field.type.count)
+                cdef = ('%s %s[%u]'):format(field.type.cdef, field.cname, field.type.count)
             else
-                cdef = ('%s %s'):format(field.type.cdef, field.label)
+                cdef = ('%s %s'):format(field.type.cdef, field.cname)
             end
 
             cdefs[#cdefs + 1] = cdef
             index = index + field.type.size
         end
 
-        print(('struct {%s;}'):format(table.concat(cdefs, ';')))
         return ('struct {%s;}'):format(table.concat(cdefs, ';'))
     end
 
@@ -113,9 +112,9 @@ do
     struct = function(fields)
         local arranged = {}
         for label, data in pairs(fields) do
-            data.keyword = keywords[label] ~= nil
             local full = {
-                label = data.keyword and ('_%s'):format(label) or label,
+                label = label,
+                cname = keywords[label] ~= nil and ('_%s'):format(label) or label,
             }
 
             for key, value in pairs(data) do
@@ -130,7 +129,7 @@ do
         end)
 
         local new = copy_type({cdef = make_cdef(arranged)})
-        new.fields = fields
+        new.fields = arranged
 
         return new
     end
@@ -157,8 +156,7 @@ do
             local new = copy_type({cdef = 'char'})[length]
 
             new.tolua = function(raw)
-                local index = raw:find('\0')
-                return index and raw:sub(0, index - 1) or raw
+                return ffi.string(raw)
             end
 
             new.toc = function(str)
@@ -169,6 +167,29 @@ do
         end
 
         return string_types[length]
+    end
+end
+
+local data
+do
+    data_types = {}
+
+    data = function(length)
+        if not data_types[length] then
+            local new = copy_type({cdef = 'char'})[length]
+
+            new.tolua = function(raw)
+                return ffi.string(raw, length)
+            end
+
+            new.toc = function(str)
+                return #str >= length and str:sub(0, length) or str .. ('\0'):rep(length - #str)
+            end
+
+            data_types[length] = new
+        end
+
+        return data_types[length]
     end
 end
 
@@ -189,6 +210,8 @@ local percent_char = tag(uint8, 'percent')
 local time = tag(uint32, 'time')
 local bag = tag(uint8, 'bag')
 local slot = tag(uint8, 'slot')
+local item = tag(uint16, 'item')
+local item_status = tag(uint8, 'item_status')
 
 local pc_name = string(16)
 
@@ -249,9 +272,57 @@ fields.incoming[0x00A] = struct {
     max_mp              = {0xEC, uint32},
 }
 
+-- Inventory Count
+-- It is unclear why there are two representations of the size for this.
+-- I have manipulated my inventory size on a mule after the item update packets have
+-- all arrived and still did not see any change in the second set of sizes, so they
+-- may not be max size/used size chars as I initially assumed. Adding them as shorts
+-- for now.
+-- There appears to be space for another 8 bags.
+fields.incoming[0x01C] = struct {
+    size                = {0x04, uint8[13], lookup='bags'},
+    -- These "dupe" sizes are set to 0 if the inventory disabled.
+    -- storage: The accumulated storage from all items (uncapped) -1
+    -- wardrobe 3/4: This is not set to 0 despite being disabled for whatever reason
+    other_size          = {0x14, uint16[13], lookup='bags'},
+}
+
+-- Finish Inventory
+fields.incoming[0x01D] = struct {
+    flag                = {0x04, uint8, const=0x01},
+}
+
+-- Modify Inventory
+fields.incoming[0x01E] = struct {
+    count               = {0x04, uint32},
+    bag                 = {0x08, bag},
+    bag_index           = {0x09, uint8},
+    status              = {0x0A, item_status},
+}
+
+-- Item Assign
+fields.incoming[0x01F] = struct {
+    count               = {0x04, uint32},
+    item_id             = {0x08, item},
+    bag                 = {0x0A, bag},
+    bag_index           = {0x0B, uint8},
+    status              = {0x0C, item_status},
+}
+
+-- Item Updates
+fields.incoming[0x020] = struct {
+    count               = {0x04, uint32},
+    bazaar              = {0x08, uint32},
+    item_id             = {0x0C, item},
+    bag                 = {0x0E, bag},
+    bag_index           = {0x0F, uint8},
+    status              = {0x10, item_status},
+    extdata             = {0x11, data(24)},
+}
+
 -- Equipment
 fields.incoming[0x050] = struct {
-    inventory_index     = {0x04, uint8},
+    bag_index           = {0x04, uint8},
     slot_id             = {0x05, slot},
     bag_id              = {0x06, bag},
 }
