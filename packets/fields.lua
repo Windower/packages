@@ -52,14 +52,14 @@ do
                 end
                 local bit_diff = field.offset - offset
                 if bit_diff > 0 then
-                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(field.type.cdef, unknown_count, bit_diff)
+                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(bit_type, unknown_count, bit_diff)
                     unknown_count = unknown_count + 1
                 end
                 offset = offset + bit_diff
             elseif bit_type ~= nil then
                 local bit_diff = field.offset - offset
                 if bit_diff > 0 then
-                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(field.type.cdef, unknown_count, bit_diff)
+                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(bit_type, unknown_count, bit_diff)
                     unknown_count = unknown_count + 1
                 end
                 offset = 0
@@ -72,6 +72,8 @@ do
                 if offset == field.type.size then
                     offset = 0
                     bit_type = nil
+                else
+                    bit_type = field.type.cdef
                 end
             else
                 if field.type.count ~= nil then
@@ -165,7 +167,7 @@ do
         end
 
         table.sort(arranged, function(field1, field2)
-            return field1.position < field2.position or field1.position == field2.position and field1.offset <= field2.offset
+            return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
         end)
 
         local new = copy_type({cdef = make_cdef(arranged)})
