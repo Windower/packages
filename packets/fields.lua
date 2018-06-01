@@ -5,6 +5,8 @@ require('os')
 require('math')
 require('table')
 
+local b = bit
+
 local fields = {
     incoming = {},
     outgoing = {},
@@ -67,7 +69,7 @@ do
             if is_bit then
                 cdefs[#cdefs + 1] = ('%s %s : %u'):format(field.type.cdef, field.cname, field.type.bits)
                 offset = offset + field.type.bits
-                if offset = field.type.size then
+                if offset == field.type.size then
                     offset = 0
                     bit_type = nil
                 end
@@ -152,6 +154,7 @@ do
             local full = {
                 label = label,
                 cname = keywords[label] ~= nil and ('_%s'):format(label) or label,
+                offset = 0,
             }
 
             for key, value in pairs(data) do
@@ -162,7 +165,7 @@ do
         end
 
         table.sort(arranged, function(field1, field2)
-            return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
+            return field1.position < field2.position or field1.position == field2.position and field1.offset <= field2.offset
         end)
 
         local new = copy_type({cdef = make_cdef(arranged)})
@@ -331,7 +334,7 @@ local boolbit = function(base, bits)
         new.tolua = function(value)
             local res = {}
             for i = 1, bits do
-                res[i] = bit.band(bit.rshift(value, i - 1), 1) == 1
+                res[i] = b.band(b.rshift(value, i - 1), 1) == 1
             end
             return res
         end
@@ -340,7 +343,7 @@ local boolbit = function(base, bits)
             local res = 0
             for i, v in pairs(value) do
                 if v then
-                    res = bit.bor(res, bit.lshift(1, i - 1))
+                    res = b.bor(res, b.lshift(1, i - 1))
                 end
             end
             return res
@@ -401,7 +404,7 @@ local combat_skill = struct {
     capped              = {0x00, boolbit(int16), offset=15},
 }
 
-local craft_skill = struct {
+local crafting_skill = struct {
     level               = {0x00, bit(int16, 5), offset=0},
     rank_id             = {0x00, bit(int16, 10), offset=5},
     capped              = {0x00, boolbit(int16), offset=15},
@@ -496,7 +499,7 @@ fields.incoming[0x00A] = struct {
 
     -- Byte 0x36
     -- 0x20 = Ballista
-fields.incoming[0x00D] = L{
+fields.incoming[0x00D] = struct {
     player_id           = {0x04, entity},
     player_index        = {0x08, entity_index},
     update_position     = {0x0A, boolbit(uint8), offset=0}, -- Position, Rotation, Target, Speed
@@ -531,7 +534,7 @@ fields.incoming[0x01B] = struct {
     -- 0A: Flags or sub job level?
     sub_job_id          = {0x0B, job},
     sub_job_unlocked    = {0x0C, boolbit(uint32)},
-    sub_jobs_unlocked   = {0x0C, boolbit(uint32, 0x16), offset=1}
+    sub_jobs_unlocked   = {0x0C, boolbit(uint32, 0x16), offset=1},
     job_levels_pre_toau = {0x10, uint8[0x10], lookup='jobs'},
     stats_base          = {0x20, stats}, -- Altering these stat values has no impact on your equipment menu.
     hp_max              = {0x3C, uint32},
@@ -737,7 +740,7 @@ fields.incoming[0x061] = struct {
 -- Skills Update
 fields.incoming[0x062] = struct {
     combat_skills       = {0x80, combat_skill[0x30], lookup='skills', lookup_index=0x00},
-    craft_skills        = {0xE0, craft_skill[0x0A], lookup='skills', lookup_index=0x30},
+    crafting_skills     = {0xE0, crafting_skill[0x0A], lookup='skills', lookup_index=0x30},
 }
 
 -- LS Message

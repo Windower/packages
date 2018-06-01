@@ -14,16 +14,30 @@ player.env = {
 player.data = {
     linkshell1 = { message = {}, },
     linkshell2 = { message = {}, },
-    skills = {},
+    skills = { combat = {}, crafting = {} },
     models = {},
     job_levels = {},
     position = {},
 }
 
+do
+    local skills = player.data.skills.combat
+    for i = 0x00, 0x30 do
+        skills[i] = {}
+    end
+end
+do
+    local skills = player.data.skills.crafting
+    for i = 0x00, 0x0A do
+        skills[i] = {}
+    end
+end
+    
+
 packets.incoming.register(0x00D, function(p)
     local data = player.data
     if p.player_id ~= data.id then
-        break
+        return
     end
 
     if p.update_position then
@@ -87,7 +101,7 @@ packets.incoming.register(0x01B, function(p)
     data.hp_max = p.hp_max
     data.mp_max = p.mp_max
     for i = 1, 0x15 do
-      data.jobs[i] = p.jobs_levels[i]
+      data.job_levels[i] = p.job_levels[i]
     end
 end)
 
@@ -116,7 +130,7 @@ packets.incoming.register(0x061, function(p)
     data.home_point_zone_id = p.home_point_zone_id
     data.nation_id = p.nation_id
     data.superior_level = p.superior_level
-    data.item_level = p.item_level + p.main_job_level
+    data.item_level = p.item_level_over_99 + p.main_job_level
     data.exp = p.exp
     data.exp_required = p.exp_required
 end)
@@ -133,15 +147,17 @@ end)
 
 packets.incoming.register(0x062, function(p)
     local data = player.data.skills
+    local combat = data.combat
+    local crafting = data.crafting
     for i = 0x00, 0x30 do
-        local skill = data[i]
+        local skill = combat[i]
         local packet = p.combat_skills[i]
         skill.level = packet.level
         skill.capped = packet.capped
     end
     for i = 0x00, 0x0A do
-        local skill = data[i]
-        local packet = p.combat_skills[i]
+        local skill = crafting[i]
+        local packet = p.crafting_skills[i]
         skill.level = packet.level
         skill.rank_id = packet.rank_id
         skill.capped = packet.capped
