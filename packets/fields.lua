@@ -52,7 +52,7 @@ do
                 end
                 local bit_diff = field.offset - offset
                 if bit_diff > 0 then
-                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(bit_type, unknown_count, bit_diff)
+                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(bit_type or field.type.cdef, unknown_count, bit_diff)
                     unknown_count = unknown_count + 1
                 end
                 offset = offset + bit_diff
@@ -69,7 +69,7 @@ do
             if is_bit then
                 cdefs[#cdefs + 1] = ('%s %s : %u'):format(field.type.cdef, field.cname, field.type.bits)
                 offset = offset + field.type.bits
-                if offset == field.type.size then
+                if offset == 8 * field.type.size then
                     offset = 0
                     bit_type = nil
                 else
@@ -324,7 +324,7 @@ end
 local bit = function(base, bits)
     local new = copy_type(base)
 
-    new.bits = size
+    new.bits = bits
 
     return new
 end
