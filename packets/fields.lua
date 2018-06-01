@@ -1,5 +1,5 @@
-local ffi = require('ffi')
-local bit = require('bit')
+local ffi = require('ffi');
+require('bit')
 require('string')
 require('os')
 require('math')
@@ -35,6 +35,8 @@ do
                 break;
             end
 
+            local is_bit = field.type.bits ~= nil
+
             local diff = field.position - index
             if diff > 0 then
                 cdefs[#cdefs + 1] = ('char _unknown%u[%u]'):format(unknown_count, diff)
@@ -42,7 +44,7 @@ do
             end
             index = index + diff
 
-            if field.type.bits ~= nil then
+            if is_bit then
                 if bit_type ~= nil then
                     assert(field.type.cdef == bit_type, 'Bit field must have the same base types for every member.')
                 end
@@ -52,26 +54,30 @@ do
                     unknown_count = unknown_count + 1
                 end
                 offset = offset + bit_diff
+            elseif bit_type ~= nil then
+                local bit_diff = field.offset - offset
+                if bit_diff > 0 then
+                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(field.type.cdef, unknown_count, bit_diff)
+                    unknown_count = unknown_count + 1
+                end
+                offset = 0
+                bit_type = nil
             end
 
-            local cdef
-            if field.type.count ~= nil then
-                cdef = ('%s %s[%u]'):format(field.type.cdef, field.cname, field.type.count)
-            elseif field.type.bits ~= nil then
-                cdef = ('%s %s : %u'):format(field.type.cdef, field.cname, field.type.bits)
-            else
-                cdef = ('%s %s'):format(field.type.cdef, field.cname)
-            end
-
-            cdefs[#cdefs + 1] = cdef
-            index = index + field.type.size
-
-            if field.type.bits ~= nil then
+            if is_bit then
+                cdefs[#cdefs + 1] = ('%s %s : %u'):format(field.type.cdef, field.cname, field.type.bits)
                 offset = offset + field.type.bits
                 if offset = field.type.size then
                     offset = 0
                     bit_type = nil
                 end
+            else
+                if field.type.count ~= nil then
+                    cdefs[#cdefs + 1] = ('%s %s[%u]'):format(field.type.cdef, field.cname, field.type.count)
+                else
+                    cdefs[#cdefs + 1] = ('%s %s'):format(field.type.cdef, field.cname)
+                end
+                index = index + field.type.size
             end
         end
 
@@ -240,7 +246,6 @@ local weather = tag(uint8, 'weather')
 local state = tag(uint8, 'state')
 local job = tag(uint8, 'job')
 local race = tag(uint8, 'race')
-local model = tag(uint16, 'model')
 local percent = tag(uint8, 'percent')
 local bag = tag(uint8, 'bag')
 local slot = tag(uint8, 'slot')
@@ -367,6 +372,19 @@ local stats = struct {
     chr                 = {0x0C, int16},
 }
 
+local model = struct {
+    face                = {0x00, uint8},
+    race                = {0x01, uint8},
+    head                = {0x02, uint16},
+    body                = {0x04, uint16},
+    hands               = {0x06, uint16},
+    legs                = {0x08, uint16},
+    feet                = {0x0A, uint16},
+    main                = {0x0C, uint16},
+    sub                 = {0x0E, uint16},
+    range               = {0x10, uint16},
+}
+
 local resistances = struct {
     fire                = {0x34, uint16},
     wind                = {0x36, uint16},
@@ -401,28 +419,19 @@ fields.incoming[0x00A] = struct {
     player_index        = {0x08, entity_index},
     heading             = {0x0B, uint8},
     x                   = {0x0C, float},
-    y                   = {0x10, float},
-    z                   = {0x14, float},
+    z                   = {0x10, float},
+    y                   = {0x14, float},
     run_count           = {0x18, uint16},
     target_index        = {0x1A, entity_index},
     movement_speed      = {0x1C, uint8},
     animation_speed     = {0x1D, uint8},
-    hpp                 = {0x1E, percent},
+    hp_percent          = {0x1E, percent},
     state               = {0x1F, state},
     zone                = {0x30, zone},
     timestamp_1         = {0x38, time},
     timestamp_2         = {0x3C, time},
     _dupe_zone          = {0x42, zone},
-    face                = {0x44, uint8},
-    race                = {0x45, race},
-    head                = {0x46, model},
-    body                = {0x48, model},
-    hands               = {0x4A, model},
-    legs                = {0x4C, model},
-    feet                = {0x4E, model},
-    main                = {0x50, model},
-    sub                 = {0x52, model},
-    ranged              = {0x54, model},
+    model               = {0x44, model},
     day_music           = {0x56, uint16},
     night_music         = {0x58, uint16},
     solo_combat_music   = {0x5A, uint16},
@@ -440,6 +449,79 @@ fields.incoming[0x00A] = struct {
     stats_bonus         = {0xDA, stats},
     max_hp              = {0xE8, uint32},
     max_mp              = {0xEC, uint32},
+}
+
+-- PC Update
+    -- The flags in this byte are complicated and may not strictly be flags.
+    -- Byte 0x20: -- Mentor is somewhere in this byte
+    -- 01 = None
+    -- 02 = Deletes everyone
+    -- 04 = Deletes everyone
+    -- 08 = None
+    -- 16 = None
+    -- 32 = None
+    -- 64 = None
+    -- 128 = None
+
+
+    -- Byte 0x21:
+    -- 01 = None
+    -- 02 = None
+    -- 04 = None
+    -- 08 = LFG
+    -- 16 = Anon
+    -- 32 = Turns your name orange
+    -- 64 = Away
+    -- 128 = None
+
+    -- Byte 0x22:
+    -- 01 = POL Icon, can target?
+    -- 02 = no notable effect
+    -- 04 = DCing
+    -- 08 = Untargettable
+    -- 16 = No linkshell
+    -- 32 = No Linkshell again
+    -- 64 = No linkshell again
+    -- 128 = No linkshell again
+
+    -- Byte 0x23:
+    -- 01 = Trial Account
+    -- 02 = Trial Account
+    -- 04 = GM Mode
+    -- 08 = None
+    -- 16 = None
+    -- 32 = Invisible models
+    -- 64 = None
+    -- 128 = Bazaar
+
+    -- Byte 0x36
+    -- 0x20 = Ballista
+fields.incoming[0x00D] = L{
+    player_id           = {0x04, entity},
+    player_index        = {0x08, entity_index},
+    update_position     = {0x0A, boolbit(uint8), offset=0}, -- Position, Rotation, Target, Speed
+    update_status       = {0x0A, boolbit(uint8), offset=1}, -- Not used for 0x00D
+    update_vitals       = {0x0A, boolbit(uint8), offset=2}, -- HP%, Status, Flags, LS color, "Face Flags"
+    update_name         = {0x0A, boolbit(uint8), offset=3}, -- Name
+    update_model        = {0x0A, boolbit(uint8), offset=4}, -- Race, Face, Gear models
+    despawn             = {0x0A, boolbit(uint8), offset=5}, -- Only set if player runs out of range or zones
+    heading             = {0x0B, uint8},
+    x                   = {0x0C, float},
+    z                   = {0x10, float},
+    y                   = {0x14, float},
+    run_count           = {0x18, bit(uint16, 13), offset=0},
+    target_index        = {0x1A, bit(entity_index, 15), offset=1},
+    movement_speed      = {0x1C, uint8}, -- 32 represents 100%
+    animation_speed     = {0x1D, uint8}, -- 32 represents 100%
+    hp_percent          = {0x1E, percent},
+    state               = {0x1F, state},
+    flags               = {0x20, flags},
+    linkshell_red       = {0x24, uint8},
+    linkshell_green     = {0x25, uint8},
+    linkshell_blue      = {0x26, uint8},
+    face_flags          = {0x43, uint8}, -- 0, 3, 4 or 8
+    model               = {0x48, model},
+    name                = {0x5A, string()},
 }
 
 -- Job Info

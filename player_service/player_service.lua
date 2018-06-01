@@ -17,74 +17,54 @@ player.data = {
     skills = {},
     models = {},
     job_levels = {},
+    position = {},
 }
 
-local incoming = {} -- table of incoming packet ids that have an assoiated handler functions
-incoming[0x00D] = function(p)   -- PC entity update packet
-  local id = p.data:unpack('I',0x01)
-  if player.data.id ~= -1 and player.data.id == id then
-    local pc_update = {}
-    pc_update[0] = function(p) --Handle pc location  update bit 0x0A
-      player.data.position.heading         = p.data:unpack('C',0x08)
-      player.data.position.x               = p.data:unpack('f',0x09)
-      player.data.position.z               = p.data:unpack('f',0x0D)
-      player.data.position.y               = p.data:unpack('f',0x11)
-      player.data.position.walk_counter    = p.data:unpack('I',0x15)  
+packets.incoming.register(0x00D, function(p)
+    local data = player.data
+    if p.player_id ~= data.id then
+        break
+    end
 
-      player.data.target_index             = p.data:unpack('I',0x17)
-      player.data.movement_speed           = p.data:unpack('C',0x19)
-      player.data.animation_speed          = p.data:unpack('C',0x1A)
-    end
-    pc_update[1] = function(p) --Not Used
+    if p.update_position then
+        local pos = data.position
+        pos.heading = p.heading
+        pos.x = p.x
+        pos.y = p.y
+        pos.z = p.z
 
+        data.target_index = p.target_index
+        data.movement_speed = p.movement_speed / 8
+        data.animation_speed = p.animation_speed / 8
     end
-    pc_update[2] = function(p) --Handle pc status    update bit 0x2A
-      player.data.hp_percent              = p.data:unpack('C',0x1B)
-      player.data.status                  = p.data:unpack('C',0x1C)
-      player.data.flag                    = p.data:unpack('I',0x1D)
-      player.data.face_flag               = p.data:unpack('C',0x40)  
-      player.data.linkshell1.red          = p.data:unpack('C',0x21)
-      player.data.linkshell1.green        = p.data:unpack('C',0x22)
-      player.data.linkshell1.blue         = p.data:unpack('C',0x23)
 
+    if p.update_vitals then
+        data.hp_percent = p.hp_percent
+        data.state = p.state
+        data.linkshell1.red = p.linkshell_red
+        data.linkshell1.green = p.linkshell_green
+        data.linkshell1.blue = p.linkshell_blue
     end
-    pc_update[3] = function(p) --Handle pc name      update bit 0x3A
-      player.data.name                    = p.data:unpack('z',0x57):gsub('\0','')
-    end
-    pc_update[4] = function(p) --Handle pc model     update bit 0x4A
-      player.data.face                    = p.data:unpack('C',0x45)
-      player.data.race                    = p.data:unpack('C',0x46)
-      player.data.equipment = { --visible equipment
-        head                          = p.data:unpack('H',0x47),
-        body                          = p.data:unpack('H',0x49),
-        hands                         = p.data:unpack('H',0x4B),
-        legs                          = p.data:unpack('H',0x4D),
-        feet                          = p.data:unpack('H',0x4F),
-        main                          = p.data:unpack('H',0x51),
-        sub                           = p.data:unpack('H',0x53),
-        ranged                        = p.data:unpack('H',0x55),
-      }
-    end
-    pc_update[5] = function(p)    --Handle pc out of range update bit 0x5A
-    end
-    local updates = {p.data:unpack('q8', 0x0A)}
-    for k,v in pairs(updates) do
-      if v and pc_update[k] then
-        pc_update[k](p)
-      end
-    end
-  end  
-end 
 
-incoming.handler = function(p)  -- function that selects id specific handler funcion
-  if p.injected then return end
+    if p.update_name then
+        data.name = p.name
+    end
 
-  if incoming[p.id] then 
-    incoming[p.id](p)     
-  end
-end
-
-packet.incoming:register(incoming.handler)
+    if p.update_model then
+        local model = data.model
+        local m = p.model
+        model.face = m.face
+        model.race = m.race
+        model.head = m.head
+        model.body = m.body
+        model.hands = m.hands
+        model.legs = m.legs
+        model.feet = m.feet
+        model.main = m.main
+        model.sub = m.sub
+        model.range = m.range
+    end
+end)
 
 packets.incoming.register(0x00A, function(p)
     local data = player.data
