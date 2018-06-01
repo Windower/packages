@@ -1,4 +1,5 @@
 local ffi = require('ffi')
+local bit = require('bit')
 require('string')
 require('os')
 require('math')
@@ -25,6 +26,8 @@ do
     local make_cdef = function(arranged)
         local cdefs = {}
         local index = 0x00
+        local offset = 0
+        local bit_type
         local unknown_count = 1
         for _, field in ipairs(arranged) do
             -- Can only happen with char*, should only appear at the end
@@ -39,10 +42,22 @@ do
             end
             index = index + diff
 
+            if field.type.bits ~= nil then
+                if bit_type ~= nil then
+                    assert(field.type.cdef == bit_type, 'Bit field must have the same base types for every member.')
+                end
+                local bit_diff = field.offset - offset
+                if bit_diff > 0 then
+                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(field.type.cdef, unknown_count, bit_diff)
+                    unknown_count = unknown_count + 1
+                end
+                offset = offset + bit_diff
+            end
+
             local cdef
-            if field.type.count then
+            if field.type.count ~= nil then
                 cdef = ('%s %s[%u]'):format(field.type.cdef, field.cname, field.type.count)
-            elseif field.type.bits then
+            elseif field.type.bits ~= nil then
                 cdef = ('%s %s : %u'):format(field.type.cdef, field.cname, field.type.bits)
             else
                 cdef = ('%s %s'):format(field.type.cdef, field.cname)
@@ -50,6 +65,14 @@ do
 
             cdefs[#cdefs + 1] = cdef
             index = index + field.type.size
+
+            if field.type.bits ~= nil then
+                offset = offset + field.type.bits
+                if offset = field.type.size then
+                    offset = 0
+                    bit_type = nil
+                end
+            end
         end
 
         return ('struct {%s;}'):format(table.concat(cdefs, ';'))
@@ -214,7 +237,7 @@ local entity = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
 local zone = tag(uint16, 'zone')
 local weather = tag(uint8, 'weather')
-local status = tag(uint8, 'status')
+local state = tag(uint8, 'state')
 local job = tag(uint8, 'job')
 local race = tag(uint8, 'race')
 local model = tag(uint16, 'model')
@@ -227,7 +250,6 @@ local flags = tag(uint32, 'flags')
 local title = tag(uint16, 'title')
 local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
 local buff = tag(uint8, 'buff')
-local status = tag(uint8, 'status')
 local indi = tag(uint8, 'indi')
 
 local pc_name = string(0x10)
@@ -297,15 +319,35 @@ local bit = function(base, bits)
     return new
 end
 
-local bit = function(base, bits)
-    local new = bit(base, bits)
+local boolbit = function(base, bits)
+    local new = bit(base, bits or 1)
 
-    new.tolua = function(value)
-        return value == 1
-    end
+    if bits ~= nil then
+        new.tolua = function(value)
+            local res = {}
+            for i = 1, bits do
+                res[i] = bit.band(bit.rshift(value, i - 1), 1) == 1
+            end
+            return res
+        end
 
-    new.toc = function(value)
-        return value and 1 or 0
+        new.toc = function(value)
+            local res = 0
+            for i, v in pairs(value) do
+                if v then
+                    res = bit.bor(res, bit.lshift(1, i - 1))
+                end
+            end
+            return res
+        end
+    else
+        new.tolua = function(value)
+            return value == 1
+        end
+
+        new.toc = function(value)
+            return value and 1 or 0
+        end
     end
 
     return new
@@ -338,13 +380,13 @@ local resistances = struct {
 
 local combat_skill = struct {
     level               = {0x00, bit(int16, 15), offset=0},
-    capped              = {0x00, boolbit(int16, 1), offset=15},
+    capped              = {0x00, boolbit(int16), offset=15},
 }
 
 local craft_skill = struct {
     level               = {0x00, bit(int16, 5), offset=0},
     rank_id             = {0x00, bit(int16, 10), offset=5},
-    capped              = {0x00, boolbit(int16, 1), offset=15},
+    capped              = {0x00, boolbit(int16), offset=15},
 }
 
 local unity = struct {
@@ -366,7 +408,7 @@ fields.incoming[0x00A] = struct {
     movement_speed      = {0x1C, uint8},
     animation_speed     = {0x1D, uint8},
     hpp                 = {0x1E, percent},
-    status              = {0x1F, status},
+    state               = {0x1F, state},
     zone                = {0x30, zone},
     timestamp_1         = {0x38, time},
     timestamp_2         = {0x3C, time},
@@ -394,10 +436,27 @@ fields.incoming[0x00A] = struct {
     main_job_id         = {0xB4, job},
     sub_job_id          = {0xB7, job},
     job_levels          = {0xBC, uint8[0x10], lookup='jobs'},
-    stats               = {0xCC, stats},
+    stats_base          = {0xCC, stats},
     stats_bonus         = {0xDA, stats},
     max_hp              = {0xE8, uint32},
     max_mp              = {0xEC, uint32},
+}
+
+-- Job Info
+fields.incoming[0x01B] = struct {
+    main_job_id         = {0x08, job},
+    -- 09: Flags or main job level?
+    -- 0A: Flags or sub job level?
+    sub_job_id          = {0x0B, job},
+    sub_job_unlocked    = {0x0C, boolbit(uint32)},
+    sub_jobs_unlocked   = {0x0C, boolbit(uint32, 0x16), offset=1}
+    job_levels_pre_toau = {0x10, uint8[0x10], lookup='jobs'},
+    stats_base          = {0x20, stats}, -- Altering these stat values has no impact on your equipment menu.
+    hp_max              = {0x3C, uint32},
+    mp_max              = {0x40, uint32},
+    job_levels          = {0x48, uint8[0x16], lookup='jobs'},
+    monster_level       = {0x5F, uint8},
+    encumbrance_flags   = {0x60, uint32}, -- [legs, hands, body, head, ammo, range, sub, main,] [back, right_ring, left_ring, right_ear, left_ear, waist, neck, feet] [HP, CHR, MND, INT, AGI, VIT, DEX, STR,] [X X X X X X X MP]
 }
 
 -- Inventory Count
@@ -541,13 +600,13 @@ fields.incoming[0x020] = struct {
     -- 0x00000001 -- Seems to indicate wardrobe 3
     -- 0x00000002 -- Seems to indicate wardrobe 4
 ]]
-fields.incoming[0x037] = L{
+fields.incoming[0x037] = struct {
     buffs               = {0x04, buff[0x20]},
     player_id           = {0x24, entity},
     hp_percent          = {0x2A, percent},
     movement_speed_half = {0x2C, bit(uint16, 12), offset=0},
     yalms_per_step      = {0x2E, bit(uint16, 9), offset=0}, -- Determines how quickly your animation walks
-    status              = {0x30, status},
+    state               = {0x30, state},
     linkshell_red       = {0x31, uint8},
     linkshell_green     = {0x32, uint8},
     linkshell_blue      = {0x33, uint8},
@@ -577,7 +636,7 @@ fields.incoming[0x061] = struct {
     exp                 = {0x10, uint16},
     exp_required        = {0x12, uint16},
     stats_base          = {0x14, stats},
-    stats_added         = {0x22, stats},
+    stats_bonus         = {0x22, stats},
     attack              = {0x30, uint16},
     defense             = {0x32, uint16},
     resistance          = {0x34, resistances},

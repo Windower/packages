@@ -86,19 +86,6 @@ incoming[0x00D] = function(p)   -- PC entity update packet
     end
   end  
 end 
-incoming[0x01B] = function(p)   -- Job Info
-  player.data.main_job_id                  = p.data:byte(0x05)
-  player.data.main_job_level               = p.data:byte(0x06)
-  player.data.sub_job_level                = p.data:byte(0x07)
-  player.data.sub_job_id                   = p.data:byte(0x08)
-
-  player.data.hp_max                       = p.data:unpack('I',0x39)
-  player.data.mp_max                       = p.data:unpack('I',0x3D)
-
-  for i=0,#res.jobs-1 do
-    player.data.jobs[i].level  = p.data:byte(i+0x45)
-  end
-end 
 
 incoming.handler = function(p)  -- function that selects id specific handler funcion
   if p.injected then return end
@@ -109,6 +96,19 @@ incoming.handler = function(p)  -- function that selects id specific handler fun
 end
 
 packet.incoming:register(incoming.handler)
+
+packets.incoming.register(0x01B, function(p)
+    local data = player.data
+    data.main_job_id = p.main_job_id
+    data.main_job_level = p.main_job_level
+    data.sub_job_id = p.sub_job_id
+    data.sub_job_level = p.sub_job_level
+    data.hp_max = p.hp_max
+    data.mp_max = p.mp_max
+    for i = 1, 0x15 do
+      data.jobs[i] = p.jobs_levels[i]
+    end
+end)
 
 packets.incoming.register(0x037, function(p)
     local data = player.data
