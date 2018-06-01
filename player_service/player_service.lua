@@ -99,17 +99,6 @@ incoming[0x01B] = function(p)   -- Job Info
     player.data.jobs[i].level  = p.data:byte(i+0x45)
   end
 end 
-incoming[0x037] = function(p)   -- Player Update
-  player.data.id                            = p.data:unpack('I',0x21)
-  player.data.hp_percent                    = p.data:byte(0x27)
-  player.data.status                        = p.data:byte(0x2D)
-
-  player.data.linkshell1.red                = p.data:byte(0x2E)
-  player.data.linkshell1.green              = p.data:byte(0x2F)
-  player.data.linkshell1.blue               = p.data:byte(0x30)
-
-  player.data.pet_index                    = bit.rshift(p.data:unpack('H',0x31),3)
-end 
 
 incoming.handler = function(p)  -- function that selects id specific handler funcion
   if p.injected then return end
@@ -121,22 +110,34 @@ end
 
 packet.incoming:register(incoming.handler)
 
+packets.incoming.register(0x037, function(p)
+    local data = player.data
+    data.id = p.id
+    data.hp_percent = p.hp_percent
+    data.status = p.status
+    data.linkshell1.red = p.linkshell1_red
+    data.linkshell1.green = p.linkshell1_green
+    data.linkshell1.blue = p.linkshell1_blue
+    data.pet_index = p.pet_index
+end)
+
 packets.incoming.register(0x061, function(p)
-    player.data.main_job_id = p.main_job_id
-    player.data.main_job_level = p.main_job_level
-    player.data.sub_job_id = p.sub_job_id
-    player.data.sub_job_level = p.sub_job_level
-    player.data.hp_max = p.hp_max
-    player.data.mp_max = p.mp_max
-    player.data.title_id = p.title_id
-    player.data.nation_rank = p.nation_rank
-    player.data.nation_rank_points = p.nation_rank_points
-    player.data.home_point_zone_id = p.home_point_zone_id
-    player.data.nation_id = p.nation_id
-    player.data.superior_level = p.superior_level
-    player.data.item_level = p.item_level + p.main_job_level
-    player.data.exp = p.exp
-    player.data.exp_required = p.exp_required
+    local data = player.data
+    data.main_job_id = p.main_job_id
+    data.main_job_level = p.main_job_level
+    data.sub_job_id = p.sub_job_id
+    data.sub_job_level = p.sub_job_level
+    data.hp_max = p.hp_max
+    data.mp_max = p.mp_max
+    data.title_id = p.title_id
+    data.nation_rank = p.nation_rank
+    data.nation_rank_points = p.nation_rank_points
+    data.home_point_zone_id = p.home_point_zone_id
+    data.nation_id = p.nation_id
+    data.superior_level = p.superior_level
+    data.item_level = p.item_level + p.main_job_level
+    data.exp = p.exp
+    data.exp_required = p.exp_required
 end)
 
 packets.incoming.register(0x062, function(p)

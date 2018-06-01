@@ -226,7 +226,9 @@ local item_status = tag(uint8, 'item_status')
 local flags = tag(uint32, 'flags')
 local title = tag(uint16, 'title')
 local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
-local unity = tag(uint8, 'unity') -- 7 Aldo
+local buff = tag(uint8, 'buff')
+local status = tag(uint8, 'status')
+local indi = tag(uint8, 'indi')
 
 local pc_name = string(0x10)
 
@@ -444,6 +446,117 @@ fields.incoming[0x020] = struct {
     bag_index           = {0x0F, uint8},
     status              = {0x10, item_status},
     extdata             = {0x11, data(24)},
+}
+
+-- Player update
+-- Buff IDs go can over 0xFF, but in the packet each buff only takes up one byte.
+-- To address that there's a 8 byte bitmask starting at 0x4C where each 2 bits
+-- represent how much to add to the value in the respective byte.
+
+--[[Flags 0x28: The structure here looks similar to byte 0x33 of 0x00D, but left shifted by 1 bit
+    -- 0x0001 -- Despawns your character
+    -- 0x0002 -- Also despawns your character, and may trigger an outgoing packet to the server (which triggers an incoming 0x037 packet)
+    -- 0x0004 -- No obvious effect
+    -- 0x0008 -- No obvious effect
+    -- 0x0010 -- LFG flag
+    -- 0x0020 -- /anon flag - blue name
+    -- 0x0040 -- orange name?
+    -- 0x0080 -- Away flag
+    -- 0x0100 -- No obvious effect
+    -- 0x0200 -- No obvious effect
+    -- 0x0400 -- No obvious effect
+    -- 0x0800 -- No obvious effect
+    -- 0x1000 -- No obvious effect
+    -- 0x2000 -- No obvious effect
+    -- 0x4000 -- No obvious effect
+    -- 0x8000 -- No obvious effect
+    
+    Flags 0x2B:
+    -- 0x01 -- POL Icon :: Actually a flag, overrides everything else but does not affect name color
+    -- 0x02 -- No obvious effect
+    -- 0x04 -- Disconnection icon :: Actually a flag, overrides everything but POL Icon
+    -- 0x08 -- No linkshell
+    -- 0x0A -- No obvious effect
+    
+    -- 0x10 -- No linkshell
+    -- 0x20 -- Trial account icon
+    -- 0x40 -- Trial account icon
+    -- 0x60 -- POL Icon (lets you walk through NPCs/PCs)
+    -- 0x80 -- GM mode
+    -- 0xA0 -- GM mode
+    -- 0xC0 -- GM mode
+    -- 0xE0 -- SGM mode
+    -- No statuses differentiate based on 0x10
+    -- Bit 0x20 + 0x40 makes 0x60, which is different.
+    -- Bit 0x80 overpowers those bits
+    -- Bit 0x80 combines with 0x04 and 0x02 to make SGM.
+    -- These are basically flags, but they can be combined to mean different things sometimes.
+    
+    Flags 0x2D:
+    -- 0x10 -- No obvious effect
+    -- 0x20 -- Event mode? Can't activate the targeting cursor but can still spin the camera
+    -- 0x40 -- No obvious effect
+    -- 0x80 -- Invisible model
+    
+    Flags 0x2F:
+    -- 0x02 -- No obvious effect
+    -- 0x04 -- No obvious effect
+    -- 0x08 -- No obvious effect
+    -- 0x10 -- No obvious effect
+    -- 0x20 -- Bazaar icon
+    -- 0x40 -- Event status again? Can't activate the targeting cursor but can move the camera.
+    -- 0x80 -- No obvious effects
+    
+    Flags 0x34:
+    -- 0x01 -- No obvious effect
+    -- 0x02 -- No obvious effect
+    -- 0x04 -- Autoinvite icon
+    
+    Flags 0x36:
+    -- 0x08 -- Terror flag
+    -- 0x10 -- No obvious effect
+    
+    Ballista stuff:
+    -- 0x0020 -- No obvious effect
+    -- 0x0040 -- San d'Oria ballista flag
+    -- 0x0060 -- Bastok ballista flag
+    -- 0x0080 -- Windurst Ballista flag
+    -- 0x0100 -- Participation icon?
+    -- 0x0200 -- Has some effect
+    -- 0x0400 -- I don't know anything about ballista
+    -- 0x0800 -- and I still don't D:<
+    -- 0x1000 -- and I still don't D:<
+    
+    Flags 0x37: Probably tried into ballista stuff too
+    -- 0x0020 -- No obvious effect
+    -- 0x0040 -- Individually, this bit has no effect. When combined with 0x20, it prevents you from returning to a walking animation after you stop (sliding along the ground while bound)
+    -- 0x0080 -- No obvious effect
+    -- 0x0100 -- No obvious effect
+    -- 0x0200 -- Trial Account emblem
+    -- 0x0400 -- No obvious effect
+    -- 0x0800 -- Question mark icon
+    -- 0x1000 -- Mentor icon
+
+    Flags 0x5C:
+    -- 0x00000001 -- Seems to indicate wardrobe 3
+    -- 0x00000002 -- Seems to indicate wardrobe 4
+]]
+fields.incoming[0x037] = L{
+    buffs               = {0x04, buff[0x20]},
+    player_id           = {0x24, entity},
+    hp_percent          = {0x2A, percent},
+    movement_speed_half = {0x2C, bit(uint16, 12), offset=0},
+    yalms_per_step      = {0x2E, bit(uint16, 9), offset=0}, -- Determines how quickly your animation walks
+    status              = {0x30, status},
+    linkshell_red       = {0x31, uint8},
+    linkshell_green     = {0x32, uint8},
+    linkshell_blue      = {0x33, uint8},
+    pet_index           = {0x34, bit(uint32, 16), offset=3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
+    ballista_stuff      = {0x34, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
+    time_offset_maybe   = {0x3C, uint32}, -- For me, this is the number of seconds in 66 hours
+    timestamp           = {0x40, uint32}, -- This is 32 years off of JST at the time the packet is sent.
+    status_effect_mask  = {0x4C, data(8)},
+    indi_status_effect  = {0x58, indi},
 }
 
 -- Equipment
