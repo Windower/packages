@@ -224,6 +224,9 @@ local slot = tag(uint8, 'slot')
 local item = tag(uint16, 'item')
 local item_status = tag(uint8, 'item_status')
 local flags = tag(uint32, 'flags')
+local title = tag(uint16, 'title')
+local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
+local unity = tag(uint8, 'unity') -- 7 Aldo
 
 local pc_name = string(0x10)
 
@@ -320,6 +323,17 @@ local stats = struct {
     chr                 = {0x0C, int16},
 }
 
+local resistances = struct {
+    fire                = {0x34, uint16},
+    wind                = {0x36, uint16},
+    lightning           = {0x38, uint16},
+    light               = {0x3A, uint16},
+    ice                 = {0x3C, uint16},
+    earth               = {0x3E, uint16},
+    water               = {0x40, uint16},
+    dark                = {0x42, uint16},
+}
+
 local combat_skill = struct {
     level               = {0x00, bit(int16, 15), offset=0},
     capped              = {0x00, boolbit(int16, 1), offset=15},
@@ -329,6 +343,12 @@ local craft_skill = struct {
     level               = {0x00, bit(int16, 5), offset=0},
     rank_id             = {0x00, bit(int16, 10), offset=5},
     capped              = {0x00, boolbit(int16, 1), offset=15},
+}
+
+local unity = struct {
+    -- 0=None, 1=Pieuje, 2=Ayame, 3=Invincible Shield, 4=Apururu, 5=Maat, 6=Aldo, 7=Jakoh Wahcondalo, 8=Naja Salaheem, 9=Flavira
+    id                  = {0x00, bit(uint32, 5), offset=0},
+    points              = {0x00, bit(uint32, 16), offset=10},
 }
 
 -- Zone update
@@ -369,9 +389,9 @@ fields.incoming[0x00A] = struct {
     player_name         = {0x84, pc_name},
     abyssea_timestamp   = {0xA0, time},
     zone_model          = {0xAA, uint16},
-    main_job            = {0xB4, job},
-    sub_job             = {0xB7, job},
-    job_levels          = {0xBC, job[0x10], lookup='jobs'},
+    main_job_id         = {0xB4, job},
+    sub_job_id          = {0xB7, job},
+    job_levels          = {0xBC, uint8[0x10], lookup='jobs'},
     stats               = {0xCC, stats},
     stats_bonus         = {0xDA, stats},
     max_hp              = {0xE8, uint32},
@@ -433,6 +453,33 @@ fields.incoming[0x050] = struct {
     bag_id              = {0x06, bag},
 }
 
+-- Char Stats
+fields.incoming[0x061] = struct {
+    hp_max              = {0x04, uint32},
+    mp_max              = {0x08, uint32},
+    main_job_id         = {0x0C, job},
+    main_job_level      = {0x0D, uint8},
+    sub_job_id          = {0x0E, job},
+    sub_job_level       = {0x0F, uint8},
+    exp                 = {0x10, uint16},
+    exp_required        = {0x12, uint16},
+    stats_base          = {0x14, stats},
+    stats_added         = {0x22, stats},
+    attack              = {0x30, uint16},
+    defense             = {0x32, uint16},
+    resistance          = {0x34, resistances},
+    title               = {0x44, title},
+    nation_rank         = {0x46, uint16},
+    nation_rank_points  = {0x48, uint16}, -- Capped at 0xFFF
+    home_point_zone_id  = {0x4A, zone},
+    nation_id           = {0x50, nation},
+    superior_level      = {0x52, uint8},
+    item_level_max      = {0x54, uint8},
+    item_level_over_99  = {0x55, uint8},
+    item_level_main     = {0x56, uint8},
+    unity               = {0x51, unity},
+}
+
 -- Skills Update
 fields.incoming[0x062] = struct {
     combat_skills       = {0x80, combat_skill[0x30], lookup='skills', lookup_index=0x00},
@@ -456,11 +503,11 @@ fields.incoming[0x0DF] = struct {
     mp                  = {0x0C, uint32},
     tp                  = {0x10, uint32},
     index               = {0x14, entity_index},
-    hpp                 = {0x16, percent},
-    mpp                 = {0x17, percent},
-    main_job            = {0x20, job},
+    hp_percent          = {0x16, percent},
+    mp_percent          = {0x17, percent},
+    main_job_id         = {0x20, job},
     main_job_level      = {0x21, uint8},
-    sub_job             = {0x22, job},
+    sub_job_id          = {0x22, job},
     sub_job_level       = {0x23, uint8},
 }
 
@@ -471,8 +518,8 @@ fields.incoming[0x0E2] = struct {
     mp                  = {0x0C, uint32},
     tp                  = {0x10, uint32},
     index               = {0x18, entity_index},
-    hpp                 = {0x1D, percent},
-    mpp                 = {0x1E, percent},
+    hp_percent          = {0x1D, percent},
+    mp_percent          = {0x1E, percent},
     name                = {0x22, string()},
 }
 
