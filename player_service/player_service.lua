@@ -20,17 +20,6 @@ player.data = {
 }
 
 local incoming = {} -- table of incoming packet ids that have an assoiated handler functions
-incoming[0x00A] = function(p)   -- Zone Update
-  player.data.id                           = p.data:unpack('I',0x01)
-  player.data.index                        = p.data:unpack('H',0x05)
-  player.data.name                         = p.data:unpack('S16',0x81):gsub('\0','') --REVISIT: Arcon is changing 'z'
-  player.data.main_job_id                  = p.data:byte(0xB1)
-  player.data.sub_job_id                   = p.data:byte(0xB4)
-
--- 16 job levels here, but not all of them?
-  player.data.hp_max                       = p.data:unpack('I',0xE5)
-  player.data.mp_max                       = p.data:unpack('I',0xE9)
-end 
 incoming[0x00D] = function(p)   -- PC entity update packet
   local id = p.data:unpack('I',0x01)
   if player.data.id ~= -1 and player.data.id == id then
@@ -96,6 +85,18 @@ incoming.handler = function(p)  -- function that selects id specific handler fun
 end
 
 packet.incoming:register(incoming.handler)
+
+packets.incoming.register(0x00A, function(p)
+    local data = player.data
+    data.id = p.player_id
+    data.index = p.player_index
+    data.name = p.name
+    data.main_job_id = p.main_job_id
+    data.sub_job_id = p.sub_job_id
+    data.hp_max = p.hp_max
+    data.mp_max = p.mp_max
+    data.hp_percent = p.hp_percent
+end)
 
 packets.incoming.register(0x01B, function(p)
     local data = player.data
