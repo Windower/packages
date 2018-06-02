@@ -52,14 +52,14 @@ do
                 end
                 local bit_diff = field.offset - offset
                 if bit_diff > 0 then
-                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(bit_type or field.type.cdef, unknown_count, bit_diff)
+                    cdefs[#cdefs + 1] = ('%s _unknown%u:%u'):format(bit_type or field.type.cdef, unknown_count, bit_diff)
                     unknown_count = unknown_count + 1
                 end
                 offset = offset + bit_diff
             elseif bit_type ~= nil then
                 local bit_diff = field.offset - offset
                 if bit_diff > 0 then
-                    cdefs[#cdefs + 1] = ('%s _unknown%u : %u'):format(bit_type, unknown_count, bit_diff)
+                    cdefs[#cdefs + 1] = ('%s _unknown%u:%u'):format(bit_type, unknown_count, bit_diff)
                     unknown_count = unknown_count + 1
                 end
                 offset = 0
@@ -67,7 +67,7 @@ do
             end
 
             if is_bit then
-                cdefs[#cdefs + 1] = ('%s %s : %u'):format(field.type.cdef, field.cname, field.type.bits)
+                cdefs[#cdefs + 1] = ('%s %s:%u'):format(field.type.cdef, field.cname, field.type.bits)
                 offset = offset + field.type.bits
                 if offset == 8 * field.type.size then
                     offset = 0
@@ -85,7 +85,7 @@ do
             end
         end
 
-        return ('struct {%s;}'):format(table.concat(cdefs, ';'))
+        return ('struct{%s;}'):format(table.concat(cdefs, ';'))
     end
 
     local key_map = {
