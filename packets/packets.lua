@@ -50,7 +50,7 @@ local copy_fields
 copy_fields = function(packet, raw, instance, fields, s)
     for _, field in pairs(fields) do
         local type = field.type
-        if type.count ~= nil then
+        if type.count ~= nil and type.cdef ~= 'char' then
             local res = {}
             local array = instance[field.cname]
             if type.fields ~= nil then
