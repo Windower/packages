@@ -102,7 +102,6 @@ packets.incoming.register(0x01B, function(p)
     data.mp_max = p.mp_max
     for i = 0, 0x17 do
       data.job_levels[i] = p.job_levels[i]
-      print(i, data.job_levels[i])
     end
 end)
 
