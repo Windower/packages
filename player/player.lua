@@ -66,11 +66,7 @@ end
 
 local player = setmetatable({}, {
         __index = function(t, k)
-            local ok, result = fetch_player(get_player_value, k)
-
-            if not ok then
-                error(result)
-            end
+            local _, result = assert(fetch_player(get_player_value, k))
 
             if type(result) == 'table' then
                 return setmetatable({}, {
@@ -82,7 +78,7 @@ local player = setmetatable({}, {
                             end
                         end,
                         __newindex = function() error('This value is read-only.') end,
-                        __pairs =function(_) 
+                        __pairs = function(_) 
                             return function(_, k)
                                 return next(result, k)
                             end
