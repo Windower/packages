@@ -1,249 +1,29 @@
-local ffi = require('ffi');
-require('bit')
-require('string')
-require('os')
-require('math')
-require('table')
+local structs = require('structs')
 
-local b = bit
+local struct = structs.struct
 
-local fields = {
-    incoming = {},
-    outgoing = {},
-}
+local tag = structs.tag
+local string = structs.string
+local data = structs.data
+local encoded = structs.encoded
 
-local struct
-local make_type
-local copy_type = function(base)
-    local new = make_type(base.cdef)
+local int8 = structs.int8
+local int16 = structs.int16
+local int32 = structs.int32
+local int64 = structs.int64
+local uint8 = structs.uint8
+local uint16 = structs.uint16
+local uint32 = structs.uint32
+local uint64 = structs.uint64
+local float = structs.float
+local double = structs.double
+local bool = structs.bool
 
-    for key, value in pairs(base) do
-        new[key] = value
-    end
+local bit = structs.bit
+local boolbit = structs.boolbit
 
-    return new
-end
+local time = structs.time
 
-do
-    local make_cdef = function(arranged)
-        local cdefs = {}
-        local index = 0x00
-        local offset = 0
-        local bit_type
-        local unknown_count = 1
-        for _, field in ipairs(arranged) do
-            -- Can only happen with char*, should only appear at the end
-            if field.type.cdef == nil then
-                break;
-            end
-
-            local is_bit = field.type.bits ~= nil
-
-            local diff = field.position - index
-            if diff > 0 then
-                cdefs[#cdefs + 1] = ('char _unknown%u[%u]'):format(unknown_count, diff)
-                unknown_count = unknown_count + 1
-            end
-            index = index + diff
-
-            if is_bit then
-                if bit_type ~= nil then
-                    assert(field.type.cdef == bit_type, 'Bit field must have the same base types for every member.')
-                end
-                local bit_diff = field.offset - offset
-                if bit_diff > 0 then
-                    cdefs[#cdefs + 1] = ('%s _unknown%u:%u'):format(bit_type or field.type.cdef, unknown_count, bit_diff)
-                    unknown_count = unknown_count + 1
-                end
-                offset = offset + bit_diff
-            elseif bit_type ~= nil then
-                local bit_diff = field.offset - offset
-                if bit_diff > 0 then
-                    cdefs[#cdefs + 1] = ('%s _unknown%u:%u'):format(bit_type, unknown_count, bit_diff)
-                    unknown_count = unknown_count + 1
-                end
-                offset = 0
-                bit_type = nil
-            end
-
-            if is_bit then
-                cdefs[#cdefs + 1] = ('%s %s:%u'):format(field.type.cdef, field.cname, field.type.bits)
-                offset = offset + field.type.bits
-                if offset == 8 * field.type.size then
-                    offset = 0
-                    bit_type = nil
-                else
-                    bit_type = field.type.cdef
-                end
-            else
-                if field.type.count ~= nil then
-                    cdefs[#cdefs + 1] = ('%s %s[%u]'):format(field.type.cdef, field.cname, field.type.count)
-                else
-                    cdefs[#cdefs + 1] = ('%s %s'):format(field.type.cdef, field.cname)
-                end
-                index = index + field.type.size
-            end
-        end
-
-        return ('struct{%s;}'):format(table.concat(cdefs, ';'))
-    end
-
-    local key_map = {
-        [1] = 'position',
-        [2] = 'type',
-    }
-
-    local type_mt = {
-        __index = function(base, count)
-            if type(count) ~= 'number' then
-                return nil
-            end
-
-            local new = copy_type(base)
-            new.count = count
-            new.size = count * base.size
-
-            return new
-        end,
-    }
-
-    make_type = function(cdef)
-        return setmetatable({
-            cdef = cdef,
-            size = ffi.sizeof(cdef),
-        }, type_mt)
-    end
-
-    local keywords = {
-        ['auto'] = true,
-        ['break'] = true,
-        ['case'] = true,
-        ['char'] = true,
-        ['complex'] = true,
-        ['const'] = true,
-        ['continue'] = true,
-        ['default'] = true,
-        ['do'] = true,
-        ['double'] = true,
-        ['else'] = true,
-        ['enum'] = true,
-        ['extern'] = true,
-        ['float'] = true,
-        ['for'] = true,
-        ['goto'] = true,
-        ['if'] = true,
-        ['int'] = true,
-        ['long'] = true,
-        ['register'] = true,
-        ['return'] = true,
-        ['short'] = true,
-        ['signed'] = true,
-        ['sizeof'] = true,
-        ['static'] = true,
-        ['struct'] = true,
-        ['switch'] = true,
-        ['typedef'] = true,
-        ['union'] = true,
-        ['unsigned'] = true,
-        ['void'] = true,
-        ['volatile'] = true,
-        ['while'] = true,
-    }
-
-    struct = function(fields)
-        local arranged = {}
-        for label, data in pairs(fields) do
-            local full = {
-                label = label,
-                cname = keywords[label] ~= nil and ('_%s'):format(label) or label,
-                offset = 0,
-            }
-
-            for key, value in pairs(data) do
-                full[key_map[key] or key] = value
-            end
-
-            arranged[#arranged + 1] = full
-        end
-
-        table.sort(arranged, function(field1, field2)
-            return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
-        end)
-
-        local new = copy_type({cdef = make_cdef(arranged)})
-        new.fields = arranged
-
-        return new
-    end
-end
-
-local uint8 = make_type('uint8_t')
-local uint16 = make_type('uint16_t')
-local uint32 = make_type('uint32_t')
-local uint64 = make_type('uint64_t')
-local int8 = make_type('int8_t')
-local int16 = make_type('int16_t')
-local int32 = make_type('int32_t')
-local int64 = make_type('int64_t')
-local float = make_type('float')
-local double = make_type('double')
-local bool = make_type('bool')
-
-local string
-do
-    string_types = {}
-
-    string = function(length)
-        if not length then
-            return { tag = 'string' }
-        end
-
-        if not string_types[length] then
-            local new = make_type('char')[length]
-
-            new.tolua = function(raw)
-                return ffi.string(raw)
-            end
-
-            new.toc = function(str)
-                return #str >= length and str:sub(0, length) or str .. ('\0'):rep(length - #str)
-            end
-
-            string_types[length] = new
-        end
-
-        return string_types[length]
-    end
-end
-
-local data
-do
-    data_types = {}
-
-    data = function(length)
-        if not data_types[length] then
-            local new = make_type('char')[length]
-
-            new.tolua = function(raw)
-                return ffi.string(raw, length)
-            end
-
-            new.toc = function(str)
-                return #str >= length and str:sub(0, length) or str .. ('\0'):rep(length - #str)
-            end
-
-            data_types[length] = new
-        end
-
-        return data_types[length]
-    end
-end
-
-local tag = function(base, tag)
-    local new = copy_type(base)
-    new.tag = tag
-    return new
-end
 local entity = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
 local zone = tag(uint16, 'zone')
@@ -259,109 +39,10 @@ local item_status = tag(uint8, 'item_status')
 local flags = tag(uint32, 'flags')
 local title = tag(uint16, 'title')
 local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
-local buff = tag(uint8, 'buff')
+local status_effect = tag(uint8, 'status_effect')
 local indi = tag(uint8, 'indi')
 
 local pc_name = string(0x10)
-
-local time = tag(uint32, 'time')
-do
-    local now = os.time()
-    local off = os.difftime(now, os.time(os.date('!*t', now)))
-
-    time.tolua = function(ts)
-        return ts + off
-    end
-
-    time.toc = function(ts)
-        return ts - off
-    end
-end
-
-local encoded = function(size, bits, lookup_string)
-    local new = make_type('char')[size]
-    local pack_str = ('b%u'):format(bits):rep(math.floor(8 * size / bits))
-
-    local lua_lookup = {}
-    do
-        local index = 0
-        for char in lookup_string:gmatch('.') do
-            lua_lookup[index] = char
-            index = index + 1
-        end
-    end
-
-    local c_lookup = {}
-    for i, v in pairs(lua_lookup) do
-        c_lookup[v] = i
-    end
-
-    new.tolua = function()
-        return function(value)
-            local res = {}
-            for i, v in ipairs({value:unpack(pack_str)}) do
-                res[i] = lua_lookup[v]
-            end
-            return table.concat(res)
-        end
-    end
-
-    new.toc = function()
-        return function(value)
-            local res = {}
-            local index = 0
-            for c in value:gmatch('.') do
-                res[index] = c_lookup[c]
-                index = index + 1
-            end
-            return pack_str:pack(unpack(res))
-        end
-    end
-
-    return new
-end
-
-local bit = function(base, bits)
-    local new = copy_type(base)
-
-    new.bits = bits
-
-    return new
-end
-
-local boolbit = function(base, bits)
-    local new = bit(base, bits or 1)
-
-    if bits ~= nil then
-        new.tolua = function(value)
-            local res = {}
-            for i = 1, bits do
-                res[i] = b.band(b.rshift(value, i - 1), 1) == 1
-            end
-            return res
-        end
-
-        new.toc = function(value)
-            local res = 0
-            for i, v in pairs(value) do
-                if v then
-                    res = b.bor(res, b.lshift(1, i - 1))
-                end
-            end
-            return res
-        end
-    else
-        new.tolua = function(value)
-            return value == 1
-        end
-
-        new.toc = function(value)
-            return value and 1 or 0
-        end
-    end
-
-    return new
-end
 
 local ls_name = encoded(0x10, 6, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
 local item_inscription = encoded(0x0C, 6, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
@@ -402,20 +83,25 @@ local resistances = struct {
 }
 
 local combat_skill = struct {
-    level               = {0x00, bit(int16, 15), offset=0},
-    capped              = {0x00, boolbit(int16), offset=15},
+    level               = {0x00, bit(uint16, 15), offset=0},
+    capped              = {0x00, boolbit(uint16), offset=15},
 }
 
 local crafting_skill = struct {
-    level               = {0x00, bit(int16, 5), offset=0},
-    rank_id             = {0x00, bit(int16, 10), offset=5},
-    capped              = {0x00, boolbit(int16), offset=15},
+    level               = {0x00, bit(uint16, 5), offset=0},
+    rank_id             = {0x00, bit(uint16, 10), offset=5},
+    capped              = {0x00, boolbit(uint16), offset=15},
 }
 
 local unity = struct {
     -- 0=None, 1=Pieuje, 2=Ayame, 3=Invincible Shield, 4=Apururu, 5=Maat, 6=Aldo, 7=Jakoh Wahcondalo, 8=Naja Salaheem, 9=Flavira
     id                  = {0x00, bit(uint32, 5), offset=0},
     points              = {0x00, bit(uint32, 16), offset=10},
+}
+
+local fields = {
+    incoming = {},
+    outgoing = {},
 }
 
 -- Zone update
@@ -688,7 +374,7 @@ fields.incoming[0x020] = struct {
     -- 0x00000002 -- Seems to indicate wardrobe 4
 ]]
 fields.incoming[0x037] = struct {
-    buffs               = {0x04, buff[0x20]},
+    status_effects      = {0x04, status_effect[0x20]},
     player_id           = {0x24, entity},
     hp_percent          = {0x2A, percent},
     movement_speed_half = {0x2C, bit(uint16, 12), offset=0},

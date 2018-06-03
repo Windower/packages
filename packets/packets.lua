@@ -1,9 +1,8 @@
+local fields = require('packets:fields')
+local packet = require('packet')
+local ffi = require('ffi')
 require('table')
 require('string')
-local packet = require('packet')
-local fields = require('packets:fields')
-local ffi = require('ffi')
-
 require('pack')
 
 local registry = {
@@ -47,6 +46,38 @@ local char_ptr = ffi.typeof('char const*')
 
 local dummy_header = ('\x00'):rep(4) 
 
+local copy_fields
+copy_fields = function(packet, raw, instance, fields, s)
+    for _, field in pairs(fields) do
+        local type = field.type
+        if type.count ~= nil then
+            local res = {}
+            local array = instance[field.cname]
+            if type.fields ~= nil then
+                for i = 0, type.count do
+                    local inner = {}
+                    copy_fields(inner, nil, array[i], type.fields)
+                    res[i] = inner
+                end
+            else
+                for i = 0, type.count do
+                    res[i] = array[i]
+                end
+            end
+            packet[field.label] = res
+        elseif type.fields ~= nil then
+            local res = {}
+            copy_fields(res, nil, instance[field.cname], type.fields)
+            packet[field.label] = res
+        elseif type.cdef ~= nil then
+            local data = instance[field.cname]
+            packet[field.label] = type.tolua ~= nil and type.tolua(data) or data
+        else
+            packet[field.label] = raw.data:unpack('z', field.position - 4)
+        end
+    end
+end
+
 packet.incoming:register(function(raw)
     local fns_id = registry.incoming[raw.id]
     local fns_all = registry.incoming.all
@@ -67,14 +98,7 @@ packet.incoming:register(function(raw)
         local instance = ffi.new(struct.cdef)
         ffi.copy(instance, char_ptr(dummy_header .. raw.data), ffi.sizeof(struct.cdef))
 
-        for _, field in pairs(struct.fields) do
-            if field.type.cdef ~= nil then
-                local data = instance[field.cname]
-                packet[field.label] = field.type.tolua ~= nil and field.type.tolua(data) or data
-            else
-                packet[field.label] = raw.data:unpack('z', field.position - 4)
-            end
-        end
+        copy_fields(packet, raw, instance, struct.fields, struct)
     end
 
     for fn in pairs(fns_id or {}) do
