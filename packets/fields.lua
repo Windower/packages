@@ -93,6 +93,13 @@ local crafting_skill = struct {
     capped              = {0x00, boolbit(uint16), offset=15},
 }
 
+local party_status_effects   = struct {
+    id                  = {0x00, entity},
+    index               = {0x04, entity_index},
+    status_effect_mask  = {0x08, data(8)},
+    status_effects      = {0x10, status_effect[0x20]},
+}
+
 local unity = struct {
     -- 0=None, 1=Pieuje, 2=Ayame, 3=Invincible Shield, 4=Apururu, 5=Maat, 6=Aldo, 7=Jakoh Wahcondalo, 8=Naja Salaheem, 9=Flavira
     id                  = {0x00, bit(uint32, 5), offset=0},
@@ -429,6 +436,11 @@ fields.incoming[0x061] = struct {
 fields.incoming[0x062] = struct {
     combat_skills       = {0x80, combat_skill[0x30], lookup='skills', lookup_index=0x00},
     crafting_skills     = {0xE0, crafting_skill[0x0A], lookup='skills', lookup_index=0x30},
+}
+
+-- Party Status Effects
+fields.incoming[0x076] = struct {
+    party_members       = {0x04, party_status_effects[5]},
 }
 
 -- LS Message

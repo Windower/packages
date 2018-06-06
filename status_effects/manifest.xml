@@ -1,0 +1,10 @@
+<package>
+  <name>status_effects</name>
+  <version>0.1.0.0</version>
+  <type>library</type>
+  <dependencies>  
+    <dependency>resources</dependency>	    
+    <dependency>enumerable</dependency>   
+    <dependency>status_effects_service</dependency>   
+  </dependencies>
+</package>
