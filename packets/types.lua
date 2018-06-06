@@ -106,13 +106,13 @@ local unity = struct {
     points              = {0x00, bit(uint32, 16), offset=10},
 }
 
-local fields = {
+local types = {
     incoming = {},
     outgoing = {},
 }
 
 -- Zone update
-fields.incoming[0x00A] = struct {
+types.incoming[0x00A] = struct {
     player_id           = {0x04, entity},
     player_index        = {0x08, entity_index},
     heading             = {0x0B, uint8},
@@ -194,7 +194,7 @@ fields.incoming[0x00A] = struct {
 
     -- Byte 0x36
     -- 0x20 = Ballista
-fields.incoming[0x00D] = struct {
+types.incoming[0x00D] = struct {
     player_id           = {0x04, entity},
     player_index        = {0x08, entity_index},
     update_position     = {0x0A, boolbit(uint8), offset=0}, -- Position, Rotation, Target, Speed
@@ -223,7 +223,7 @@ fields.incoming[0x00D] = struct {
 }
 
 -- Job Info
-fields.incoming[0x01B] = struct {
+types.incoming[0x01B] = struct {
     main_job_id         = {0x08, job},
     -- 09: Flags or main job level?
     -- 0A: Flags or sub job level?
@@ -246,7 +246,7 @@ fields.incoming[0x01B] = struct {
 -- may not be max size/used size chars as I initially assumed. Adding them as shorts
 -- for now.
 -- There appears to be space for another 8 bags.
-fields.incoming[0x01C] = struct {
+types.incoming[0x01C] = struct {
     size                = {0x04, uint8[13], lookup='bags'},
     -- These "dupe" sizes are set to 0 if the inventory disabled.
     -- storage: The accumulated storage from all items (uncapped) -1
@@ -255,12 +255,12 @@ fields.incoming[0x01C] = struct {
 }
 
 -- Finish Inventory
-fields.incoming[0x01D] = struct {
+types.incoming[0x01D] = struct {
     flag                = {0x04, uint8, const=0x01},
 }
 
 -- Modify Inventory
-fields.incoming[0x01E] = struct {
+types.incoming[0x01E] = struct {
     count               = {0x04, uint32},
     bag                 = {0x08, bag},
     bag_index           = {0x09, uint8},
@@ -268,7 +268,7 @@ fields.incoming[0x01E] = struct {
 }
 
 -- Item Assign
-fields.incoming[0x01F] = struct {
+types.incoming[0x01F] = struct {
     count               = {0x04, uint32},
     item_id             = {0x08, item},
     bag                 = {0x0A, bag},
@@ -277,7 +277,7 @@ fields.incoming[0x01F] = struct {
 }
 
 -- Item Updates
-fields.incoming[0x020] = struct {
+types.incoming[0x020] = struct {
     count               = {0x04, uint32},
     bazaar              = {0x08, uint32},
     item_id             = {0x0C, item},
@@ -380,7 +380,7 @@ fields.incoming[0x020] = struct {
     -- 0x00000001 -- Seems to indicate wardrobe 3
     -- 0x00000002 -- Seems to indicate wardrobe 4
 ]]
-fields.incoming[0x037] = struct {
+types.incoming[0x037] = struct {
     status_effects      = {0x04, status_effect[0x20]},
     player_id           = {0x24, entity},
     hp_percent          = {0x2A, percent},
@@ -399,14 +399,14 @@ fields.incoming[0x037] = struct {
 }
 
 -- Equipment
-fields.incoming[0x050] = struct {
+types.incoming[0x050] = struct {
     bag_index           = {0x04, uint8},
     slot_id             = {0x05, slot},
     bag_id              = {0x06, bag},
 }
 
 -- Char Stats
-fields.incoming[0x061] = struct {
+types.incoming[0x061] = struct {
     hp_max              = {0x04, uint32},
     mp_max              = {0x08, uint32},
     main_job_id         = {0x0C, job},
@@ -433,18 +433,17 @@ fields.incoming[0x061] = struct {
 }
 
 -- Skills Update
-fields.incoming[0x062] = struct {
+types.incoming[0x062] = struct {
     combat_skills       = {0x80, combat_skill[0x30], lookup='skills', lookup_index=0x00},
     crafting_skills     = {0xE0, crafting_skill[0x0A], lookup='skills', lookup_index=0x30},
 }
 
--- Party Status Effects
 fields.incoming[0x076] = struct {
     party_members       = {0x04, party_status_effects[5]},
 }
 
 -- LS Message
-fields.incoming[0x0CC] = struct {
+types.incoming[0x0CC] = struct {
     flags               = {0x04, flags},
     message             = {0x08, string(0x80)},
     timestamp           = {0x88, time},
@@ -454,7 +453,7 @@ fields.incoming[0x0CC] = struct {
 }
 
 -- Char Update
-fields.incoming[0x0DF] = struct {
+types.incoming[0x0DF] = struct {
     id                  = {0x04, entity},
     hp                  = {0x08, uint32},
     mp                  = {0x0C, uint32},
@@ -469,7 +468,7 @@ fields.incoming[0x0DF] = struct {
 }
 
 -- Char Info
-fields.incoming[0x0E2] = struct {
+types.incoming[0x0E2] = struct {
     id                  = {0x04, entity},
     hp                  = {0x08, uint32},
     mp                  = {0x0C, uint32},
@@ -480,4 +479,4 @@ fields.incoming[0x0E2] = struct {
     name                = {0x22, string()},
 }
 
-return fields
+return types

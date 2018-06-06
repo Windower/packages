@@ -1,4 +1,4 @@
-local fields = require('packets:fields')
+local types = require('packets:types')
 local packet = require('packet')
 local ffi = require('ffi')
 require('table')
@@ -47,7 +47,7 @@ local char_ptr = ffi.typeof('char const*')
 local dummy_header = ('\x00'):rep(4) 
 
 local copy_fields
-copy_fields = function(packet, raw, instance, fields, s)
+copy_fields = function(packet, raw, instance, fields)
     for _, field in pairs(fields) do
         local type = field.type
         if type.count ~= nil and type.cdef ~= 'char' then
@@ -93,12 +93,12 @@ packet.incoming:register(function(raw)
         injected = raw.injected,
     }
 
-    local struct = fields.incoming[raw.id]
-    if struct ~= nil then
-        local instance = ffi.new(struct.cdef)
-        ffi.copy(instance, char_ptr(dummy_header .. raw.data), ffi.sizeof(struct.cdef))
+    local type = types.incoming[raw.id]
+    if type ~= nil then
+        local instance = type.ctype()
+        ffi.copy(instance, char_ptr(dummy_header .. raw.data), type.size)
 
-        copy_fields(packet, raw, instance, struct.fields, struct)
+        copy_fields(packet, raw, instance, type.fields)
     end
 
     for fn in pairs(fns_id or {}) do

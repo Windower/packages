@@ -8,16 +8,6 @@ require('pack')
 
 local structs = {}
 
-structs.copy_type = function(base)
-    local new = structs.make_type(base.cdef)
-
-    for key, value in pairs(base) do
-        new[key] = value
-    end
-
-    return new
-end
-
 local make_cdef = function(arranged)
     local cdefs = {}
     local index = 0x00
@@ -26,11 +16,12 @@ local make_cdef = function(arranged)
     local unknown_count = 1
     for _, field in ipairs(arranged) do
         -- Can only happen with char*, should only appear at the end
-        if field.type.cdef == nil then
+        local type = field.type
+        if type.cdef == nil then
             break;
         end
 
-        local is_bit = field.type.bits ~= nil
+        local is_bit = type.bits ~= nil
 
         local diff = field.position - index
         if diff > 0 then
@@ -41,11 +32,11 @@ local make_cdef = function(arranged)
 
         if is_bit then
             if bit_type ~= nil then
-                assert(field.type.cdef == bit_type, 'Bit field must have the same base types for every member.')
+                assert(type.cdef == bit_type, 'Bit field must have the same base types for every member.')
             end
             local bit_diff = field.offset - offset
             if bit_diff > 0 then
-                cdefs[#cdefs + 1] = ('%s _unknown%u:%u'):format(bit_type or field.type.cdef, unknown_count, bit_diff)
+                cdefs[#cdefs + 1] = ('%s _unknown%u:%u'):format(bit_type or type.cdef, unknown_count, bit_diff)
                 unknown_count = unknown_count + 1
             end
             offset = offset + bit_diff
@@ -60,23 +51,23 @@ local make_cdef = function(arranged)
         end
 
         if is_bit then
-            cdefs[#cdefs + 1] = ('%s %s:%u'):format(field.type.cdef, field.cname, field.type.bits)
-            offset = offset + field.type.bits
-            if offset == 8 * field.type.size then
+            cdefs[#cdefs + 1] = ('%s %s:%u'):format(type.cdef, field.cname, type.bits)
+            offset = offset + type.bits
+            if offset == 8 * type.size then
                 offset = 0
                 bit_type = nil
             else
-                bit_type = field.type.cdef
+                bit_type = type.cdef
             end
         else
-            if field.type.count ~= nil then
-                cdefs[#cdefs + 1] = ('%s %s[%u]'):format(field.type.cdef, field.cname, field.type.count)
-            elseif field.type.ptr == true then
-                cdefs[#cdefs + 1] = ('%s* %s'):format(field.type.cdef, field.cname)
+            if type.count ~= nil then
+                cdefs[#cdefs + 1] = ('%s %s[%u]'):format(type.cdef, field.cname, type.count)
+            elseif type.dereference ~= nil then
+                cdefs[#cdefs + 1] = ('%s%s %s'):format(type.cdef, ('*'):rep(type.dereference), field.cname)
             else
-                cdefs[#cdefs + 1] = ('%s %s'):format(field.type.cdef, field.cname)
+                cdefs[#cdefs + 1] = ('%s %s'):format(type.cdef, field.cname)
             end
-            index = index + field.type.size
+            index = index + type.size
         end
     end
 
@@ -107,8 +98,19 @@ local type_mt = {
 structs.make_type = function(cdef)
     return setmetatable({
         cdef = cdef,
+        ctype = ffi.typeof(cdef),
         size = ffi.sizeof(cdef),
     }, type_mt)
+end
+
+structs.copy_type = function(base)
+    local new = structs.make_type(base.cdef)
+
+    for key, value in pairs(base) do
+        new[key] = value
+    end
+
+    return new
 end
 
 local keywords = {
@@ -148,6 +150,22 @@ local keywords = {
 }
 
 structs.struct = function(fields)
+    local signature
+    local dereference
+    if fields[1] ~= nil then
+        signature = fields[1]
+        fields[1] = nil
+
+        dereference = 0
+        local index = signature:find('%*') + 1
+        while signature:sub(index, index) == '*' do
+            dereference = dereference + 1
+            index = index + 1
+        end
+
+        signature = signature:sub(1, index - 1 - dereference) .. signature:sub(index)
+    end
+
     local arranged = {}
     for label, data in pairs(fields) do
         local full = {
@@ -168,7 +186,14 @@ structs.struct = function(fields)
     end)
 
     local new = structs.copy_type({cdef = make_cdef(arranged)})
+
     new.fields = arranged
+
+    if dereference ~= nil then
+        new.cdef = ('%s*'):format(new.cdef)
+        new.signature = signature
+        new.dereference = dereference
+    end
 
     return new
 end
@@ -334,10 +359,10 @@ structs.boolbit = function(base, bits)
     return new
 end
 
-structs.ptr = function(base)
+structs.ptr = function(base, derefs)
     local new = structs.copy_type(base)
 
-    new.ptr = true
+    new.dereference = derefs or 1
     new.size = ffi.sizeof('void*')
 
     return new
