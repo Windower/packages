@@ -157,7 +157,7 @@ structs.struct = function(fields)
         fields[1] = nil
 
         dereference = 0
-        local index = signature:find('%*') + 1
+        local index = (signature:find('%*') or 0) + 1
         while signature:sub(index, index) == '*' do
             dereference = dereference + 1
             index = index + 1
