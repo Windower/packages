@@ -438,7 +438,7 @@ types.incoming[0x062] = struct {
     crafting_skills     = {0xE0, crafting_skill[0x0A], lookup='skills', lookup_index=0x30},
 }
 
-fields.incoming[0x076] = struct {
+types.incoming[0x076] = struct {
     party_members       = {0x04, party_status_effects[5]},
 }
 
