@@ -7,14 +7,17 @@ local scanned = {}
 
 local modules = {'FFXiMain.dll', 'polcore.dll', 'polcoreEU.dll'}
 
+local byte_ptr = ffi.typeof('char**')
+
 return setmetatable({}, {
     __index = function(_, name)
-        local info = scanned[name]
-        if info == nil then
-            local type = types[name]
-            if type == nil then
-                return nil
-            end
+        local type = types[name]
+        if type == nil then
+            return nil
+        end
+
+        local base_ptr = scanned[name]
+        if base_ptr == nil then
 
             -- TODO: Remove after scanner allows invalid sigs
             local ptr = scanner.scan(type.signature, name == 'auto_disconnect' and 'polcore.dll' or 'FFXiMain.dll')
@@ -27,19 +30,20 @@ return setmetatable({}, {
             -- end
             assert(ptr ~= nil, 'Signature ' .. type.signature .. ' not found.')
 
-            info = {
-                data = ffi.cast(type.cdef .. ('*'):rep(type.dereference), ptr),
-                dereference = type.dereference,
-            }
+            for _, offset in ipairs(type.static_offsets) do
+                ptr = ffi.cast(byte_ptr, ptr)[offset]
+            end
 
-            scanned[name] = info
+            base_ptr = ptr
+
+            scanned[name] = base_ptr
         end
 
-        local ptr = info.data
-        for i = 1, info.dereference do
-            ptr = ptr[0]
+        local ptr = base_ptr
+        for _, offset in ipairs(type.offsets) do
+            ptr = ffi.cast(byte_ptr, ptr)[offset]
         end
 
-        return ptr
+        return ffi.cast(type.ctype, ptr)
     end,
 })

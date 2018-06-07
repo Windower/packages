@@ -62,8 +62,6 @@ local make_cdef = function(arranged)
         else
             if type.count ~= nil then
                 cdefs[#cdefs + 1] = ('%s %s[%u]'):format(type.cdef, field.cname, type.count)
-            elseif type.dereference ~= nil then
-                cdefs[#cdefs + 1] = ('%s%s %s'):format(type.cdef, ('*'):rep(type.dereference), field.cname)
             else
                 cdefs[#cdefs + 1] = ('%s %s'):format(type.cdef, field.cname)
             end
@@ -95,12 +93,25 @@ local type_mt = {
     end,
 }
 
-structs.make_type = function(cdef)
-    return setmetatable({
-        cdef = cdef,
-        ctype = ffi.typeof(cdef),
-        size = ffi.sizeof(cdef),
-    }, type_mt)
+do
+    local cdef_cache = {}
+
+    structs.make_type = function(cdef)
+        if cdef_cache[cdef] == nil then
+            cdef_cache[cdef] = {
+                cdef = cdef,
+                ctype = ffi.typeof(cdef),
+                size = ffi.sizeof(cdef),
+            }
+        end
+
+        local info = cdef_cache[cdef]
+        return setmetatable({
+            cdef = info.cdef,
+            ctype = info.ctype,
+            size = info.size,
+        }, type_mt)
+    end
 end
 
 structs.copy_type = function(base)
@@ -150,27 +161,17 @@ local keywords = {
 }
 
 structs.struct = function(fields)
-    local signature
-    local dereference
+    local sig_info
     if fields[1] ~= nil then
-        signature = fields[1]
+        sig_info = fields[1]
         fields[1] = nil
-
-        dereference = 0
-        local index = (signature:find('%*') or 0) + 1
-        while signature:sub(index, index) == '*' do
-            dereference = dereference + 1
-            index = index + 1
-        end
-
-        signature = signature:sub(1, index - 1 - dereference) .. signature:sub(index)
     end
 
     local arranged = {}
     for label, data in pairs(fields) do
         local full = {
             label = label,
-            cname = keywords[label] ~= nil and ('_%s'):format(label) or label,
+            cname = keywords[label] ~= nil and ('_' .. label) or label,
             offset = 0,
         }
 
@@ -185,15 +186,18 @@ structs.struct = function(fields)
         return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
     end)
 
-    local new = structs.copy_type({cdef = make_cdef(arranged)})
+    local new
+    if sig_info ~= nil then
+        new = structs.make_type(make_cdef(arranged) .. '*')
+
+        new.signature = sig_info[1]
+        new.offsets = sig_info.offsets or {}
+        new.static_offsets = sig_info.static_offsets or {}
+    else
+        new = structs.make_type(make_cdef(arranged))
+    end
 
     new.fields = arranged
-
-    if dereference ~= nil then
-        new.cdef = ('%s*'):format(new.cdef)
-        new.signature = signature
-        new.dereference = dereference
-    end
 
     return new
 end
@@ -359,13 +363,8 @@ structs.boolbit = function(base, bits)
     return new
 end
 
-structs.ptr = function(base, derefs)
-    local new = structs.copy_type(base)
-
-    new.dereference = derefs or 1
-    new.size = ffi.sizeof('void*')
-
-    return new
+structs.ptr = function(base)
+    return structs.make_type(base.cdef .. '*')
 end
 
 return structs
