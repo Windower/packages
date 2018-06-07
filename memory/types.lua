@@ -21,6 +21,10 @@ local bool = structs.bool
 
 local ptr = structs.ptr
 
+local entity = tag(uint32, 'entity')
+local entity_index = tag(uint16, 'entity_index')
+local percent = tag(uint8, 'percent')
+
 local npc_name = string(0x18)
 local fourcc = string(0x04)
 
@@ -99,14 +103,15 @@ types.entity_array = struct {
     pos                      = {0x024, world_coord},
     _dupe_heading            = {0x038, float},
     _dupe_pos                = {0x044, world_coord},
-    index                    = {0x074, uint32},
+    index                    = {0x074, entity_index},
+    id                       = {0x078, entity},
     name                     = {0x07C, npc_name},
     movement_speed           = {0x098, float},
     movement_speed_base      = {0x09C, float},
     distance                 = {0x0D8, float},
     _dupe_heading2           = {0x0E4, float},
-    owner                    = {0x0E8, uint32},
-    hp_percent               = {0x0EC, uint8},
+    owner                    = {0x0E8, entity},
+    hp_percent               = {0x0EC, percent},
     target_type              = {0x0EE, uint8}, -- 0 = PC, 1 = NPC, 2 = NPC with fixed model (including various types of books), 3 = Doors and similar objects
     race                     = {0x0EF, uint16},
     face                     = {0x0FC, uint16},
@@ -114,7 +119,7 @@ types.entity_array = struct {
     freeze                   = {0x11C, bool},
     flags                    = {0x120, uint32[0x06]},
     status                   = {0x168, uint32}, -- Is this type correct?
-    claim_id                 = {0x184, uint32},
+    claim_id                 = {0x184, entity},
     animation                = {0x18C, animation[0x0A]},
     animation_time           = {0x1B4, uint16},
     animation_step           = {0x1B6, uint16},
@@ -124,17 +129,17 @@ types.entity_array = struct {
     linkshell_color          = {0x1D0, linkshell_color},
     campaign_mode            = {0x1D6, bool},
     fishing_timer            = {0x1D8, uint32}, -- counts down during fishing, goes 0xFFFFFFFF after 0, time until the fish bites
-    target_index             = {0x1F4, uint16},
-    pet_index                = {0x1F6, uint16},
+    target_index             = {0x1F4, entity_index},
+    pet_index                = {0x1F6, entity_index},
     model_scale              = {0x200, float},
     model_size               = {0x204, float},
-    fellow_index             = {0x29C, uint16},
-    owner_index              = {0x29E, uint16},
+    fellow_index             = {0x29C, entity_index},
+    owner_index              = {0x29E, entity_index},
     -- TODO: Verify
     -- npc_talking              = {0x0AC, uint32},
     -- pos_move                 = {0x054, world_coord}
     -- status_server            = {0x16C, uint32},
-    -- pets_owners_index        = {0x2A0, uint16},
+    -- pets_owners_index        = {0x2A0, entity_index},
     -- npc_speech_loop          = {0x13E, uint16},
     -- npc_speech_frame         = {0x140, uint16},
     -- npc_walk_pos_1           = {0x15C, uint16},
