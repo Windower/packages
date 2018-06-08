@@ -63,7 +63,7 @@ local model = struct {
 }
 
 types.misc2_graphics = struct {
-    {'894E188B15????????33FF6A24893D*'},
+    {'894E188B15????????33FF6A24893D'},
     render                  = {0x000, ptr(render)},
     footstep_effects        = {0x174, bool},
     clipping_plane_entity   = {0x1AC, float},
@@ -73,13 +73,13 @@ types.misc2_graphics = struct {
 }
 
 types.volumes = struct {
-    {'33DBF3AB6A10881D????????C705*'},
+    {'33DBF3AB6A10881D????????C705'},
     menu                    = {0x1C, float},
     footsteps               = {0x20, float},
 }
 
 types.auto_disconnect = struct {
-    {'6A00E8????????8B44240883C40485C07505A3*'},
+    {'6A00E8????????8B44240883C40485C07505A3'},
     enabled                 = {0x00, bool},
     last_active_time        = {0x04, uint32}, -- in ms, unknown offset
     timeout_time            = {0x08, uint32}, -- in ms
@@ -87,7 +87,7 @@ types.auto_disconnect = struct {
 }
 
 types.gamma_adjustment = struct {
-    {'83EC205355568BF18B0D*', static_offsets = {0}},
+    {'83EC205355568BF18B0D', static_offsets = {0}},
     red                     = {0x7F8, float},
     green                   = {0x7FC, float},
     blue                    = {0x800, float},
@@ -97,7 +97,7 @@ types.gamma_adjustment = struct {
 }
 
 types.entity_array = struct {
-    {'8B560C8B042A8B0485*'},
+    {'8B560C8B042A8B0485'},
     pos_display             = {0x004, world_coord},
     heading                 = {0x018, float}, -- E=0  N=+pi/2   W=+/-pi S=-pi/2
     pos                     = {0x024, world_coord},
