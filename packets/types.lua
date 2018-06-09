@@ -41,6 +41,7 @@ local title = tag(uint16, 'title')
 local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
 local status_effect = tag(uint8, 'status_effect')
 local indi = tag(uint8, 'indi')
+local ip = tag(uint32, 'ip')
 
 local pc_name = string(0x10)
 
@@ -147,6 +148,13 @@ types.incoming[0x00A] = struct {
     stats_bonus         = {0xDA, stats},
     max_hp              = {0xE8, uint32},
     max_mp              = {0xEC, uint32},
+}
+
+-- Zone Response
+types.incoming[0x00B] = struct {
+    type                = {0x04, uint8},
+    ip                  = {0x08, ip},
+    port                = {0x0C, uint16},
 }
 
 -- PC Update

@@ -37,7 +37,7 @@ local make_table = function(io)
             error('Not yet implemented')
         end,
         last = function()
-            error('Not yet implemented')
+            -- error('Not yet implemented')
         end,
     }
 end

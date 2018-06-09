@@ -84,7 +84,7 @@ packets.incoming.register(0x00A, function(p)
     local data = player.data
     data.id = p.player_id
     data.index = p.player_index
-    data.name = p.name
+    data.name = p.player_name
     data.main_job_id = p.main_job_id
     data.sub_job_id = p.sub_job_id
     data.hp_max = p.hp_max
@@ -166,7 +166,7 @@ end)
 
 packets.incoming.register(0x0CC, function(p)
     local ls_number = bit.band(p.flags, 0x40) == 0x40 and 2 or 1
-    local data = player.data[('linkshell%u'):format(ls_number)]
+    local data = player.data['linkshell' .. ls_number]
     data.name = p.linkshell_name
     data.message.text = p.message
     data.message.player_name = p.player_name

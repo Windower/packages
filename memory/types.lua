@@ -24,7 +24,9 @@ local ptr = structs.ptr
 local entity = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
 local percent = tag(uint8, 'percent')
+local ip = tag(uint32, 'ip')
 
+local pc_name = string(0x10)
 local npc_name = string(0x18)
 local fourcc = string(0x04)
 
@@ -145,6 +147,16 @@ types.entity_array = struct {
     -- npc_walk_pos_1          = {0x15C, uint16},
     -- npc_walk_pos_2          = {0x15E, uint16},
     -- npc_walk_mode           = {0x160, uint16},
+}
+
+types.account_info = struct {
+    {'538B5C240856578BFB83C9FF33C053F2AEA1'},
+    version                 = {0x248, string(0x10)},
+    ip                      = {0x260, ip},
+    port                    = {0x26C, uint16},
+    id                      = {0x314, entity},
+    name                    = {0x318, pc_name},
+    server                  = {0x390, uint8},
 }
 
 return types

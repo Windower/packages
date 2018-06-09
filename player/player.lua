@@ -65,41 +65,40 @@ local get_player_value = function(data, key)
 end
 
 local player = setmetatable({}, {
-        __index = function(t, k)
-            local _, result = assert(fetch_player(get_player_value, k))
+    __index = function(t, k)
+        local _, result = assert(fetch_player(get_player_value, k))
 
-            if type(result) == 'table' then
-                return setmetatable({}, {
-                        __index = function(_, l)
-                            if indexers[k] then
-                                return indexers[k](result, l)
-                            else
-                                return result[l]
-                            end
-                        end,
-                        __newindex = function() error('This value is read-only.') end,
-                        __pairs = function(_) 
-                            return function(_, k)
-                                return next(result, k)
-                            end
-                        end,
-                        __metatable = false,
-                    })
-            else
-                return result
-            end
-        end,
-        __newindex = function() error('This value is read-only.') end,
+        if type(result) == 'table' then
+            return setmetatable({}, {
+                __index = function(_, l)
+                    if indexers[k] then
+                        return indexers[k](result, l)
+                    else
+                        return result[l]
+                    end
+                end,
+                __newindex = function() error('This value is read-only.') end,
+                __pairs = function(_) 
+                    return function(_, k)
+                        return next(result, k)
+                    end
+                end,
+                __metatable = false,
+            })
+        else
+            return result
+        end
+    end,
+    __newindex = function()
+        error('This value is read-only.')
+    end,
+    __pairs = function(t)
+        return function(t, k)
+            local _, result = assert(fetch_player(get_player_pairs, k))
+            return unpack(result)
+        end, t, nil
+    end,
+    __metatable = false,
+})
 
-        __pairs = function(t)
-            return function(t, k)
-                local ok, result = fetch_player(get_player_pairs, k)
-                if not ok then
-                    error(result)
-                end
-                return unpack(result)
-            end, t, nil
-        end,
-        __metatable = false,
-    })
 return player

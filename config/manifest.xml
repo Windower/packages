@@ -4,5 +4,6 @@
   <type>addon</type>
   <dependencies>
     <dependency>memory</dependency>
+    <dependency>settings</dependency>
   </dependencies>
 </package>
