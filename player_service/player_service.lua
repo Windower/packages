@@ -15,7 +15,7 @@ player.data = {
     linkshell1 = { message = {}, },
     linkshell2 = { message = {}, },
     skills = { combat = {}, crafting = {} },
-    models = {},
+    model = {},
     job_levels = {},
     position = {},
 }
