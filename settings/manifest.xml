@@ -1,0 +1,9 @@
+<package>
+  <name>settings</name>
+  <version>1.0.0.0</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>files</dependency>
+    <dependency>account</dependency>
+  </dependencies>
+</package>
