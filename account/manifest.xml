@@ -1,0 +1,8 @@
+<package>
+  <name>account</name>
+  <version>1.0.0.0</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>account_service</dependency>
+  </dependencies>
+</package>
