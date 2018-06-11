@@ -9,6 +9,48 @@ local modules = {'FFXiMain.dll', 'polcore.dll', 'polcoreEU.dll'}
 
 local byte_ptr = ffi.typeof('char**')
 
+local make_field_meta
+make_field_meta = function(instance, fields)
+    return {
+        __index = function(_, label)
+            local field
+            for _, value in ipairs(fields) do
+                if value.label == label then
+                    field = value
+                end
+            end
+
+            if field == nil then
+                return nil
+            end
+
+            local type = field.type
+            if type.count ~= nil and type.cdef ~= 'char' then
+                local array = instance[field.cname]
+                if type.fields ~= nil then
+                    return setmetatable({}, {
+                        __index = function(_, index)
+                            return setmetatable({}, make_field_meta(array[index], type.fields))
+                        end,
+                    })
+                else
+                    return setmetatable({}, {
+                        __index = function(_, index)
+                            return type.tolua and type.tolua(array[index]) or array[index]
+                        end,
+                    })
+                end
+            elseif type.fields ~= nil then
+                return setmetatable({}, make_field_meta(instance[field.cname], type.fields))
+            end
+
+            return type.tolua and type.tolua(instance[field.cname]) or instance[field.cname]
+        end,
+        __pairs = function(_)
+        end,
+    }
+end
+
 return setmetatable({}, {
     __index = function(_, name)
         local type = types[name]
@@ -44,6 +86,6 @@ return setmetatable({}, {
             ptr = ffi.cast(byte_ptr, ptr)[offset]
         end
 
-        return ffi.cast(type.ctype, ptr)
+        return setmetatable({}, make_field_meta(ffi.cast(type.ctype, ptr), type.fields))
     end,
 })

@@ -218,7 +218,14 @@ local string_types = {}
 
 structs.string = function(length)
     if not length then
-        return { tag = 'string' }
+        return {
+            tolua = function(data, field)
+                return data:unpack('z', field.position)
+            end,
+            toc = function(str, field)
+                return str .. ('\0'):rep(4 - (#str + field.position) % 4)
+            end,
+        }
     end
 
     if not string_types[length] then

@@ -3,7 +3,6 @@
   <version>1.0.0.0</version>
   <type>library</type>
   <dependencies>
-    <dependency>pack</dependency>
-    <dependency>structs</dependency>
+    <dependency>packet_service</dependency>
   </dependencies>
 </package>

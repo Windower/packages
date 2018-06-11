@@ -114,47 +114,47 @@ local types = {
 
 -- Zone update
 types.incoming[0x00A] = struct {
-    player_id           = {0x04, entity},
-    player_index        = {0x08, entity_index},
-    heading             = {0x0B, uint8},
-    x                   = {0x0C, float},
-    z                   = {0x10, float},
-    y                   = {0x14, float},
-    run_count           = {0x18, uint16},
-    target_index        = {0x1A, entity_index},
-    movement_speed      = {0x1C, uint8},
-    animation_speed     = {0x1D, uint8},
-    hp_percent          = {0x1E, percent},
-    state               = {0x1F, state},
-    zone                = {0x30, zone},
-    timestamp_1         = {0x38, time},
-    timestamp_2         = {0x3C, time},
-    _dupe_zone          = {0x42, zone},
-    model               = {0x44, model},
-    day_music           = {0x56, uint16},
-    night_music         = {0x58, uint16},
-    solo_combat_music   = {0x5A, uint16},
-    party_combat_music  = {0x5C, uint16},
-    menu_zone           = {0x62, uint16},
-    menu_id             = {0x64, uint16},
-    weather             = {0x68, weather},
-    player_name         = {0x84, pc_name},
-    abyssea_timestamp   = {0xA0, time},
-    zone_model          = {0xAA, uint16},
-    main_job_id         = {0xB4, job},
-    sub_job_id          = {0xB7, job},
-    job_levels          = {0xBC, uint8[0x10], lookup='jobs'},
-    stats_base          = {0xCC, stats},
-    stats_bonus         = {0xDA, stats},
-    max_hp              = {0xE8, uint32},
-    max_mp              = {0xEC, uint32},
+    player_id           = {0x00, entity},
+    player_index        = {0x04, entity_index},
+    heading             = {0x07, uint8},
+    x                   = {0x08, float},
+    z                   = {0x0C, float},
+    y                   = {0x10, float},
+    run_count           = {0x14, uint16},
+    target_index        = {0x16, entity_index},
+    movement_speed      = {0x18, uint8},
+    animation_speed     = {0x19, uint8},
+    hp_percent          = {0x1A, percent},
+    state               = {0x1B, state},
+    zone                = {0x2C, zone},
+    timestamp_1         = {0x34, time},
+    timestamp_2         = {0x38, time},
+    _dupe_zone          = {0x3E, zone},
+    model               = {0x40, model},
+    day_music           = {0x52, uint16},
+    night_music         = {0x54, uint16},
+    solo_combat_music   = {0x56, uint16},
+    party_combat_music  = {0x58, uint16},
+    menu_zone           = {0x5E, uint16},
+    menu_id             = {0x60, uint16},
+    weather             = {0x64, weather},
+    player_name         = {0x80, pc_name},
+    abyssea_timestamp   = {0x9C, time},
+    zone_model          = {0xA6, uint16},
+    main_job_id         = {0xB0, job},
+    sub_job_id          = {0xB3, job},
+    job_levels          = {0xB8, uint8[0x10], lookup='jobs'},
+    stats_base          = {0xC8, stats},
+    stats_bonus         = {0xD6, stats},
+    max_hp              = {0xE4, uint32},
+    max_mp              = {0xE8, uint32},
 }
 
 -- Zone Response
 types.incoming[0x00B] = struct {
-    type                = {0x04, uint8},
-    ip                  = {0x08, ip},
-    port                = {0x0C, uint16},
+    type                = {0x00, uint8},
+    ip                  = {0x04, ip},
+    port                = {0x08, uint16},
 }
 
 -- PC Update
@@ -203,48 +203,48 @@ types.incoming[0x00B] = struct {
     -- Byte 0x36
     -- 0x20 = Ballista
 types.incoming[0x00D] = struct {
-    player_id           = {0x04, entity},
-    player_index        = {0x08, entity_index},
-    update_position     = {0x0A, boolbit(uint8), offset=0}, -- Position, Rotation, Target, Speed
-    update_status       = {0x0A, boolbit(uint8), offset=1}, -- Not used for 0x00D
-    update_vitals       = {0x0A, boolbit(uint8), offset=2}, -- HP%, Status, Flags, LS color, "Face Flags"
-    update_name         = {0x0A, boolbit(uint8), offset=3}, -- Name
-    update_model        = {0x0A, boolbit(uint8), offset=4}, -- Race, Face, Gear models
-    despawn             = {0x0A, boolbit(uint8), offset=5}, -- Only set if player runs out of range or zones
-    heading             = {0x0B, uint8},
-    x                   = {0x0C, float},
-    z                   = {0x10, float},
-    y                   = {0x14, float},
-    run_count           = {0x18, bit(uint16, 13), offset=0},
-    target_index        = {0x1A, bit(entity_index, 15), offset=1},
-    movement_speed      = {0x1C, uint8}, -- 32 represents 100%
-    animation_speed     = {0x1D, uint8}, -- 32 represents 100%
-    hp_percent          = {0x1E, percent},
-    state               = {0x1F, state},
-    flags               = {0x20, flags},
-    linkshell_red       = {0x24, uint8},
-    linkshell_green     = {0x25, uint8},
-    linkshell_blue      = {0x26, uint8},
-    face_flags          = {0x43, uint8}, -- 0, 3, 4 or 8
-    model               = {0x48, model},
-    name                = {0x5A, string()},
+    player_id           = {0x00, entity},
+    player_index        = {0x04, entity_index},
+    update_position     = {0x06, boolbit(uint8), offset=0}, -- Position, Rotation, Target, Speed
+    update_status       = {0x06, boolbit(uint8), offset=1}, -- Not used for 0x00D
+    update_vitals       = {0x06, boolbit(uint8), offset=2}, -- HP%, Status, Flags, LS color, "Face Flags"
+    update_name         = {0x06, boolbit(uint8), offset=3}, -- Name
+    update_model        = {0x06, boolbit(uint8), offset=4}, -- Race, Face, Gear models
+    despawn             = {0x06, boolbit(uint8), offset=5}, -- Only set if player runs out of range or zones
+    heading             = {0x07, uint8},
+    x                   = {0x08, float},
+    z                   = {0x0C, float},
+    y                   = {0x10, float},
+    run_count           = {0x14, bit(uint16, 13), offset=0},
+    target_index        = {0x16, bit(entity_index, 15), offset=1},
+    movement_speed      = {0x18, uint8}, -- 32 represents 100%
+    animation_speed     = {0x19, uint8}, -- 32 represents 100%
+    hp_percent          = {0x1A, percent},
+    state               = {0x1B, state},
+    flags               = {0x1C, flags},
+    linkshell_red       = {0x20, uint8},
+    linkshell_green     = {0x21, uint8},
+    linkshell_blue      = {0x22, uint8},
+    face_flags          = {0x3F, uint8}, -- 0, 3, 4 or 8
+    model               = {0x44, model},
+    name                = {0x56, string()},
 }
 
 -- Job Info
 types.incoming[0x01B] = struct {
-    main_job_id         = {0x08, job},
+    main_job_id         = {0x04, job},
     -- 09: Flags or main job level?
     -- 0A: Flags or sub job level?
-    sub_job_id          = {0x0B, job},
-    sub_job_unlocked    = {0x0C, boolbit(uint32)},
-    sub_jobs_unlocked   = {0x0C, boolbit(uint32, 0x16), offset=1},
-    job_levels_pre_toau = {0x10, uint8[0x10], lookup='jobs'},
-    stats_base          = {0x20, stats}, -- Altering these stat values has no impact on your equipment menu.
-    hp_max              = {0x3C, uint32},
-    mp_max              = {0x40, uint32},
-    job_levels          = {0x44, uint8[0x18], lookup='jobs'},
-    monster_level       = {0x5F, uint8},
-    encumbrance_flags   = {0x60, uint32}, -- [legs, hands, body, head, ammo, range, sub, main,] [back, right_ring, left_ring, right_ear, left_ear, waist, neck, feet] [HP, CHR, MND, INT, AGI, VIT, DEX, STR,] [X X X X X X X MP]
+    sub_job_id          = {0x07, job},
+    sub_job_unlocked    = {0x08, boolbit(uint32)},
+    sub_jobs_unlocked   = {0x08, boolbit(uint32, 0x16), offset=1},
+    job_levels_pre_toau = {0x0C, uint8[0x10], lookup='jobs'},
+    stats_base          = {0x1C, stats}, -- Altering these stat values has no impact on your equipment menu.
+    hp_max              = {0x38, uint32},
+    mp_max              = {0x3C, uint32},
+    job_levels          = {0x40, uint8[0x18], lookup='jobs'},
+    monster_level       = {0x5B, uint8},
+    encumbrance_flags   = {0x5C, uint32}, -- [legs, hands, body, head, ammo, range, sub, main,] [back, right_ring, left_ring, right_ear, left_ear, waist, neck, feet] [HP, CHR, MND, INT, AGI, VIT, DEX, STR,] [X X X X X X X MP]
 }
 
 -- Inventory Count
@@ -255,44 +255,44 @@ types.incoming[0x01B] = struct {
 -- for now.
 -- There appears to be space for another 8 bags.
 types.incoming[0x01C] = struct {
-    size                = {0x04, uint8[13], lookup='bags'},
+    size                = {0x00, uint8[13], lookup='bags'},
     -- These "dupe" sizes are set to 0 if the inventory disabled.
     -- storage: The accumulated storage from all items (uncapped) -1
     -- wardrobe 3/4: This is not set to 0 despite being disabled for whatever reason
-    other_size          = {0x14, uint16[13], lookup='bags'},
+    other_size          = {0x10, uint16[13], lookup='bags'},
 }
 
 -- Finish Inventory
 types.incoming[0x01D] = struct {
-    flag                = {0x04, uint8, const=0x01},
+    flag                = {0x00, uint8, const=0x01},
 }
 
 -- Modify Inventory
 types.incoming[0x01E] = struct {
-    count               = {0x04, uint32},
-    bag                 = {0x08, bag},
-    bag_index           = {0x09, uint8},
-    status              = {0x0A, item_status},
+    count               = {0x00, uint32},
+    bag                 = {0x04, bag},
+    bag_index           = {0x05, uint8},
+    status              = {0x06, item_status},
 }
 
 -- Item Assign
 types.incoming[0x01F] = struct {
-    count               = {0x04, uint32},
-    item_id             = {0x08, item},
-    bag                 = {0x0A, bag},
-    bag_index           = {0x0B, uint8},
-    status              = {0x0C, item_status},
+    count               = {0x00, uint32},
+    item_id             = {0x04, item},
+    bag                 = {0x06, bag},
+    bag_index           = {0x07, uint8},
+    status              = {0x08, item_status},
 }
 
 -- Item Updates
 types.incoming[0x020] = struct {
-    count               = {0x04, uint32},
-    bazaar              = {0x08, uint32},
-    item_id             = {0x0C, item},
-    bag                 = {0x0E, bag},
-    bag_index           = {0x0F, uint8},
-    status              = {0x10, item_status},
-    extdata             = {0x11, data(24)},
+    count               = {0x00, uint32},
+    bazaar              = {0x04, uint32},
+    item_id             = {0x08, item},
+    bag                 = {0x0A, bag},
+    bag_index           = {0x0B, uint8},
+    status              = {0x0C, item_status},
+    extdata             = {0x0D, data(24)},
 }
 
 -- Player update
@@ -389,102 +389,102 @@ types.incoming[0x020] = struct {
     -- 0x00000002 -- Seems to indicate wardrobe 4
 ]]
 types.incoming[0x037] = struct {
-    status_effects      = {0x04, status_effect[0x20]},
-    player_id           = {0x24, entity},
-    hp_percent          = {0x2A, percent},
-    movement_speed_half = {0x2C, bit(uint16, 12), offset=0},
-    yalms_per_step      = {0x2E, bit(uint16, 9), offset=0}, -- Determines how quickly your animation walks
-    state               = {0x30, state},
-    linkshell_red       = {0x31, uint8},
-    linkshell_green     = {0x32, uint8},
-    linkshell_blue      = {0x33, uint8},
-    pet_index           = {0x34, bit(uint32, 16), offset=3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
-    ballista_stuff      = {0x34, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
-    time_offset_maybe   = {0x3C, uint32}, -- For me, this is the number of seconds in 66 hours
-    timestamp           = {0x40, uint32}, -- This is 32 years off of JST at the time the packet is sent.
-    status_effect_mask  = {0x4C, data(8)},
-    indi_status_effect  = {0x58, indi},
+    status_effects      = {0x00, status_effect[0x20]},
+    player_id           = {0x20, entity},
+    hp_percent          = {0x26, percent},
+    movement_speed_half = {0x28, bit(uint16, 12), offset=0},
+    yalms_per_step      = {0x2A, bit(uint16, 9), offset=0}, -- Determines how quickly your animation walks
+    state               = {0x2C, state},
+    linkshell_red       = {0x2D, uint8},
+    linkshell_green     = {0x2E, uint8},
+    linkshell_blue      = {0x2F, uint8},
+    pet_index           = {0x30, bit(uint32, 16), offset=3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
+    ballista_stuff      = {0x30, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
+    time_offset_maybe   = {0x38, uint32}, -- For me, this is the number of seconds in 66 hours
+    timestamp           = {0x3C, uint32}, -- This is 32 years off of JST at the time the packet is sent.
+    status_effect_mask  = {0x48, data(8)},
+    indi_status_effect  = {0x54, indi},
 }
 
 -- Equipment
 types.incoming[0x050] = struct {
-    bag_index           = {0x04, uint8},
-    slot_id             = {0x05, slot},
-    bag_id              = {0x06, bag},
+    bag_index           = {0x00, uint8},
+    slot_id             = {0x01, slot},
+    bag_id              = {0x02, bag},
 }
 
 -- Char Stats
 types.incoming[0x061] = struct {
-    hp_max              = {0x04, uint32},
-    mp_max              = {0x08, uint32},
-    main_job_id         = {0x0C, job},
-    main_job_level      = {0x0D, uint8},
-    sub_job_id          = {0x0E, job},
-    sub_job_level       = {0x0F, uint8},
-    exp                 = {0x10, uint16},
-    exp_required        = {0x12, uint16},
-    stats_base          = {0x14, stats},
-    stats_bonus         = {0x22, stats},
-    attack              = {0x30, uint16},
-    defense             = {0x32, uint16},
-    resistance          = {0x34, resistances},
-    title               = {0x44, title},
-    nation_rank         = {0x46, uint16},
-    nation_rank_points  = {0x48, uint16}, -- Capped at 0xFFF
-    home_point_zone_id  = {0x4A, zone},
-    nation_id           = {0x50, nation},
-    superior_level      = {0x52, uint8},
-    item_level_max      = {0x54, uint8},
-    item_level_over_99  = {0x55, uint8},
-    item_level_main     = {0x56, uint8},
-    unity               = {0x51, unity},
+    hp_max              = {0x00, uint32},
+    mp_max              = {0x04, uint32},
+    main_job_id         = {0x08, job},
+    main_job_level      = {0x09, uint8},
+    sub_job_id          = {0x0A, job},
+    sub_job_level       = {0x0B, uint8},
+    exp                 = {0x0C, uint16},
+    exp_required        = {0x0E, uint16},
+    stats_base          = {0x10, stats},
+    stats_bonus         = {0x1E, stats},
+    attack              = {0x2C, uint16},
+    defense             = {0x2E, uint16},
+    resistance          = {0x30, resistances},
+    title               = {0x40, title},
+    nation_rank         = {0x42, uint16},
+    nation_rank_points  = {0x44, uint16}, -- Capped at 0xFFF
+    home_point_zone_id  = {0x46, zone},
+    nation_id           = {0x4C, nation},
+    superior_level      = {0x4E, uint8},
+    item_level_max      = {0x50, uint8},
+    item_level_over_99  = {0x51, uint8},
+    item_level_main     = {0x52, uint8},
+    unity               = {0x54, unity},
 }
 
 -- Skills Update
 types.incoming[0x062] = struct {
-    combat_skills       = {0x80, combat_skill[0x30], lookup='skills', lookup_index=0x00},
-    crafting_skills     = {0xE0, crafting_skill[0x0A], lookup='skills', lookup_index=0x30},
+    combat_skills       = {0x7C, combat_skill[0x30], lookup='skills', lookup_index=0x00},
+    crafting_skills     = {0xDC, crafting_skill[0x0A], lookup='skills', lookup_index=0x30},
 }
 
 types.incoming[0x076] = struct {
-    party_members       = {0x04, party_status_effects[5]},
+    party_members       = {0x00, party_status_effects[5]},
 }
 
 -- LS Message
 types.incoming[0x0CC] = struct {
-    flags               = {0x04, flags},
-    message             = {0x08, string(0x80)},
-    timestamp           = {0x88, time},
-    player_name         = {0x8C, pc_name},
-    permissions         = {0x98, data(4)},
-    linkshell_name      = {0x9C, ls_name},
+    flags               = {0x00, flags},
+    message             = {0x04, string(0x80)},
+    timestamp           = {0x84, time},
+    player_name         = {0x88, pc_name},
+    permissions         = {0x94, data(4)},
+    linkshell_name      = {0x98, ls_name},
 }
 
 -- Char Update
 types.incoming[0x0DF] = struct {
-    id                  = {0x04, entity},
-    hp                  = {0x08, uint32},
-    mp                  = {0x0C, uint32},
-    tp                  = {0x10, uint32},
-    index               = {0x14, entity_index},
-    hp_percent          = {0x16, percent},
-    mp_percent          = {0x17, percent},
-    main_job_id         = {0x20, job},
-    main_job_level      = {0x21, uint8},
-    sub_job_id          = {0x22, job},
-    sub_job_level       = {0x23, uint8},
+    id                  = {0x00, entity},
+    hp                  = {0x04, uint32},
+    mp                  = {0x08, uint32},
+    tp                  = {0x0C, uint32},
+    index               = {0x10, entity_index},
+    hp_percent          = {0x12, percent},
+    mp_percent          = {0x13, percent},
+    main_job_id         = {0x1C, job},
+    main_job_level      = {0x1D, uint8},
+    sub_job_id          = {0x1E, job},
+    sub_job_level       = {0x1F, uint8},
 }
 
 -- Char Info
 types.incoming[0x0E2] = struct {
-    id                  = {0x04, entity},
-    hp                  = {0x08, uint32},
-    mp                  = {0x0C, uint32},
-    tp                  = {0x10, uint32},
-    index               = {0x18, entity_index},
-    hp_percent          = {0x1D, percent},
-    mp_percent          = {0x1E, percent},
-    name                = {0x22, string()},
+    id                  = {0x00, entity},
+    hp                  = {0x04, uint32},
+    mp                  = {0x08, uint32},
+    tp                  = {0x0C, uint32},
+    index               = {0x14, entity_index},
+    hp_percent          = {0x19, percent},
+    mp_percent          = {0x1A, percent},
+    name                = {0x1E, string()},
 }
 
 return types
