@@ -1,7 +1,7 @@
 <package>
   <name>items_service</name>
-  <version>0</version> <!-- 2nd 3rd and 4th numbers are optional, can also have an optional tag string suffix -->
-  <type>service</type> <!-- can also be "service" or "addon" -->
+  <version>1.0.0.0</version>
+  <type>service</type>
   <dependencies>
     <dependency>resources</dependency>
     <dependency>packets</dependency>

@@ -1,7 +1,6 @@
 local shared = require('shared')
 local packets = require('packets')
 local res = require('resources')
-require('pack')
 
 items = shared.new('items')
 equipment = shared.new('equipment')
