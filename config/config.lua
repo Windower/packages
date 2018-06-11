@@ -1,4 +1,5 @@
 local memory = require('memory')
+local settings = require('settings')
 
 local defaults = {
     gameplay = {
@@ -37,27 +38,27 @@ local defaults = {
     },
 }
 
-local settings = defaults -- TODO: Magic
+local options = settings.load(defaults)
 
 coroutine.schedule(function()
     while true do
         do -- misc2_graphics
             local struct = memory.misc2_graphics
-            local settings = settings.graphics
+            local options = options.graphics
 
-            local aspect_ratio = settings.aspect_ratio
+            local aspect_ratio = options.aspect_ratio
 
             struct.render.aspect_ratio = (4 / 3) / (aspect_ratio.auto and (x / y) or aspect_ratio.value)
-            struct.render.framerate_divisor = settings.framerate == 'unlimited' and 0 or math.ceil(60 / settings.framerate)
-            struct.clipping_plane_entity = settings.clipping_plane
-            struct.clipping_plane_map = settings.clipping_plane
+            struct.render.framerate_divisor = options.framerate == 'unlimited' and 0 or math.ceil(60 / options.framerate)
+            struct.clipping_plane_entity = options.clipping_plane
+            struct.clipping_plane_map = options.clipping_plane
         end
 
         do -- auto_disconnect
             local struct = memory.auto_disconnect
-            local settings = settings.system
+            local options = options.system
             
-            local auto_disconnect = settings.auto_disconnect
+            local auto_disconnect = options.auto_disconnect
 
             struct.enabled = auto_disconnect.enabled
             struct.timeout_time = auto_disconnect.time
@@ -65,9 +66,9 @@ coroutine.schedule(function()
 
         do -- gamma_adjustment
             local struct = memory.gamma_adjustment
-            local settings = settings.graphics
+            local options = options.graphics
 
-            local gamma_adjustment = settings.gamma_adjustment
+            local gamma_adjustment = options.gamma_adjustment
 
             struct.red = gamma_adjustment.red
             struct.green = gamma_adjustment.green
