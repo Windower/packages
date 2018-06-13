@@ -36,7 +36,6 @@ local handle_00A = function(p)
         data.server = info.server
         data.name = info.name
         data.id = info.id
-        print(info.server, info.name, info.id)
 
         login_event:trigger()
     end)

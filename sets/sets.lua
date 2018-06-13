@@ -64,7 +64,8 @@ meta.__pow = function(s1, s2)
 end
 
 meta.__tostring = function(s)
-    local res = '{'
+    local res = ''
+
     local first = true
     for _, el in pairs(s.data) do
         if first then
@@ -74,9 +75,8 @@ meta.__tostring = function(s)
         end
         res = res .. tostring(el)
     end
-    res = res .. '}'
 
-    return res
+    return '{' .. res .. '}'
 end
 
 meta.__ipairs = function(s)
@@ -92,11 +92,11 @@ meta.__pairs = function(s)
 end
 
 meta.__create = function(t)
-    local s = { data = {}}
+    local data = {}
     for _, el in pairs(t or {}) do
-        s.data[el] = el
+        data[el] = el
     end
-    return setmetatable(s, meta)
+    return setmetatable({ data = data }, meta)
 end
 
 meta.__add_element = function(s, el)

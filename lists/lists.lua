@@ -2,14 +2,10 @@ local list = {}
 local meta = {}
 
 local make_key = function(l, k)
-    if type(k) ~= 'number' then
-        error('Invalid key ' .. tostring(k))
-    end
+    assert(type(k) == 'number', 'Invalid index ' .. tostring(k))
 
     k = k < 0 and l.count + k + 1 or k
-    if k == 0 or k > l.count then
-        error('Invalid key ' .. tostring(k))
-    end
+    assert(k >= 0 and k <= l.count, 'Invalid index ' .. tostring(k))
 
     return k
 end
@@ -49,7 +45,7 @@ meta.__concat = function(l1, l2)
 end
 
 meta.__tostring = function(l)
-    local str = '['
+    local str = ''
 
     for key = 1, l.count do
         if key > 1 then
@@ -58,7 +54,7 @@ meta.__tostring = function(l)
         str = str .. tostring(rawget(l, key))
     end
 
-    return str .. ']'
+    return '[' .. str .. ']'
 end
 
 meta.__ipairs = pairs
