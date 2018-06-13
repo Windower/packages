@@ -72,15 +72,13 @@ return setmetatable({}, {
                 return nil
             end
 
-            -- TODO: Remove after scanner allows invalid sigs
-            local ptr = scanner.scan(type.signature, name == 'auto_disconnect' and 'polcore.dll' or 'FFXiMain.dll')
-            -- local ptr
-            -- for _, module in ipairs(modules) do
-            --     ptr = scanner.scan(type.signature)
-            --     if ptr ~= nil then
-            --         break
-            --     end
-            -- end
+            local ptr
+            for _, module in ipairs(modules) do
+                ptr = scanner.scan(type.signature, module)
+                if ptr ~= nil then
+                    break
+                end
+            end
             assert(ptr ~= nil, 'Signature ' .. type.signature .. ' not found.')
 
             for _, offset in ipairs(type.static_offsets) do
