@@ -20,8 +20,8 @@ local history = {
     },
 }
 
-local raw = history.raw
-local parsed = history.parsed
+local history_raw = history.raw
+local history_parsed = history.parsed
 
 local registry = {
     incoming = { all = {} },
@@ -77,7 +77,7 @@ local parse = function(packet, types, history_raw, history_parsed)
         local instance = type.ctype()
         ffi.copy(instance, char_ptr(packet.data), type.size)
 
-        copy_fields(packet, raw, instance, type.fields)
+        copy_fields(packet, packet.data, instance, type.fields)
     end
 
     history_parsed[id] = packet
@@ -88,12 +88,12 @@ end
 
 packets.env = {
     last = function(direction, id)
-        local parsed_packet = parsed[direction][id]
+        local parsed_packet = history_parsed[direction][id]
         if parsed_packet ~= nil then
             return parsed_packet
         end
 
-        local raw_packet = raw[direction][id]
+        local raw_packet = history_raw[direction][id]
         if raw_packet ~= nil then
             return parse(raw_packet, types[direction])
         end
@@ -147,10 +147,10 @@ local types_incoming = types.incoming
 local types_outgoing = types.outgoing
 local registry_incoming = registry.incoming
 local registry_outgoing = registry.outgoing
-local raw_incoming = raw.incoming
-local raw_outgoing = raw.outgoing
-local parsed_incoming = parsed.incoming
-local parsed_outgoing = parsed.outgoing
+local raw_incoming = history_raw.incoming
+local raw_outgoing = history_raw.outgoing
+local parsed_incoming = history_parsed.incoming
+local parsed_outgoing = history_parsed.outgoing
 
 packet.incoming:register(function(raw)
     handle_packet(raw, types_incoming, registry_incoming, raw_incoming, parsed_incoming)
