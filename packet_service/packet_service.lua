@@ -39,10 +39,10 @@ copy_fields = function(packet, raw, instance, fields)
         if type.count ~= nil and type.cdef ~= 'char' then
             data = {}
             local array = instance[field.cname]
-            if type.fields ~= nil then
+            if type.base.fields ~= nil then
                 for i = 0, type.count do
                     local inner = {}
-                    copy_fields(inner, nil, array[i], type.fields)
+                    copy_fields(inner, nil, array[i], type.base.fields)
                     data[i] = inner
                 end
             else

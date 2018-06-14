@@ -8,6 +8,14 @@ local struct = function(info, type)
     return structs.struct(type, info)
 end
 
+local array = function(info, type, count)
+    if count == nil then
+        return structs.array(info, type)
+    end
+
+    return structs.array(type, count, info)
+end
+
 local tag = structs.tag
 local string = structs.string
 local data = structs.data
@@ -36,8 +44,6 @@ local pc_name = string(0x10)
 local npc_name = string(0x18)
 local fourcc = string(0x04)
 
-local types = {}
-
 local render = struct({
     framerate_divisor       = {0x030, uint32},
     aspect_ratio            = {0x2F0, float},
@@ -48,10 +54,6 @@ local world_coord = struct({
     z                       = {0x4, float},
     y                       = {0x8, float}, 
     w                       = {0xC, float},
-})
-
-local animation = struct({
-    value                   = {0x0, fourcc},
 })
 
 local linkshell_color = struct({
@@ -93,7 +95,7 @@ local entity = struct({
     flags                   = {0x120, uint32[0x06]},
     status                  = {0x168, uint32}, -- Is this type correct?
     claim_id                = {0x184, entity},
-    animation               = {0x18C, animation[0x0A]},
+    animation               = {0x18C, fourcc[0x0A]},
     animation_time          = {0x1B4, uint16},
     animation_step          = {0x1B6, uint16},
     emote_id                = {0x1BC, uint16},
@@ -119,6 +121,8 @@ local entity = struct({
     -- npc_walk_pos_2          = {0x15E, uint16},
     -- npc_walk_mode           = {0x160, uint16},
 })
+
+local types = {}
 
 types.misc2_graphics = struct({'894E188B15????????33FF6A24893D'}, {
     render                  = {0x000, ptr(render)},
@@ -150,7 +154,7 @@ types.gamma_adjustment = struct({'83EC205355568BF18B0D', static_offsets = {0}}, 
     _dupe_blue              = {0x80C, float},
 })
 
-types.entity_array = struct({'8B560C8B042A8B0485'}, ptr(entity)[0x900])
+types.entities = array({'8B560C8B042A8B0485'}, ptr(entity), 0x900)
 
 types.account_info = struct({'538B5C240856578BFB83C9FF33C053F2AEA1'}, {
     version                 = {0x248, string(0x10)},

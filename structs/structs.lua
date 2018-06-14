@@ -25,7 +25,7 @@ local make_cdef = function(arranged)
 
         local diff = field.position - index
         if diff > 0 then
-            cdefs[#cdefs + 1] = ('char _unknown%u[%u]'):format(unknown_count, diff)
+            cdefs[#cdefs + 1] = 'char _unknown' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
             unknown_count = unknown_count + 1
         end
         index = index + diff
@@ -36,14 +36,14 @@ local make_cdef = function(arranged)
             end
             local bit_diff = field.offset - offset
             if bit_diff > 0 then
-                cdefs[#cdefs + 1] = ('%s _unknown%u:%u'):format(bit_type or type.cdef, unknown_count, bit_diff)
+                cdefs[#cdefs + 1] = (bit_type or type.cdef) .. ' _unknown' .. tostring(unknown_count) .. ':' .. tostring(bit_diff)
                 unknown_count = unknown_count + 1
             end
             offset = offset + bit_diff
         elseif bit_type ~= nil then
             local bit_diff = field.offset - offset
             if bit_diff > 0 then
-                cdefs[#cdefs + 1] = ('%s _unknown%u:%u'):format(bit_type, unknown_count, bit_diff)
+                cdefs[#cdefs + 1] = bit_type .. ' _unknown' .. tostring(unknown_count) .. ':' .. tostring(bit_diff)
                 unknown_count = unknown_count + 1
             end
             offset = 0
@@ -51,7 +51,7 @@ local make_cdef = function(arranged)
         end
 
         if is_bit then
-            cdefs[#cdefs + 1] = ('%s %s:%u'):format(type.cdef, field.cname, type.bits)
+            cdefs[#cdefs + 1] = type.cdef .. ' ' .. field.cname .. ':' .. tostring(type.bits)
             offset = offset + type.bits
             if offset == 8 * type.size then
                 offset = 0
@@ -61,15 +61,21 @@ local make_cdef = function(arranged)
             end
         else
             if type.count ~= nil then
-                cdefs[#cdefs + 1] = ('%s %s[%u]'):format(type.cdef, field.cname, type.count)
+                local counts = ''
+                local base = type
+                while base.count ~= nil do
+                    counts = '[' .. tostring(base.count) .. ']' .. counts
+                    base = base.base
+                end
+                cdefs[#cdefs + 1] = type.cdef .. ' ' .. field.cname .. counts
             else
-                cdefs[#cdefs + 1] = ('%s %s'):format(type.cdef, field.cname)
+                cdefs[#cdefs + 1] = type.cdef .. ' ' .. field.cname
             end
             index = index + type.size
         end
     end
 
-    return ('struct{%s;}'):format(table.concat(cdefs, ';'))
+    return 'struct{' .. table.concat(cdefs, ';') .. ';}'
 end
 
 local key_map = {
@@ -83,13 +89,7 @@ local type_mt = {
             return nil
         end
 
-        local new = structs.copy_type(base)
-
-        new.count = count
-        new.size = count * base.size
-        new.base = base
-
-        return new
+        return structs.array(base, count)
     end,
 }
 
@@ -160,40 +160,56 @@ local keywords = {
     ['while'] = true,
 }
 
-structs.struct = function(fields, info)
-    local arranged = {}
-    for label, data in pairs(fields) do
-        local full = {
-            label = label,
-            cname = keywords[label] ~= nil and ('_' .. label) or label,
-            offset = 0,
-        }
-
-        for key, value in pairs(data) do
-            full[key_map[key] or key] = value
+do
+    local build_type = function(cdef, info)
+        local new
+        if info ~= nil then
+            new = structs.make_type(cdef .. '*')
+            new.signature = info[1]
+            new.offsets = info.offsets or {}
+            new.static_offsets = info.static_offsets or {}
+        else
+            new = structs.make_type(cdef)
         end
 
-        arranged[#arranged + 1] = full
+        return new
     end
 
-    table.sort(arranged, function(field1, field2)
-        return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
-    end)
+    structs.array = function(type, count, info)
+        local new = build_type(type.cdef, info)
 
-    local new
-    if info ~= nil then
-        new = structs.make_type(make_cdef(arranged) .. '*')
+        new.count = count
+        new.base = type
 
-        new.signature = info[1]
-        new.offsets = info.offsets or {}
-        new.static_offsets = info.static_offsets or {}
-    else
-        new = structs.make_type(make_cdef(arranged))
+        return new
     end
 
-    new.fields = arranged
+    structs.struct = function(fields, info)
+        local arranged = {}
+        for label, data in pairs(fields) do
+            local full = {
+                label = label,
+                cname = keywords[label] ~= nil and ('_' .. label) or label,
+                offset = 0,
+            }
 
-    return new
+            for key, value in pairs(data) do
+                full[key_map[key] or key] = value
+            end
+
+            arranged[#arranged + 1] = full
+        end
+
+        table.sort(arranged, function(field1, field2)
+            return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
+        end)
+
+        local new = build_type(make_cdef(arranged), info)
+
+        new.fields = arranged
+
+        return new
+    end
 end
 
 structs.uint8 = structs.make_type('uint8_t')
@@ -213,11 +229,11 @@ local string_types = {}
 structs.string = function(length)
     if not length then
         return {
-            tolua = function(data, field)
-                return data:unpack('z', field.position)
+            tolua = function(raw, field)
+                return raw:unpack('z', field.position + 1)
             end,
-            toc = function(str, field)
-                return str .. ('\0'):rep(4 - (#str + field.position) % 4)
+            toc = function(instance, value, field)
+                ffi.copy(instance, value .. ('\0'):rep(4 - (#value + field.position) % 4))
             end,
         }
     end
@@ -225,12 +241,12 @@ structs.string = function(length)
     if not string_types[length] then
         local new = structs.make_type('char')[length]
 
-        new.tolua = function(raw)
-            return ffi.string(raw)
+        new.tolua = function(value, field)
+            return ffi.string(value)
         end
 
-        new.toc = function(str)
-            return #str >= length and str:sub(0, length) or str .. ('\0'):rep(length - #str)
+        new.toc = function(instance, value, field)
+            ffi.copy(instance, #value >= length and value:sub(1, length - 1) .. '\0' or value .. ('\0'):rep(length - #value))
         end
 
         string_types[length] = new
@@ -245,12 +261,12 @@ structs.data = function(length)
     if not data_types[length] then
         local new = structs.make_type('char')[length]
 
-        new.tolua = function(raw)
-            return ffi.string(raw, length)
+        new.tolua = function(value, field)
+            return ffi.string(value, length)
         end
 
-        new.toc = function(str)
-            return #str >= length and str:sub(0, length) or str .. ('\0'):rep(length - #str)
+        new.toc = function(instance, value, field)
+            ffi.copy(instance, #value >= length and value:sub(1, length - 1) .. '\0' or value .. ('\0'):rep(length - #value))
         end
 
         data_types[length] = new
@@ -270,12 +286,12 @@ do
     local now = os.time()
     local off = os.difftime(now, os.time(os.date('!*t', now)))
 
-    structs.time.tolua = function(ts)
-        return ts + off
+    structs.time.tolua = function(value, field)
+        return value + off
     end
 
-    structs.time.toc = function(ts)
-        return ts - off
+    structs.time.toc = function(instance, value, field)
+        instance = value - off
     end
 end
 
@@ -298,7 +314,7 @@ structs.encoded = function(size, bits, lookup_string)
     end
 
     new.tolua = function()
-        return function(value)
+        return function(value, field)
             local res = {}
             for i, v in ipairs({value:unpack(pack_str)}) do
                 res[i] = lua_lookup[v]
@@ -308,14 +324,15 @@ structs.encoded = function(size, bits, lookup_string)
     end
 
     new.toc = function()
-        return function(value)
+        return function(instance, value, field)
             local res = {}
             local index = 0
             for c in value:gmatch('.') do
                 res[index] = c_lookup[c]
                 index = index + 1
             end
-            return pack_str:pack(unpack(res))
+            local str = pack_str:pack(unpack(res))
+            ffi.copy(instance, #str >= size and str:sub(1, size - 1) .. '\0' or str .. ('\0'):rep(#str - size))
         end
     end
 
@@ -334,7 +351,7 @@ structs.boolbit = function(base, bits)
     local new = structs.bit(base, bits or 1)
 
     if bits ~= nil then
-        new.tolua = function(value)
+        new.tolua = function(value, field)
             local res = {}
             for i = 1, bits do
                 res[i] = bit.band(bit.rshift(value, i - 1), 1) == 1
@@ -342,22 +359,22 @@ structs.boolbit = function(base, bits)
             return res
         end
 
-        new.toc = function(value)
+        new.toc = function(instance, value, field)
             local res = 0
             for i, v in pairs(value) do
                 if v then
                     res = bit.bor(res, bit.lshift(1, i - 1))
                 end
             end
-            return res
+            instance = res
         end
     else
-        new.tolua = function(value)
+        new.tolua = function(value, field)
             return value == 1
         end
 
-        new.toc = function(value)
-            return value and 1 or 0
+        new.toc = function(instance, value, field)
+            instance = value and 1 or 0
         end
     end
 
@@ -365,7 +382,12 @@ structs.boolbit = function(base, bits)
 end
 
 structs.ptr = function(base)
-    return structs.make_type(base.cdef .. '*')
+    local new = structs.make_type(base.cdef .. '*')
+
+    new.base = base
+    new.ptr = true
+
+    return new
 end
 
 return structs

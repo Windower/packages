@@ -73,14 +73,14 @@ local model = struct({
 })
 
 local resistances = struct({
-    fire                = {0x34, uint16},
-    wind                = {0x36, uint16},
-    lightning           = {0x38, uint16},
-    light               = {0x3A, uint16},
-    ice                 = {0x3C, uint16},
-    earth               = {0x3E, uint16},
-    water               = {0x40, uint16},
-    dark                = {0x42, uint16},
+    fire                = {0x0, uint16},
+    wind                = {0x2, uint16},
+    lightning           = {0x4, uint16},
+    light               = {0x6, uint16},
+    ice                 = {0x8, uint16},
+    earth               = {0xA, uint16},
+    water               = {0xC, uint16},
+    dark                = {0xE, uint16},
 })
 
 local combat_skill = struct({
@@ -94,7 +94,7 @@ local crafting_skill = struct({
     capped              = {0x00, boolbit(uint16), offset=15},
 })
 
-local party_status_effects   = struct({
+local party_status_effects = struct({
     id                  = {0x00, entity},
     index               = {0x04, entity_index},
     status_effect_mask  = {0x08, data(8)},
@@ -110,7 +110,7 @@ local unity = struct({
 local types = {
     incoming = {},
     outgoing = {},
-})
+}
 
 -- Zone update
 types.incoming[0x00A] = struct({
