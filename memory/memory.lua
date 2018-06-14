@@ -12,18 +12,6 @@ local byte_ptr = ffi.typeof('char**')
 local meta_array
 local meta_struct
 
-local debug = function(t)
-    local res = ''
-
-    for key, value in pairs(t) do
-        if key ~= 'cdef' then
-            res = res .. tostring(key) .. '=' .. tostring(value) .. ', '
-        end
-    end
-
-    return '{' .. res .. '}'
-end
-
 local do_get_magic
 do_get_magic = function(instance, type)
     if type.ptr == true then
@@ -117,7 +105,7 @@ return setmetatable({}, {
         do
             local cached = fixed_types[name]
             if cached ~= nil then
-                return cached
+                return do_get_magic(cached, types[name])
             end
         end
 
