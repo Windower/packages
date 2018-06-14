@@ -160,13 +160,7 @@ local keywords = {
     ['while'] = true,
 }
 
-structs.struct = function(fields)
-    local sig_info
-    if fields[1] ~= nil then
-        sig_info = fields[1]
-        fields[1] = nil
-    end
-
+structs.struct = function(fields, info)
     local arranged = {}
     for label, data in pairs(fields) do
         local full = {
@@ -187,12 +181,12 @@ structs.struct = function(fields)
     end)
 
     local new
-    if sig_info ~= nil then
+    if info ~= nil then
         new = structs.make_type(make_cdef(arranged) .. '*')
 
-        new.signature = sig_info[1]
-        new.offsets = sig_info.offsets or {}
-        new.static_offsets = sig_info.static_offsets or {}
+        new.signature = info[1]
+        new.offsets = info.offsets or {}
+        new.static_offsets = info.static_offsets or {}
     else
         new = structs.make_type(make_cdef(arranged))
     end

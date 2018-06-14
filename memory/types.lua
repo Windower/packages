@@ -1,6 +1,12 @@
 local structs = require('structs')
 
-local struct = structs.struct
+local struct = function(info, type)
+    if type == nil then
+        return structs.struct(info)
+    end
+
+    return structs.struct(type, info)
+end
 
 local tag = structs.tag
 local string = structs.string
@@ -32,29 +38,29 @@ local fourcc = string(0x04)
 
 local types = {}
 
-local render = struct {
+local render = struct({
     framerate_divisor       = {0x030, uint32},
     aspect_ratio            = {0x2F0, float},
-}
+})
 
-local world_coord = struct {
+local world_coord = struct({
     x                       = {0x0, float},
     z                       = {0x4, float},
     y                       = {0x8, float}, 
     w                       = {0xC, float},
-}
+})
 
-local animation = struct {
+local animation = struct({
     value                   = {0x0, fourcc},
-}
+})
 
-local linkshell_color = struct {
+local linkshell_color = struct({
     red                     = {0x0, uint8},
     green                   = {0x1, uint8},
     blue                    = {0x2, uint8},
-}
+})
 
-local model = struct {
+local model = struct({
     head                    = {0x0, uint16},
     body                    = {0x2, uint16},
     hands                   = {0x4, uint16},
@@ -62,9 +68,9 @@ local model = struct {
     feet                    = {0x8, uint16},
     main                    = {0xA, uint16},
     ranged                  = {0xC, uint16},
-}
+})
 
-local entity = struct {
+local entity = struct({
     pos_display             = {0x004, world_coord},
     heading                 = {0x018, float}, -- E=0  N=+pi/2   W=+/-pi S=-pi/2
     pos                     = {0x024, world_coord},
@@ -112,55 +118,47 @@ local entity = struct {
     -- npc_walk_pos_1          = {0x15C, uint16},
     -- npc_walk_pos_2          = {0x15E, uint16},
     -- npc_walk_mode           = {0x160, uint16},
-}
+})
 
-types.misc2_graphics = struct {
-    {'894E188B15????????33FF6A24893D'},
+types.misc2_graphics = struct({'894E188B15????????33FF6A24893D'}, {
     render                  = {0x000, ptr(render)},
     footstep_effects        = {0x174, bool},
     clipping_plane_entity   = {0x1AC, float},
     clipping_plane_map      = {0x1BC, float},
     aspect_ratio_option     = {0x2EC, uint32},
     animation_framerate     = {0x304, uint32},
-}
+})
 
-types.volumes = struct {
-    {'33DBF3AB6A10881D????????C705'},
+types.volumes = struct({'33DBF3AB6A10881D????????C705'}, {
     menu                    = {0x1C, float},
     footsteps               = {0x20, float},
-}
+})
 
-types.auto_disconnect = struct {
-    {'6A00E8????????8B44240883C40485C07505A3'},
+types.auto_disconnect = struct({'6A00E8????????8B44240883C40485C07505A3'}, {
     enabled                 = {0x00, bool},
     last_active_time        = {0x04, uint32}, -- in ms, unknown offset
     timeout_time            = {0x08, uint32}, -- in ms
     active                  = {0x10, bool},
-}
+})
 
-types.gamma_adjustment = struct {
-    {'83EC205355568BF18B0D', static_offsets = {0}},
+types.gamma_adjustment = struct({'83EC205355568BF18B0D', static_offsets = {0}}, {
     red                     = {0x7F8, float},
     green                   = {0x7FC, float},
     blue                    = {0x800, float},
     _dupe_red               = {0x804, float},
     _dupe_green             = {0x808, float},
     _dupe_blue              = {0x80C, float},
-}
+})
 
-types.entity_array = struct {
-    {'8B560C8B042A8B0485'},
-    array                   = {0x00, ptr(entity)[0x900]},
-}
+types.entity_array = struct({'8B560C8B042A8B0485'}, ptr(entity)[0x900])
 
-types.account_info = struct {
-    {'538B5C240856578BFB83C9FF33C053F2AEA1'},
+types.account_info = struct({'538B5C240856578BFB83C9FF33C053F2AEA1'}, {
     version                 = {0x248, string(0x10)},
     ip                      = {0x260, ip},
     port                    = {0x26C, uint16},
     id                      = {0x314, entity},
     name                    = {0x318, pc_name},
     server                  = {0x390, uint8},
-}
+})
 
 return types
