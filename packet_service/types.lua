@@ -2,6 +2,11 @@ local structs = require('structs')
 
 local struct = structs.struct
 
+local multiple = function(info)
+    info.multiple = true
+    return info
+end
+
 local tag = structs.tag
 local string = structs.string
 local data = structs.data
@@ -105,6 +110,12 @@ local unity = struct({
     -- 0=None, 1=Pieuje, 2=Ayame, 3=Invincible Shield, 4=Apururu, 5=Maat, 6=Aldo, 7=Jakoh Wahcondalo, 8=Naja Salaheem, 9=Flavira
     id                  = {0x00, bit(uint32, 5), offset=0},
     points              = {0x00, bit(uint32, 16), offset=10},
+})
+
+local job_point_info = struct({
+    capacity_points     = {0x00, uint16},
+    job_points          = {0x02, uint16},
+    job_points_spent    = {0x04, uint16},
 })
 
 local types = {
@@ -444,6 +455,42 @@ types.incoming[0x061] = struct({
 types.incoming[0x062] = struct({
     combat_skills       = {0x7C, combat_skill[0x30], lookup='skills', lookup_index=0x00},
     crafting_skills     = {0xDC, crafting_skill[0x0A], lookup='skills', lookup_index=0x30},
+})
+
+-- Set Update
+-- This packet likely varies based on jobs, but currently I only have it worked out for Monstrosity.
+-- It also appears in three chunks, so it's double-varying.
+-- Packet was expanded in the March 2014 update and now includes a fourth packet, which contains CP values.
+types.incoming[0x063] = multiple({
+    base = struct({
+        type            = {0x00, uint16},
+    }),
+    lookups = {'type'},
+    [0x02] = struct({
+        flags           = {0x02, data(7)}, -- The 3rd bit of the last byte is the flag that indicates whether or not you are xp capped (blue levels)
+    }),
+    [0x03] = struct({
+        flags1          = {0x02, data(2)}, -- Consistently D8 for me
+        flags2          = {0x04, data(2)}, -- Vary when I change species
+        flags3          = {0x06, data(2)}, -- Consistent across species
+        monstrosity_rank= {0x08, uint8}, -- 00 = Mon, 01 = NM, 02 = HM
+        infamy          = {0x0E, uint16},
+        instinct_flags  = {0x18, data(0x40)}, -- Bitpacked 2-bit values. 0 = no instincts from that species, 1 == first instinct, 2 == first and second instinct, 3 == first, second, and third instinct.
+        monster_levels  = {0x58, data(0x80)}, -- Mapped onto the item ID for these creatures. (00 doesn't exist, 01 is rabbit, 02 is behemoth, etc.)
+    }),
+    [0x04] = struct({
+        slime_level     = {0x82, uint8},
+        spriggan_level  = {0x83, uint8},
+        instinct_flags  = {0x84, data(0x0C)}, -- Contains job/race instincts from the 0x03 set. Has 8 unused bytes. This is a 1:1 mapping.
+        variants_flags  = {0x90, data(0x20)}, -- Does not show normal monsters, only variants. Bit is 1 if the variant is owned. Length is an estimation including the possible padding.
+    }),
+    [0x05] = struct({
+        job_points      = {0x08, job_point_info[0x18], lookup='jobs'}
+    }),
+    [0x09] = struct({
+        status_effects  = {0x04, uint16[0x20]},
+        durations       = {0x44, time[0x20]},
+    }),
 })
 
 types.incoming[0x076] = struct({

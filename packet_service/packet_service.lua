@@ -20,6 +20,16 @@ local history = {
     },
 }
 
+local multi_index = function(base, indices)
+    for _, index in ipairs(indices) do
+        if base == nil then
+            return nil
+        end
+        base = base[index]
+    end
+    return base
+end
+
 local history_raw = history.raw
 local history_parsed = history.parsed
 
@@ -67,35 +77,61 @@ copy_fields = function(packet, raw, instance, fields)
 
         packet[field.label] = data
     end
+
+    return packet
+end
+
+local parse_chunk = function(packet, ptr, type)
+    local instance = type.ctype()
+    ffi.copy(instance, ptr, type.size)
+
+    return copy_fields(packet, packet.data, instance, type.fields)
+end
+
+local parse_single
+parse_single = function(packet, ptr, type)
+    if type == nil then
+        return packet
+    end
+
+    if type.multiple == nil then
+        return parse_chunk(packet, ptr, type)
+    end
+
+    local packet = parse_single(packet, ptr, type.base)
+    ptr = ptr + type.base.size
+
+    local indices = {}
+    for _, lookup in ipairs(type.lookups) do
+        indices[#indices + 1] = packet[lookup]
+    end
+
+    return parse_single(packet, ptr, multi_index(type, indices))
 end
 
 local parse = function(packet, types, history_raw, history_parsed)
     local id = packet.id
 
-    local type = types[id]
-    if type ~= nil then
-        local instance = type.ctype()
-        ffi.copy(instance, char_ptr(packet.data), type.size)
+    local result = parse_single(packet, char_ptr(packet.data), types[id])
 
-        copy_fields(packet, packet.data, instance, type.fields)
-    end
-
-    history_parsed[id] = packet
+    history_parsed[id] = result
     history_raw[id] = nil
 
-    return packet
+    return result
 end
 
 packets.env = {
     last = function(direction, id)
-        local parsed_packet = history_parsed[direction][id]
+        local history_parsed = history_parsed[direction]
+        local parsed_packet = history_parsed[id]
         if parsed_packet ~= nil then
             return parsed_packet
         end
 
-        local raw_packet = history_raw[direction][id]
+        local history_raw = history_raw[direction]
+        local raw_packet = history_raw[id]
         if raw_packet ~= nil then
-            return parse(raw_packet, types[direction])
+            return parse(raw_packet, types[direction], history_raw, history_parsed)
         end
 
         return nil
