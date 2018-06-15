@@ -27,12 +27,12 @@ do_get_magic = function(instance, type)
     end
 end
 
-local do_set_magic = function(instance, value, type)
+local do_set_magic = function(root_instance, index, value, type)
     local toc = type.toc
     if toc ~= nil then
-        toc(instance, value)
+        toc(root_instance, index, value)
     else
-        instance = value
+        root_instance[index] = value
     end
 end
 
@@ -42,8 +42,7 @@ meta_array = {
         return do_get_magic(instance, data.type)
     end,
     __newindex = function(data, index, value)
-        local instance = data.cdata[index]
-        do_set_magic(instance, value, data.type)
+        do_set_magic(data.cdata, index, value, data.type)
     end,
 }
 
@@ -65,9 +64,8 @@ do
             return do_get_magic(instance, field.type)
         end,
         __newindex = function(data, name, value)
-            local instance = data.cdata[name]
             local field = get_struct_field(data.type.fields, name)
-            do_set_magic(instance, value, field.type)
+            do_set_magic(data.cdata, name, value, field.type)
         end,
     }
 end
@@ -132,12 +130,12 @@ return setmetatable({}, {
         do
             local cached = fixed_types[name]
             if cached ~= nil then
-                return do_set_magic(cached, types[name])
+                return do_set_magic(cached, 0, value, types[name])
             end
         end
 
         local type, ptr = setup_name(name)
 
-        do_set_magic(get_instance(type, ptr), value, type)
+        do_set_magic(get_instance(type, ptr), 0, value, type)
     end,
 })

@@ -235,8 +235,8 @@ structs.string = function(length)
             tolua = function(raw, field)
                 return raw:unpack('z', field.position + 1)
             end,
-            toc = function(instance, value, field)
-                ffi.copy(instance, value .. ('\0'):rep(4 - (#value + field.position) % 4))
+            toc = function(instance, index, value, field)
+                ffi.copy(instance[index], value .. ('\0'):rep(4 - (#value + field.position) % 4))
             end,
         }
     end
@@ -248,8 +248,8 @@ structs.string = function(length)
             return ffi.string(value)
         end
 
-        new.toc = function(instance, value, field)
-            ffi.copy(instance, #value >= length and value:sub(1, length - 1) .. '\0' or value .. ('\0'):rep(length - #value))
+        new.toc = function(instance, index, value, field)
+            ffi.copy(instance[index], #value >= length and value:sub(1, length - 1) .. '\0' or value .. ('\0'):rep(length - #value))
         end
 
         string_types[length] = new
@@ -268,8 +268,8 @@ structs.data = function(length)
             return ffi.string(value, length)
         end
 
-        new.toc = function(instance, value, field)
-            ffi.copy(instance, #value >= length and value:sub(1, length - 1) .. '\0' or value .. ('\0'):rep(length - #value))
+        new.toc = function(instance, index, value, field)
+            ffi.copy(instance[index], #value >= length and value:sub(1, length - 1) .. '\0' or value .. ('\0'):rep(length - #value))
         end
 
         data_types[length] = new
@@ -293,8 +293,8 @@ do
         return value + off
     end
 
-    structs.time.toc = function(instance, value, field)
-        instance = value - off
+    structs.time.toc = function(instance, index, value, field)
+        instance[index] = value - off
     end
 end
 
@@ -327,7 +327,7 @@ structs.encoded = function(size, bits, lookup_string)
     end
 
     new.toc = function()
-        return function(instance, value, field)
+        return function(instance, index, value, field)
             local res = {}
             local index = 0
             for c in value:gmatch('.') do
@@ -335,7 +335,7 @@ structs.encoded = function(size, bits, lookup_string)
                 index = index + 1
             end
             local str = pack_str:pack(unpack(res))
-            ffi.copy(instance, #str >= size and str:sub(1, size - 1) .. '\0' or str .. ('\0'):rep(#str - size))
+            ffi.copy(instance[index], #str >= size and str:sub(1, size - 1) .. '\0' or str .. ('\0'):rep(#str - size))
         end
     end
 
@@ -362,22 +362,22 @@ structs.boolbit = function(base, bits)
             return res
         end
 
-        new.toc = function(instance, value, field)
+        new.toc = function(instance, index, value, field)
             local res = 0
             for i, v in pairs(value) do
                 if v then
                     res = bit.bor(res, bit.lshift(1, i - 1))
                 end
             end
-            instance = res
+            instance[index] = res
         end
     else
         new.tolua = function(value, field)
             return value == 1
         end
 
-        new.toc = function(instance, value, field)
-            instance = value and 1 or 0
+        new.toc = function(instance, index, value, field)
+            instance[index] = value and 1 or 0
         end
     end
 
