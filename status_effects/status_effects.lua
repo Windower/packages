@@ -1,6 +1,6 @@
-local shared = require('shared')
-local res    = require('resources')
 local enum   = require('enumerable')
+local res    = require('resources')
+local shared = require('shared')
 
 local fetch_status_effects = shared.get('status_effects_service', 'status_effects')
 

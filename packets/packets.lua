@@ -1,5 +1,5 @@
+local event = require('event')
 local shared = require('shared')
-require('event')
 
 local fetch = shared.get('packet_service', 'packets')
 

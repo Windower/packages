@@ -1,10 +1,10 @@
 local account = require('account')
-local files = require('files')
-local windower = require('windower')
 local event = require('event')
-require('table')
-require('string')
-require('os')
+local files = require('files')
+local os = require('os')
+local string = require('string')
+local table = require('table')
+local windower = require('windower')
 
 local info_cache = {}
 

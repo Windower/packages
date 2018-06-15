@@ -1,7 +1,7 @@
-local types = require('memory:types')
-local scanner = require('scanner')
 local ffi = require('ffi')
-require('string')
+local scanner = require('scanner')
+local string = require('string')
+local types = require('memory:types')
 
 local scan_results = {}
 local fixed_types = {}

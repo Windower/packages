@@ -1,5 +1,6 @@
 local res = require('resources')
 local shared = require('shared')
+
 local fetch_player = shared.get('player_service', 'player')
 
 local indexers = {

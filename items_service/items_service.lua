@@ -1,6 +1,6 @@
-local shared = require('shared')
 local packets = require('packets')
 local res = require('resources')
+local shared = require('shared')
 
 items = shared.new('items')
 equipment = shared.new('equipment')

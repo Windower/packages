@@ -1,7 +1,7 @@
-require('string')
-require('table')
-require('bit')
+local bit = require('bit')
 local ffi = require('ffi')
+local string = require('string')
+local table = require('table')
 
 local codes =
 {

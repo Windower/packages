@@ -1,11 +1,11 @@
-local types = require('types')
-local packet = require('packet')
-local shared = require('shared')
 local event = require('event')
 local ffi = require('ffi')
-require('table')
-require('string')
-require('pack')
+local pack = require('pack')
+local packet = require('packet')
+local shared = require('shared')
+local string = require('string')
+local table = require('table')
+local types = require('types')
 
 packets = shared.new('packets')
 

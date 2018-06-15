@@ -28,9 +28,9 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ]]
 
-chat = require('chat')
-require('string')
-bit = require('bit')
+local bit = require('bit')
+local chat = require('chat')
+local string = require('string')
 
 --[[blist = S{
     'Paintbrush of Souls',  -- Requires correct timing, should not be skipped

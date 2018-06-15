@@ -1,6 +1,6 @@
-local shared = require('shared')
 local enumerable = require('enumerable')
 local res = require('resources')
+local shared = require('shared')
 
 local fetch = shared.get('items_service', 'items')
 

@@ -1,6 +1,6 @@
-local packets = require('packets')
-local memory = require('memory')
 local event = require('event')
+local memory = require('memory')
+local packets = require('packets')
 local shared = require('shared')
 
 account_data = shared.new('account_data')

@@ -1,4 +1,4 @@
-require('io')
+local io = require('io')
 
 local files = {}
 

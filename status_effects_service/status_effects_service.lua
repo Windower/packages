@@ -1,9 +1,9 @@
-require('os')
-require('bit')
+local bit = require('bit')
+local os = require('os')
 local pack   = require('pack')
 local packet = require('packet')
-local shared = require('shared')
 local packets = require('packets')
+local shared = require('shared')
 
 status_effects = shared.new('status_effects')
 

@@ -28,10 +28,10 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ]]
 
-chat = require('chat')
-command = require('command')
-require('os')
-require('string')
+local chat = require('chat')
+local command = require('command')
+local os = require('os')
+local string = require('string')
 
 chat.text_added:register(function(obj)
     local time = '\u{F7C9}[%H:%M:%S]\u{F601} '

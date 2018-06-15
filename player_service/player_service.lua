@@ -1,9 +1,9 @@
-require('bit')
+local bit = require('bit')
 local pack = require('pack')
 local packet = require('packet')
 local packets = require('packets')
-local shared = require('shared')
 local res = require('resources')
+local shared = require('shared')
 
 player = shared.new('player')
 

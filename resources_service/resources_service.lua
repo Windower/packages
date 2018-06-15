@@ -1,6 +1,6 @@
-require('table')
-require('io')
+local io = require('io')
 local shared = require('shared')
+local table = require('table')
 local windower = require('windower')
 
 resources = shared.new('resources')

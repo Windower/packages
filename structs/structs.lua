@@ -1,10 +1,10 @@
-local ffi = require('ffi');
-require('bit')
-require('string')
-require('os')
-require('math')
-require('table')
-require('pack')
+local ffi = require('ffi')
+local bit = require('bit')
+local string = require('string')
+local os = require('os')
+local math = require('math')
+local table = require('table')
+local pack = require('pack')
 
 local structs = {}
 
