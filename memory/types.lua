@@ -35,7 +35,7 @@ local bool = structs.bool
 
 local ptr = structs.ptr
 
-local entity = tag(uint32, 'entity')
+local entity_id = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
 local percent = tag(uint8, 'percent')
 local ip = tag(uint32, 'ip')
@@ -79,13 +79,13 @@ local entity = struct({
     _dupe_heading           = {0x038, float},
     _dupe_pos               = {0x044, world_coord},
     index                   = {0x074, entity_index},
-    id                      = {0x078, entity},
+    id                      = {0x078, entity_id},
     name                    = {0x07C, npc_name},
     movement_speed          = {0x098, float},
     movement_speed_base     = {0x09C, float},
     distance                = {0x0D8, float},
     _dupe_heading2          = {0x0E4, float},
-    owner                   = {0x0E8, entity},
+    owner                   = {0x0E8, entity_id},
     hp_percent              = {0x0EC, percent},
     target_type             = {0x0EE, uint8}, -- 0 = PC, 1 = NPC, 2 = NPC with fixed model (including various types of books), 3 = Doors and similar objects
     race                    = {0x0EF, uint16},
@@ -94,7 +94,7 @@ local entity = struct({
     freeze                  = {0x11C, bool},
     flags                   = {0x120, uint32[0x06]},
     status                  = {0x168, uint32}, -- Is this type correct?
-    claim_id                = {0x184, entity},
+    claim_id                = {0x184, entity_id},
     animation               = {0x18C, fourcc[0x0A]},
     animation_time          = {0x1B4, uint16},
     animation_step          = {0x1B6, uint16},
@@ -160,7 +160,7 @@ types.account_info = struct({'538B5C240856578BFB83C9FF33C053F2AEA1'}, {
     version                 = {0x248, string(0x10)},
     ip                      = {0x260, ip},
     port                    = {0x26C, uint16},
-    id                      = {0x314, entity},
+    id                      = {0x314, entity_id},
     name                    = {0x318, pc_name},
     server                  = {0x390, uint8},
 })

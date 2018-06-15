@@ -132,7 +132,7 @@ return setmetatable({}, {
         do
             local cached = fixed_types[name]
             if cached ~= nil then
-                return cached
+                return do_set_magic(cached, types[name])
             end
         end
 

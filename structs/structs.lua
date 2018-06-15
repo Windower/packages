@@ -180,6 +180,9 @@ do
 
         new.count = count
         new.base = type
+        if info == nil then
+            new.size = type.size * count
+        end
 
         return new
     end
