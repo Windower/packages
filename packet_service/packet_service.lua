@@ -136,7 +136,7 @@ packets.env = {
 
         return nil
     end,
-    event = function(direction, id)
+    get_event = function(direction, id)
         id = id or 'all'
 
         local reg = registry[direction]

@@ -8,7 +8,7 @@ local get_last = function(_, direction, id)
 end
 
 local make_event = function(_, direction, id)
-    return event(direction, id)
+    return get_event(direction, id)
 end
 
 local registry = {
