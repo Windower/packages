@@ -40,7 +40,7 @@ Get-ChildItem $stagingDir -Directory -Recurse |
                     Write-Host "Tests Passed`n" -ForegroundColor Green
                 } else {
                     Write-Host "Tests Failed`n" -ForegroundColor Red
-                    $passed = $false
+                    $script:passed = $false
                 }
             }
         Pop-Location

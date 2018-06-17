@@ -70,6 +70,11 @@ Get-ChildItem $stagingDir -Directory -Recurse |
     Where-Object { $_.Name -ceq ".test" } |
     Remove-Item -Recurse -Force
 
+"Renaming manifest.tpl.xml files..."
+Get-ChildItem $stagingDir -File -Recurse |
+    Where-Object { $_.Name -ceq "manifest.tpl.xml" } |
+    Rename-Item -NewName "manifest.xml"
+
 function Get-PackageValid ([Parameter(Mandatory=$true)][string[]]$name) {
     $manifest = (Join-Path $name "manifest.xml")
     ([xml](Get-Content $manifest)).package.name -ceq $name
