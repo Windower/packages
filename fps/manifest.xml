@@ -1,0 +1,8 @@
+<package>
+  <name>fps</name>
+  <version>1.0.0.0</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>settings</dependency>
+  </dependencies>
+</package>
