@@ -1,5 +1,6 @@
 local memory = require('memory')
 local settings = require('settings')
+local math = require('math')
 
 local defaults = {
     gameplay = {
