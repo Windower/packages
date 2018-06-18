@@ -9,8 +9,6 @@ equipment.data = {}
 
 equipment.env = {
     next = next,
-    pairs = pairs,
-    type = type,
 }
 
 items.data = {
@@ -34,9 +32,6 @@ items.data = {
 
 items.env = {
     next = next,
-    pairs = pairs,
-    table = table,
-    type = type,
 }
 
 local new_item = function(bag, index)

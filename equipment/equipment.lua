@@ -4,27 +4,20 @@ local shared = require('shared')
 
 local fetch = shared.get('items_service', 'equipment')
 
-local indexer = function(data, index)
-    return data[index]
-end
-
-local iterator = function(data, index)
-    return {next(data, index)}
+local iterate = function(data, index)
+    return next(data, index)
 end
 
 local equip_meta = {
     __index = function(t, index)
-        
         if type(index) == 'string' then
+            local lc_slot = index:lower()
             index = (res.slots:first(function(v, k, t)
-                local lc_slot = index:lower()
                 return v.english:lower() == lc_slot
             end) or {}).id or index
         end
         
-        local success, data = assert(fetch(indexer, index))
-
-        return data
+        return fetch:read(index)
     end,
 
     __newindex = function()
@@ -33,9 +26,7 @@ local equip_meta = {
 
     __pairs = function(t)
         return function(t, index)
-            local success, data = assert(fetch(iterator, index))
-
-            return unpack(data)
+            return fetch:call(iterate, index)
         end, t, nil
     end,
 }

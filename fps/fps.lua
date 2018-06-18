@@ -11,7 +11,7 @@ local defaults = {
 
 local options = settings.load(defaults)
 
-local times = enumerable.wrap({})
+local times = {}
 
 ui.display(function()
     if #times >= 10 then
@@ -19,7 +19,7 @@ ui.display(function()
     end
     times[#times + 1] = os.clock()
 
-    ui.location(options.y, options.y)
+    ui.location(options.x, options.y)
 
     ui.text(string.format('%.1f', (#times - 1) / (times[#times] - times[1])))
 end)

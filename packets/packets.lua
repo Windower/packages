@@ -4,11 +4,11 @@ local shared = require('shared')
 local fetch = shared.get('packet_service', 'packets')
 
 local get_last = function(_, direction, id)
-    return last(direction, id)
+    return get_last(direction, id)
 end
 
 local make_event = function(_, direction, id)
-    return get_event(direction, id)
+    return make_event(direction, id)
 end
 
 local registry = {
@@ -26,7 +26,7 @@ local make_table = function(direction)
             end
 
             if reg[id] == nil then
-                reg[id] = select(2, assert(fetch(make_event, direction, id)))
+                reg[id] = fetch:call(make_event, direction, id)
             end
 
             local event = reg[id]
@@ -44,7 +44,7 @@ local make_table = function(direction)
             error('Not yet implemented')
         end,
         last = function(id)
-            return select(2, assert(fetch(get_last, direction, id)))
+            return fetch:call(get_last, direction, id)
         end,
     }
 end

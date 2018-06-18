@@ -121,7 +121,7 @@ local parse = function(packet, types, history_raw, history_parsed)
 end
 
 packets.env = {
-    last = function(direction, id)
+    get_last = function(direction, id)
         local history_parsed = history_parsed[direction]
         local parsed_packet = history_parsed[id]
         if parsed_packet ~= nil then
@@ -136,7 +136,7 @@ packets.env = {
 
         return nil
     end,
-    get_event = function(direction, id)
+    make_event = function(direction, id)
         id = id or 'all'
 
         local reg = registry[direction]

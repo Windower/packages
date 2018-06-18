@@ -6,14 +6,14 @@ local fetch_player = shared.get('player_service', 'player')
 local indexers = {
     job_levels = function(t, k)
         if type(k) == 'string' then
-            local job_id = res.jobs:first(function(v) return (v.english == k or v.english_short == k)end).id
+            local job_id = res.jobs:first(function(v) return (v.english == k or v.english_short == k) end).id
             return rawget(t, job_id) or rawget(t, k)
         end
         return rawget(t, k)
     end,
     nations = function(t, k)
         local nations = {'Bastok','windurst'}
-        nations[0] = "San d'Oria"
+        nations[0] = 'San d\'Oria'
         if k == 'name' then
             return nations[t.id] or ''
         else
@@ -53,50 +53,41 @@ local indexers = {
     end,
 }
 
-local get_player_pairs = function(data, key)
-    return {next(data, key)}
-end
-
-local get_player_value = function(data, key)
-    if data[key] ~= nil then
-        return data[key]
-    else 
-        return nil
-    end
+local iterate = function(data, key)
+    return next(data, key)
 end
 
 local player = setmetatable({}, {
-    __index = function(t, k)
-        local _, result = assert(fetch_player(get_player_value, k))
+    __index = function(_, k)
+        local result = fetch_player:read(k)
 
-        if type(result) == 'table' then
-            return setmetatable({}, {
-                __index = function(_, l)
-                    if indexers[k] then
-                        return indexers[k](result, l)
-                    else
-                        return result[l]
-                    end
-                end,
-                __newindex = function() error('This value is read-only.') end,
-                __pairs = function(_) 
-                    return function(_, k)
-                        return next(result, k)
-                    end
-                end,
-                __metatable = false,
-            })
-        else
+        if type(result) ~= 'table' then
             return result
         end
+
+        return setmetatable({}, {
+            __index = function(_, l)
+                if indexers[k] then
+                    return indexers[k](result, l)
+                else
+                    return result[l]
+                end
+            end,
+            __newindex = function() error('This value is read-only.') end,
+            __pairs = function(_) 
+                return function(_, k)
+                    return next(result, k)
+                end
+            end,
+            __metatable = false,
+        })
     end,
     __newindex = function()
         error('This value is read-only.')
     end,
     __pairs = function(t)
-        return function(t, k)
-            local _, result = assert(fetch_player(get_player_pairs, k))
-            return unpack(result)
+        return function(_, k)
+            return fetch_player:call(iterate, k)
         end, t, nil
     end,
     __metatable = false,
