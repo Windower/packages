@@ -68,25 +68,25 @@ local update_item = function(bag, index, count, status, id, bazaar, extdata)
     if extdata then item.extdata = extdata end
 end
 
-packets.incoming.register(0x01C, function(p)
+packets.incoming[0x01C]:register(function(p)
     for i = 0, #items.data.bags do
         items.data.bags[i].size = p.size[i] - 1
     end
 end)
 
-packets.incoming.register(0x01E, function(p)
+packets.incoming[0x01E]:register(function(p)
     update_item(p.bag, p.bag_index, p.count, p.status)
 end)
 
-packets.incoming.register(0x01F, function(p)
+packets.incoming[0x01F]:register(function(p)
     update_item(p.bag, p.bag_index, p.count, p.status, p.item_id)
 end)
 
-packets.incoming.register(0x020, function(p)
+packets.incoming[0x020]:register(function(p)
     update_item(p.bag, p.bag_index, p.count, p.status, p.item_id, p.bazaar, p.extdata)
 end)
 
-packets.incoming.register(0x050, function(p)
+packets.incoming[0x050]:register(function(p)
     if p.bag_index == 0 then
         equipment.data[p.slot_id] = nil
     else

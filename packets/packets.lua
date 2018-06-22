@@ -3,53 +3,82 @@ local shared = require('shared')
 
 local fetch = shared.get('packet_service', 'packets')
 
-local get_last = function(_, direction, id)
-    return get_last(direction, id)
+local get_last = function(_, ...)
+    return get_last(...)
 end
 
-local make_event = function(_, direction, id)
-    return make_event(direction, id)
+local make_event = function(_, ...)
+    return make_event(...)
 end
 
-local registry = {
-    incoming = {},
-    outgoing = {},
+local nesting_meta
+nesting_meta = {
+    __index = function(t, k)
+        local v = setmetatable({}, nesting_meta)
+        t[k] = v
+        return v
+    end,
 }
 
-local make_table = function(direction)
-    local reg = registry[direction]
-    return {
-        register = function(id, fn)
-            if type(id) == 'function' then
-                fn = id
-                id = 'all'
-            end
+local registry = setmetatable({}, nesting_meta)
 
-            if reg[id] == nil then
-                reg[id] = fetch:call(make_event, direction, id)
-            end
+local get_recursive
+get_recursive = function(base, ...)
+    if select('#', ...) == 0 then
+        return base
+    end
 
-            local event = reg[id]
-            event:register(fn)
-        end,
-        unregister = function(id, fn)
-            if type(id) == 'function' then
-                fn = id
-                id = 'all'
-            end
+    if base[...] == nil then
+        base[...] = { fns = {} }
+    end
 
-            reg[id]:unregister(fn)
-        end,
-        new = function()
-            error('Not yet implemented')
-        end,
-        last = function(id)
-            return fetch:call(get_last, direction, id)
-        end,
-    }
+    return get_recursive(base[...], select(2, ...))
 end
 
-return {
-    incoming = make_table('incoming'),
-    outgoing = make_table('outgoing'),
+local fns = {}
+
+local make_table
+local packet_meta = {
+    __index = function(t, k)
+        if k == 'last' then
+            return fetch:call(get_last, unpack(t.path))
+        end
+
+        local new = make_table(t)
+        new.path[#new.path + 1] = k
+        return new
+    end,
 }
+
+fns.register = function(t, fn)
+    local base = get_recursive(registry, unpack(t.path))
+    local event = fetch:call(make_event, unpack(t.path))
+    base.fns[fn] = event
+    event:register(fn)
+end
+
+fns.unregister = function(t, fn)
+    local base = get_recursive(registry, unpack(t.path))
+    base.fns[fn] = nil
+end
+
+fns.new = function(t, values)
+    error('Not yet implemented.')
+end
+
+make_table = function(t)
+    local path = t.path
+    local new_path = {}
+    for i = 1, #path do
+        new_path[i] = path[i]
+    end
+
+    return setmetatable({
+        path = new_path,
+        register = fns.register,
+        unregister = fns.unregister,
+        new = fns.new,
+    }, packet_meta)
+end
+
+return make_table({ path = {} })

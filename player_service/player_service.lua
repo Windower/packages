@@ -22,19 +22,19 @@ player.data = {
 
 do
     local skills = player.data.skills.combat
-    for i = 0x00, 0x30 do
+    for i = 0x00, 0x2F do
         skills[i] = {}
     end
 end
 do
     local skills = player.data.skills.crafting
-    for i = 0x00, 0x0A do
+    for i = 0x00, 0x09 do
         skills[i] = {}
     end
 end
     
 
-packets.incoming.register(0x00D, function(p)
+packets.incoming[0x00D]:register(function(p)
     local data = player.data
     if p.player_id ~= data.id then
         return
@@ -80,7 +80,7 @@ packets.incoming.register(0x00D, function(p)
     end
 end)
 
-packets.incoming.register(0x00A, function(p)
+packets.incoming[0x00A]:register(function(p)
     local data = player.data
     data.id = p.player_id
     data.index = p.player_index
@@ -92,7 +92,7 @@ packets.incoming.register(0x00A, function(p)
     data.hp_percent = p.hp_percent
 end)
 
-packets.incoming.register(0x01B, function(p)
+packets.incoming[0x01B]:register(function(p)
     local data = player.data
     data.main_job_id = p.main_job_id
     data.main_job_level = p.main_job_level
@@ -105,7 +105,7 @@ packets.incoming.register(0x01B, function(p)
     end
 end)
 
-packets.incoming.register(0x037, function(p)
+packets.incoming[0x037]:register(function(p)
     local data = player.data
     data.id = p.id
     data.hp_percent = p.hp_percent
@@ -116,7 +116,7 @@ packets.incoming.register(0x037, function(p)
     data.pet_index = p.pet_index
 end)
 
-packets.incoming.register(0x061, function(p)
+packets.incoming[0x061]:register(function(p)
     local data = player.data
     data.main_job_id = p.main_job_id
     data.main_job_level = p.main_job_level
@@ -135,7 +135,7 @@ packets.incoming.register(0x061, function(p)
     data.exp_required = p.exp_required
 end)
 
-packets.incoming.register(0x062, function(p)
+packets.incoming[0x062]:register(function(p)
     local data = player.data
     data.main_job_id = p.main_job_id
     data.main_job_level = p.main_job_level
@@ -145,17 +145,17 @@ packets.incoming.register(0x062, function(p)
     data.mp_max = p.mp_max
 end)
 
-packets.incoming.register(0x062, function(p)
+packets.incoming[0x062]:register(function(p)
     local data = player.data.skills
     local combat = data.combat
     local crafting = data.crafting
-    for i = 0x00, 0x30 do
+    for i = 0x00, 0x2F do
         local skill = combat[i]
         local packet = p.combat_skills[i]
         skill.level = packet.level
         skill.capped = packet.capped
     end
-    for i = 0x00, 0x0A do
+    for i = 0x00, 0x09 do
         local skill = crafting[i]
         local packet = p.crafting_skills[i]
         skill.level = packet.level
@@ -164,7 +164,7 @@ packets.incoming.register(0x062, function(p)
     end
 end)
 
-packets.incoming.register(0x0CC, function(p)
+packets.incoming[0x0CC]:register(function(p)
     local ls_number = bit.band(p.flags, 0x40) == 0x40 and 2 or 1
     local data = player.data['linkshell' .. ls_number]
     data.name = p.linkshell_name
@@ -174,7 +174,7 @@ packets.incoming.register(0x0CC, function(p)
     data.message.permissions = p.permissions
 end)
 
-packets.incoming.register(0x0DF, function(p)
+packets.incoming[0x0DF]:register(function(p)
     local data = player.data
     if data.id ~= p.id then
         return
@@ -193,7 +193,7 @@ packets.incoming.register(0x0DF, function(p)
     data.sub_job.level = p.sub_job_level
 end)
 
-packets.incoming.register(0x0E2, function(p)
+packets.incoming[0x0E2]:register(function(p)
     local data = player.data
     if data.id ~= p.id then
         return
