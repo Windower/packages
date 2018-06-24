@@ -77,8 +77,8 @@ function Get-PackageValid ([Parameter(Mandatory=$true)][string[]]$name) {
 
 "Removing invalid packages..."
 Get-ChildItem $stagingDir -Directory -Exclude "`$symsrv" -Name |
-    Where-Object { -not (Get-PackageValid $_) } |
-    ForEach-Object { Remove-Item -Recurse -Force $_ }
+    Where-Object { (Test-Path $_) -and -not (Get-PackageValid $_) } |
+    Remove-Item -Recurse -Force
 
 function Get-BoolValue ([object]$value, [bool]$default = $true) {
     if ($value -is [string]) {
@@ -92,6 +92,9 @@ function Get-BoolValue ([object]$value, [bool]$default = $true) {
 function Write-PackageInfo ([Parameter(Mandatory=$true)][string[]]$path,
         [Parameter(Mandatory=$true)][System.XMl.XmlWriter]$writer) {
     $manifest = (Join-Path $path "manifest.xml")
+    if (-not (Test-Path $manifest)) {
+        return
+    }
     $package = ([xml](Get-Content $manifest)).package
     $writer.WriteStartElement("package")
     $writer.WriteElementString("name", $package.name)
@@ -135,7 +138,6 @@ $packagesWriter.WriteStartDocument()
 $packagesWriter.WriteStartElement("packages")
 
 Get-ChildItem $stagingDir -Directory -Exclude "`$symsrv" |
-    Where-Object { Get-PackageValid $_ } |
     ForEach-Object { Write-PackageInfo $_.FullName $packagesWriter }
 
 $packagesWriter.WriteEndElement()
@@ -169,7 +171,14 @@ Get-ChildItem -Force | Remove-Item -Recurse -Force
 "`nCloning deployment repository..."
 $cloneUrl = "https://${env:GITHUB_USERNAME}:${env:GITHUB_TOKEN}@github.com/${env:APPVEYOR_REPO_NAME}.git"
 try { & git clone -q --branch="gh-pages" --depth=1 $cloneUrl . 2>&1 | Out-Null } catch { }
-if (-not $?) { throw "Failed to clone repository" }
+if (-not $?) {
+    Write-Host "Failed to clone gh-pages branch, attempting to create..." -ForegroundColor Red
+    try {
+        & git clone -q --depth=1 $cloneUrl .
+        & git checkout --orphan gh-pages
+    } catch { }
+    if (-not $?) { throw "Failed to create gh-pages branch" }
+}
 "Cleaning gh-pages branch..."
 try { & git rm -rf . 2>&1 | Out-Null } catch { }
 
