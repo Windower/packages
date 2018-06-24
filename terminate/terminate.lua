@@ -7,6 +7,6 @@ ffi.cdef[[
 
 local kernel32 = ffi.load('kernel32')
 
-command.register('terminate', function() 
+command.core.register('terminate', function() 
     kernel32.TerminateProcess(ffi.cast('void*',-1), 0)
 end)
