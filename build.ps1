@@ -64,7 +64,12 @@ Expand-Archive "${luaDir}.zip" -DestinationPath $luaDir
 
 Get-ChildItem -Directory |
     Where-Object { $changedPackages.Contains($_.Name) } |
-    Copy-Item -Destination $stagingDir -Recurse -Force
+    ForEach-Object {
+        Get-ChildItem $_ -File |
+            Where-Object { $_.Name -ceq "manifest.tpl.xml" } |
+            Rename-Item -NewName "manifest.xml"
+        Copy-Item $_ -Destination $stagingDir -Recurse -Force
+    }
 
 New-Item $symbolsDir -ItemType Directory | Out-Null
 Get-ChildItem $stagingDir -Directory -Recurse |

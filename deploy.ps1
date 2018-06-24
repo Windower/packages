@@ -70,19 +70,13 @@ Get-ChildItem $stagingDir -Directory -Recurse |
     Where-Object { $_.Name -ceq ".test" } |
     Remove-Item -Recurse -Force
 
-"Renaming manifest.tpl.xml files..."
-Get-ChildItem $stagingDir -File -Recurse |
-    Where-Object { $_.Name -ceq "manifest.tpl.xml" } |
-    Rename-Item -NewName "manifest.xml"
-
 function Get-PackageValid ([Parameter(Mandatory=$true)][string[]]$name) {
     $manifest = (Join-Path $name "manifest.xml")
-    ([xml](Get-Content $manifest)).package.name -ceq $name
+    (Test-Path $manifest) -and ([xml](Get-Content $manifest)).package.name -ceq $name
 }
 
 "Removing invalid packages..."
 Get-ChildItem $stagingDir -Directory -Exclude "`$symsrv" -Name |
-    Where-Object { Test-Path $_ } |
     Where-Object { -not (Get-PackageValid $_) } |
     ForEach-Object { Remove-Item -Recurse -Force $_ }
 
@@ -141,6 +135,7 @@ $packagesWriter.WriteStartDocument()
 $packagesWriter.WriteStartElement("packages")
 
 Get-ChildItem $stagingDir -Directory -Exclude "`$symsrv" |
+    Where-Object { Get-PackageValid $_ } |
     ForEach-Object { Write-PackageInfo $_.FullName $packagesWriter }
 
 $packagesWriter.WriteEndElement()
@@ -188,7 +183,7 @@ Get-ChildItem $stagingDir | Copy-Item -Destination . -Recurse -Force
 "Committing changes..."
 & git commit -q -m "Deploy packages from commit $env:APPVEYOR_REPO_COMMIT"
 "Pushing to remote..."
-try { & git push -q origin gh-pages 2>&1 | Out-Null } catch { }
-if (-not $?) { throw "Failed push to remote" }
+# try { & git push -q origin gh-pages 2>&1 | Out-Null } catch { }
+# if (-not $?) { throw "Failed push to remote" }
 
 ""
