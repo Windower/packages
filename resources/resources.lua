@@ -3,26 +3,22 @@ local shared = require('shared')
 
 local fetch = shared.get('resources_service', 'resources')
 
-local indexer = function(data, resource_name, index)
-    return data[resource_name][index]
-end
-
-local iterator = function(data, resource_name, index)
-    return {next(data[resource_name], index)}
+local iterate = function(data, resource_name, index)
+    return next(data[resource_name], index)
 end
 
 local constructors = setmetatable({}, {
     __index = function(mts, resource_name)
-        local success, data = assert(fetch(function(data, resource_name)
+        local data = fetch:call(function(data, resource_name)
             return data[resource_name] ~= nil
-        end, resource_name))
+        end, resource_name)
 
         assert(data, 'Resource "' .. resource_name .. '" not found.')
 
         local meta = {}
 
         meta.__index = function(t, index)
-            local success, data = assert(fetch(indexer, resource_name, index))
+            local data = fetch:read(resource_name, index)
             if data == nil then
                 return nil
             end
@@ -34,9 +30,7 @@ local constructors = setmetatable({}, {
 
         meta.__pairs = function(t)
             return function(t, index)
-                local success, data = assert(fetch(iterator, resource_name, index))
-
-                return unpack(data)
+                return fetch:call(iterate, resource_name, index)
             end, t, nil
         end
 

@@ -12,48 +12,31 @@ local indexer = function(data, bag, index)
     return data.bags[bag][index]
 end
 
-local bag_iterator = function(data, index)
-    local k, v = next(data.bags, index)
-    return {k, (v or {}).contents}
+local iterate = function(data, bag, index)
+    return next(data.bags[bag].contents, index)
 end
 
-local iterator = function(data, bag, index)
-    return {next(data.bags[bag].contents, index)}
+local iterate_bag = function(data, bag)
+    local k, v = next(data.bags, bag)
+    return k, (v or {}).contents
 end
 
 local constructors = setmetatable({}, {
     __index = function(mts, bag)
-        
-        local success, data = fetch(function(data, bag)
+        fetch:call(function(data, bag)
             return data.bags[bag] ~= nil
         end, bag)
 
-        if not success then
-            error(data)
-        elseif not data then
-            error("Unknown bag: " .. bag )
-        end
+        assert(data, 'Unknown bag: ' .. bag)
 
         local meta = {
-            __index = function(t, index)
-                local success, data = fetch(indexer, bag, index)
-    
-                if not success then
-                    error(data)
-                end
-    
-                return data
+            __index = function(_, index)
+                return fetch:read(bag, index)
             end,
 
             __pairs = function(t)
                 return function(t, index)
-                    local success, data = fetch(iterator, bag, index)
-
-                    if not success then
-                        error(data)
-                    end
-
-                    return unpack(data)
+                    return fetch:call(iterate, bag, index)
                 end, t, nil
             end,
         }
@@ -66,16 +49,11 @@ local constructors = setmetatable({}, {
 
 return setmetatable({}, {
     __index = function(_, bag)
-
         if type(bag) == 'string' then
             local lc_bag = bag:lower()
             
             if lc_bag == 'gil' then
-                local success, data = fetch(function(data) return data.gil end)
-                if not success then
-                    error(data)
-                end
-                return data
+                return fetch:read('gil')
             end
 
             bag = (res.bags:first(function(v, k, t)
@@ -87,12 +65,7 @@ return setmetatable({}, {
 
     __pairs = function(t)
         return function(t, index)
-            local success, data = fetch(bag_iterator, index)
-
-            if not success then
-                error(data)
-            end
-            return unpack(data)
+            return fetch:call(iterate_bag, index)
         end, t, nil
     end,
 })

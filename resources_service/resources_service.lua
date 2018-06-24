@@ -8,7 +8,7 @@ resources = shared.new('resources')
 resources.data = {}
 
 --TODO: Temporary....
-for path in io.popen('dir "' .. windower.addon_path .. '\\res\\" /s/b'):lines() do
+for path in io.popen('dir "' .. windower.package_path .. '\\res\\" /s/b'):lines() do
     local res, slot_table = dofile(path)
     local res_name = path:match('\\([%a_]+.lua)'):sub(1, -5)
     resources.data[res_name] = res

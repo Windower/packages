@@ -57,11 +57,11 @@ local handle_00B = function(p)
     end)
 end
 
-packets.incoming.register(0x00A, handle_00A)
-packets.incoming.register(0x00B, handle_00B)
+packets.incoming[0x00A]:register(handle_00A)
+packets.incoming[0x00B]:register(handle_00B)
 
-local last_00A = packets.incoming.last(0x00A)
-local last_00B = packets.incoming.last(0x00B)
+local last_00A = packets.incoming[0x00A].last
+local last_00B = packets.incoming[0x00B].last
 
 if last_00A then
     handle_00A(last_00A)
