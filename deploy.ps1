@@ -183,7 +183,7 @@ Get-ChildItem $stagingDir | Copy-Item -Destination . -Recurse -Force
 "Committing changes..."
 & git commit -q -m "Deploy packages from commit $env:APPVEYOR_REPO_COMMIT"
 "Pushing to remote..."
-# try { & git push -q origin gh-pages 2>&1 | Out-Null } catch { }
-# if (-not $?) { throw "Failed push to remote" }
+try { & git push -q origin gh-pages 2>&1 | Out-Null } catch { }
+if (-not $?) { throw "Failed push to remote" }
 
 ""
