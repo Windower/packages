@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$luaUrl = "https://windower.github.io/windower/lua.zip"
+$luaUrl = "http://windower.github.io/windower/lua.zip"
 
 $buildRoot = Join-Path $env:TEMP "windower-build"
 
