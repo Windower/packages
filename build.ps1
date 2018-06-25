@@ -62,6 +62,11 @@ New-Item $luaDir -ItemType Directory | Out-Null
 (New-Object System.Net.WebClient).DownloadFile($luaUrl, "${luaDir}.zip")
 Expand-Archive "${luaDir}.zip" -DestinationPath $luaDir
 
+$docsPath = Join-Path $stagingDir ".docs"
+if (Test-Path $docsPath) {
+    Copy-Item -Path $docsPath -Destination $stagingDir -Recurse -Force
+}
+
 Get-ChildItem -Directory |
     Where-Object { $changedPackages.Contains($_.Name) } |
     ForEach-Object {
