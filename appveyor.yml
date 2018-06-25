@@ -10,10 +10,11 @@ image: Visual Studio 2017
 
 environment:
   BUILD_PATH: C:\build\
-  GITHUB_USERNAME: alphaONE2
-  GITHUB_NAME: alphaONE2
-  GITHUB_EMAIL: iryoku@windower.net
+  GITHUB_USERNAME: WindowerBot
+  GITHUB_NAME: WindowerBot
+  GITHUB_EMAIL: 39810929+WindowerBot@users.noreply.github.com
   GITHUB_TOKEN:
+    secure: m6mZDtWfoHMRrfVTzY2Eq6DNFV8hlvghlTCidTng0J4SBezag38tteGczs16N/EM
 
 init:
   - git config --global core.autocrlf input

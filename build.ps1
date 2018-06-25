@@ -13,9 +13,12 @@ Remove-Item $stagingDir -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $luaDir -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item $symbolsDir -Recurse -Force -ErrorAction SilentlyContinue
 
+New-Item $stagingDir -ItemType Directory | Out-Null
 if ($env:CI) {
     Remove-Item $deployedDir -Recurse -Force -ErrorAction SilentlyContinue
-    & git clone -q --depth=1 --branch="gh-pages" https://github.com/${env:APPVEYOR_REPO_NAME}.git $deployedDir
+    try {
+        & git clone -q --depth=1 --branch="gh-pages" https://github.com/${env:APPVEYOR_REPO_NAME}.git $deployedDir 2>&1 | Out-Null
+    } catch { }
     $buildAll = -not $?
 
     if($env:APPVEYOR_PULL_REQUEST_NUMBER) {
@@ -44,13 +47,11 @@ if ($env:CI) {
             Exit
         }
 
-        New-Item $stagingDir -ItemType Directory | Out-Null
         Get-ChildItem $deployedDir -Directory |
             Where-Object { -not $changedPackages.Contains($_.Name) } |
             Copy-Item -Destination $stagingDir -Recurse -Force
     }
 } else {
-    New-Item $stagingDir -ItemType Directory | Out-Null
     $buildAll = $true
 }
 

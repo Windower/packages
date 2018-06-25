@@ -174,10 +174,9 @@ try { & git clone -q --branch="gh-pages" --depth=1 $cloneUrl . 2>&1 | Out-Null }
 if (-not $?) {
     Write-Host "Failed to clone gh-pages branch, attempting to create..." -ForegroundColor Red
     try {
-        & git clone -q --depth=1 $cloneUrl .
-        & git checkout --orphan gh-pages
+        & git clone -q --depth=1 $cloneUrl . 2>&1 | Out-Null
+        & git checkout --orphan "gh-pages" 2>&1 | Out-Null
     } catch { }
-    if (-not $?) { throw "Failed to create gh-pages branch" }
 }
 "Cleaning gh-pages branch..."
 try { & git rm -rf . 2>&1 | Out-Null } catch { }
