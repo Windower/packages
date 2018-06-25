@@ -185,6 +185,8 @@ try { & git rm -rf . 2>&1 | Out-Null } catch { }
 "Staging files..."
 Get-ChildItem $stagingDir | Copy-Item -Destination . -Recurse -Force
 
+"packages.windower.net" | Out-File "CNAME" -Encoding ASCII -Force
+
 & git config core.autocrlf false
 & git config user.email "$env:GITHUB_EMAIL"
 & git config user.name "$env:GITHUB_NAME"
