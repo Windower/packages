@@ -1,0 +1,9 @@
+<package>
+  <name>send</name>
+  <version>0.1</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>player</dependency>
+    <dependency>ipc</dependency>
+  </dependencies>
+</package>
