@@ -4,7 +4,7 @@ local shared = require('shared')
 local linkshell = shared.new('linkshell')
 
 -- Does this file need this?
-local linkshell.env = {
+linkshell_env = {
     next = next,
 }
   
@@ -14,7 +14,7 @@ local linkshell.data = {
 }
 
 local handle_color = function(p)
-local data = linkshell[1]
+local data = linkshell.data[1]
     data.color.red = p.linkshell_red
     data.color.green = p.linkshell_green
     data.color.blue = p.linkshell_blue
@@ -22,7 +22,7 @@ end
 
 packets.incoming[0x0CC]:register(function(p)
     local ls_number = bit.band(p.flags, 0x40) == 0x40 and 2 or 1
-    local data = linkshell[ls_number]
+    local data = linkshell.data[ls_number]
     data.name = p.linkshell_name
     data.message.timestamp = p.timestamp
     data.message.author = p.player_name
