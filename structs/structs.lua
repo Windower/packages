@@ -75,7 +75,7 @@ local make_cdef = function(arranged)
         end
     end
 
-    return 'struct{' .. table.concat(cdefs, ';') .. ';}'
+    return next(cdefs) and ('struct{' .. table.concat(cdefs, ';') .. ';}') or 'struct{}'
 end
 
 local key_map = {

@@ -107,9 +107,9 @@ end)
 
 packets.incoming[0x037]:register(function(p)
     local data = player.data
-    data.id = p.id
+    data.id = p.player_id
     data.hp_percent = p.hp_percent
-    data.status = p.status
+    data.state = p.state
     data.linkshell1.red = p.linkshell1_red
     data.linkshell1.green = p.linkshell1_green
     data.linkshell1.blue = p.linkshell1_blue
@@ -135,6 +135,7 @@ packets.incoming[0x061]:register(function(p)
     data.exp_required = p.exp_required
 end)
 
+--[[ #BYRTH# I am not sure what this was meant to be
 packets.incoming[0x062]:register(function(p)
     local data = player.data
     data.main_job_id = p.main_job_id
@@ -143,7 +144,7 @@ packets.incoming[0x062]:register(function(p)
     data.sub_job_level = p.sub_job_level
     data.hp_max = p.hp_max
     data.mp_max = p.mp_max
-end)
+end)]]
 
 packets.incoming[0x062]:register(function(p)
     local data = player.data.skills
