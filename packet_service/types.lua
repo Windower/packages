@@ -45,9 +45,12 @@ local flags = tag(uint32, 'flags')
 local title = tag(uint16, 'title')
 local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
 local status_effect = tag(uint8, 'status_effect')
+local skill = tag(uint8, 'skill')
 local indi = tag(uint8, 'indi')
 local ip = tag(uint32, 'ip')
 local chat = tag(uint8, 'chat')
+local ability_recast = tag(uint8, 'ability_recast')
+local action_message = tag(uint16, 'action_messages')
 
 local pc_name = string(0x10)
 local fourcc = string(0x04)
@@ -170,7 +173,7 @@ local shop_item = struct({
     price               = {0x00, uint32},
     item_id             = {0x04, item},
     shop_slot           = {0x06, uint16},
-    craft_skill         = {0x08, uint16, lookup="skills"}, -- Zero on normal shops, has values that correlate to res\skills.
+    craft_skill         = {0x08, skill}, -- Zero on normal shops, has values that correlate to res\skills.
     craft_rank          = {0x0A, uint16}, -- Correlates to Rank able to purchase product from GuildNPC  
 })
 
@@ -199,7 +202,7 @@ local blacklist_entry = struct({
 
 local equipset_build = struct({
     active              = {0x00, boolbit(uint8), offset=0},
-    bag_id              = {0x00, bit(uint8, 6), offset=2, lookup='bags'},
+    bag_id              = {0x00, bit(bag, 6), offset=2},
     bag_index           = {0x01, uint8},
     item_id             = {0x02, item},
 })
@@ -214,7 +217,7 @@ local equipset_entry = struct({
 local ability_recast = struct({
     duration        = {0x00, uint16},
     _known1         = {0x02, uint8, const=0},
-    recast          = {0x03, uint8, lookup='ability_recasts'}, -- recast
+    recast          = {0x03, ability_recast},
 })
 
 local types = {
@@ -526,7 +529,7 @@ types.incoming[0x029] = struct({
     param_2             = {0x0C, uint32},
     actor_index         = {0x10, entity_index},
     target_index        = {0x12, entity_index},
-    message_id          = {0x14, uint16, lookup='action_messages'},
+    message_id          = {0x14, action_message},
 })
 
 
@@ -573,8 +576,8 @@ types.incoming[0x029] = struct({
 --[[  0x2A can also be triggered by spending cruor by buying non-vwnm related items, or even activating/using Flux
       Field1 will be the amount of cruor spent
 ]]
-      
-     
+
+
 --[[ 0x2A can also be triggered by zoning into Abyssea:
      Field1 will be set to your remaining time. 5 at first, then whatever new value when acquiring visiting status.
      0x2A will likely be triggered as well when extending your time limit. Needs verification.
@@ -735,14 +738,14 @@ types.incoming[0x036] = struct({
     -- 0x2000 -- No obvious effect
     -- 0x4000 -- No obvious effect
     -- 0x8000 -- No obvious effect
-    
+
     Flags 0x2B:
     -- 0x01 -- POL Icon :: Actually a flag, overrides everything else but does not affect name color
     -- 0x02 -- No obvious effect
     -- 0x04 -- Disconnection icon :: Actually a flag, overrides everything but POL Icon
     -- 0x08 -- No linkshell
     -- 0x0A -- No obvious effect
-    
+
     -- 0x10 -- No linkshell
     -- 0x20 -- Trial account icon
     -- 0x40 -- Trial account icon
@@ -756,13 +759,13 @@ types.incoming[0x036] = struct({
     -- Bit 0x80 overpowers those bits
     -- Bit 0x80 combines with 0x04 and 0x02 to make SGM.
     -- These are basically flags, but they can be combined to mean different things sometimes.
-    
+
     Flags 0x2D:
     -- 0x10 -- No obvious effect
     -- 0x20 -- Event mode? Can't activate the targeting cursor but can still spin the camera
     -- 0x40 -- No obvious effect
     -- 0x80 -- Invisible model
-    
+
     Flags 0x2F:
     -- 0x02 -- No obvious effect
     -- 0x04 -- No obvious effect
@@ -771,16 +774,16 @@ types.incoming[0x036] = struct({
     -- 0x20 -- Bazaar icon
     -- 0x40 -- Event status again? Can't activate the targeting cursor but can move the camera.
     -- 0x80 -- No obvious effects
-    
+
     Flags 0x34:
     -- 0x01 -- No obvious effect
     -- 0x02 -- No obvious effect
     -- 0x04 -- Autoinvite icon
-    
+
     Flags 0x36:
     -- 0x08 -- Terror flag
     -- 0x10 -- No obvious effect
-    
+
     Ballista stuff:
     -- 0x0020 -- No obvious effect
     -- 0x0040 -- San d'Oria ballista flag
@@ -791,7 +794,7 @@ types.incoming[0x036] = struct({
     -- 0x0400 -- I don't know anything about ballista
     -- 0x0800 -- and I still don't D:<
     -- 0x1000 -- and I still don't D:<
-    
+
     Flags 0x37: Probably tried into ballista stuff too
     -- 0x0020 -- No obvious effect
     -- 0x0040 -- Individually, this bit has no effect. When combined with 0x20, it prevents you from returning to a walking animation after you stop (sliding along the ground while bound)
@@ -916,14 +919,16 @@ types.incoming[0x044] = multiple({
         job             = {0x00, job},
         subjob          = {0x01, bool},
     }),
+
     lookups = {'job'},
+
     -- For BLM, 0x29 to 0x43 appear to represent the black magic that you know
-    
+
     --PUP
     [0x12] = struct({
         automaton_head  = {0x04, uint8}, -- Harlequinn 1, Valoredge 2, Sharpshot 3, Stormwaker 4, Soulsoother 5, Spiritreaver 6
         automaton_frame = {0x05, uint8}, -- Harlequinn 20, Valoredge 21, Sharpshot 22, Stormwaker 23
-        attachments     = {0x06, item[0x0C], lookup='items'}, -- #BYRTH# Attachment assignments are based off their position in the equipment list. Offset is +2237, so Strobe is 01, etc.
+        attachments     = {0x06, item[0x0C]}, -- #BYRTH# Attachment assignments are based off their position in the equipment list. Offset is +2237, so Strobe is 01, etc.
         available_heads = {0x14, data(4)}, -- Flags for the available heads (Position corresponds to Item ID shifted down by 8192)
         available_bodies= {0x18, data(4)}, -- #BYRTH# Flags for the available bodies (position corresponds to the item ID shifted down by ???)
         available_attach= {0x34, data(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments {position corresponds to the item ID shifted down by 2237)
@@ -953,10 +958,11 @@ types.incoming[0x044] = multiple({
         base_chr        = {0x94, uint16},
         max_chr         = {0x96, uint16}
     }),
+
     --MON
     [0x17] = struct({
         species         = {0x04, uint16},
-        instinct        = {0x08, item[12], lookup='items'}, -- Order is based off their position in the equipment list. #BYRTH# offset?
+        instinct        = {0x08, item[12]}, -- Order is based off their position in the equipment list. #BYRTH# offset?
         -- Zeroing everything after byte 0x22 has no notable effect.
     })
 })
@@ -980,9 +986,9 @@ types.incoming[0x04B] = multiple({
     base = struct({
         type            = {0x00, uint8},
     }),
-    
+
     lookups = {'type'},
-    
+
     -- Seems to occur when refreshing the d-box after any change (or before changes).
     [0x01] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -993,14 +999,14 @@ types.incoming[0x04B] = multiple({
         player_name     = {0x10, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
         -- 0x20: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
         timestamp       = {0x24, time},
-        item_id         = {0x2C, item, lookup='items'},
+        item_id         = {0x2C, item},
         -- 0x2E: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
         -- 0x30: Flags? 01/04 00 00 00 observed
         count           = {0x34, uint16},
         -- 0x36: Unknown short
         -- 0x38: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
     }),
-    
+
     -- Seems to occur when placing items into the d-box.
     [0x02] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1009,8 +1015,8 @@ types.incoming[0x04B] = multiple({
         _known3         = {0x04, uint32, const=0xFFFFFFFF},
         packet_number   = {0x08, uint8},
     }),
-    
-    
+
+
     -- Two occur per item that is actually sent (hitting "OK" to send).
     [0x03] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1019,7 +1025,7 @@ types.incoming[0x04B] = multiple({
         _known3         = {0x04, uint32, const=0xFFFFFFFF},
         packet_number   = {0x08, uint8},
     }),
-    
+
     -- Two occur per sent item that is Canceled.
     [0x04] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1030,14 +1036,14 @@ types.incoming[0x04B] = multiple({
         player_name     = {0x10, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
         -- 0x20: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
         timestamp       = {0x24, time},
-        item_id         = {0x2C, item, lookup='items'},
+        item_id         = {0x2C, item},
         -- 0x2E: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
         -- 0x30: Flags? 01/04 00 00 00 observed
         count           = {0x34, uint16},
         -- 0x36: Unknown short
         -- 0x38: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
     }),
-    
+
     -- Seems to occur quasi-randomly. Can be seen following spells.
     [0x05] = struct({
         _known1         = {0x01, uint8, const=0xFF},
@@ -1046,7 +1052,7 @@ types.incoming[0x04B] = multiple({
         _known3         = {0x04, uint32, const=0xFFFFFFFF},
         packet_number   = {0x08, uint8},
     }),
-    
+
     -- 0x06 Occurs for new items.
     -- Two of these are sent sequentially. The first one doesn't seem to contain much/any
     -- information and the second one is very similar to a type 0x01 packet
@@ -1061,14 +1067,14 @@ types.incoming[0x04B] = multiple({
         player_name     = {0x10, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
         -- 0x20: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
         timestamp       = {0x24, time},
-        item_id         = {0x2C, item, lookup='items'},
+        item_id         = {0x2C, item},
         -- 0x2E: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
         -- 0x30: Flags? 01/04 00 00 00 observed
         count           = {0x34, uint16},
         -- 0x36: Unknown short
         -- 0x38: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
     }),
-    
+
     -- Occurs as the first packet when removing something from the send box.
     [0x07] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1077,7 +1083,7 @@ types.incoming[0x04B] = multiple({
         _known3         = {0x04, uint32, const=0xFFFFFFFF},
         packet_number   = {0x08, uint8},
     }),
-    
+
     -- Occurs as the first packet when removing or dropping something from the delivery box.
     [0x08] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1088,14 +1094,14 @@ types.incoming[0x04B] = multiple({
         player_name     = {0x10, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
         -- 0x20: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
         timestamp       = {0x24, time},
-        item_id         = {0x2C, item, lookup='items'},
+        item_id         = {0x2C, item},
         -- 0x2E: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
         -- 0x30: Flags? 01/04 00 00 00 observed
         count           = {0x34, uint16},
         -- 0x36: Unknown short
         -- 0x38: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
     }),
-    
+
     -- Occurs when someone returns something from the delivery box.
     [0x09] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1104,7 +1110,7 @@ types.incoming[0x04B] = multiple({
         _known3         = {0x04, uint32, const=0xFFFFFFFF},
         packet_number   = {0x08, uint8},
     }),
-    
+
     -- Occurs as the second packet when removing something from the delivery box or send box.
     [0x0A] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1115,14 +1121,14 @@ types.incoming[0x04B] = multiple({
         player_name     = {0x10, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
         -- 0x20: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
         timestamp       = {0x24, time},
-        item_id         = {0x2C, item, lookup='items'},
+        item_id         = {0x2C, item},
         -- 0x2E: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
         -- 0x30: Flags? 01/04 00 00 00 observed
         count           = {0x34, uint16},
         -- 0x36: Unknown short
         -- 0x38: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
     }),
-    
+
     -- Occurs as the second packet when dropping something from the delivery box.
     [0x0B] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1131,7 +1137,7 @@ types.incoming[0x04B] = multiple({
         _known3         = {0x04, uint32, const=0xFFFFFFFF},
         packet_number   = {0x08, uint8},
     }),
-    
+
     -- Sent after entering a name and hitting "OK" in the outbox.
     [0x0C] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1140,7 +1146,7 @@ types.incoming[0x04B] = multiple({
         _known3         = {0x04, uint32, const=0xFFFFFFFF},
         packet_number   = {0x08, uint8},
     }),
-    
+
     -- Sent after requesting the send box, causes the client to open the send box dialogue.
     [0x0D] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1150,7 +1156,7 @@ types.incoming[0x04B] = multiple({
         success         = {0x08, uint8}, -- When in a 0x0D/0x0E type, 01 grants request to open inbox/outbox. With FA you get "Please try again later"
         packet_number   = {0x08, uint8},
     }),
-    
+
     -- Sent after requesting the delivery box, causes the client to open the delivery box dialogue.
     [0x0E] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1160,7 +1166,7 @@ types.incoming[0x04B] = multiple({
         success         = {0x08, uint8}, -- When in a 0x0D/0x0E type, 01 grants request to open inbox/outbox. With FA you get "Please try again later"
         packet_number   = {0x08, uint8},
     }),
-    
+
     -- Sent after closing the delivery box or send box.
     [0x0F] = struct({
         _known1         = {0x01, uint8, const=0x01},
@@ -1179,23 +1185,23 @@ types.incoming[0x04C] = multiple({
     base = struct({
         type            = {0x00, uint8},
     }),
-    
+
     lookups = {'type'},
-    
+
     -- Open menu response
     [0x02] = struct({
         _known1         = {0x01, uint8, const=0xFF}, 
         success         = {0x02, bool},
         _known2         = {0x03, uint8, const=0x00},    
     }),
-    
+
     -- Unknown Logout
     [0x03] = struct({
         _known1         = {0x01, uint8, const=0xFF}, 
         success         = {0x02, bool},
         _known2         = {0x03, uint8, const=0x00},
     }),
-    
+
     -- Sell item confirmation
     [0x04] = struct({
         _known1         = {0x01, uint8, const=0xFF}, 
@@ -1206,7 +1212,7 @@ types.incoming[0x04C] = multiple({
         item_id         = {0x0A, item},
         stack           = {0x0C, bool},
     }),
-    
+
     -- Open sales status menu
     [0x05] = struct({
         _known1         = {0x01, uint8, const=0xFF}, 
@@ -1237,7 +1243,7 @@ types.incoming[0x04C] = multiple({
         price           = {0x28, uint32},
         timestamp       = {0x34, time},
     }),
-    
+
     -- Sell item confirmation - Sent twice. On action completion, the second seems to contain updated information
     [0x0B] = struct({
         sale_slot       = {0x01, uint8},
@@ -1254,7 +1260,7 @@ types.incoming[0x04C] = multiple({
         -- 0x2C~0x33: Only populated (with what?) on the second packet
         timestamp       = {0x34, time},
     }),
-    
+
     -- Sales item status - Sent twice. On action completion, the second seems to contain updated information
     [0x0D] = struct({
         sale_slot       = {0x01, uint8},
@@ -1270,7 +1276,7 @@ types.incoming[0x04C] = multiple({
         price           = {0x28, uint32},
         timestamp       = {0x34, time},
     }),
-    
+
     -- ???
     [0x10] = struct({
         _known1         = {0x01, uint8, const=0x00}, 
@@ -1314,16 +1320,7 @@ types.incoming[0x050] = struct({
 
 -- Model Change
 types.incoming[0x051] = struct({
-    face                = {0x00, uint8},
-    race                = {0x01, uint8, lookup='races'},
-    head                = {0x02, uint16},
-    body                = {0x04, uint16},
-    hands               = {0x06, uint16},
-    legs                = {0x08, uint16},
-    feet                = {0x0A, uint16},
-    main                = {0x0C, uint16},
-    sub                 = {0x0E, uint16},
-    ranged              = {0x10, uint16},
+    model               = {0x00, model},
     -- 0x12: May varying meaningfully, but it's unclear
 })
 
@@ -1343,38 +1340,39 @@ types.incoming[0x055] = multiple({
     base = struct({
         type            = {0x80, uint8}, -- Only goes from 0~6 at present, but has 3 bytes after it.
     }),
+
     lookups = {'type'},
-    
+
     [0x00] = struct({
         key_items_available = {0x00, data(0x40)}, -- Likely to the key items resource with no offset, so position 0 is KI 0
         key_items_examined  = {0x40, data(0x40)}, -- Likely to the key items resource with no offset, so position 0 is KI 0
     }),
-    
+
     [0x01] = struct({
         key_items_available = {0x00, data(0x40)}, -- Likely to the key items resource with a 512 offset, so position 0 is KI 512
         key_items_examined  = {0x40, data(0x40)}, -- Likely to the key items resource with a 512 offset, so position 0 is KI 512
     }),
-    
+
     [0x02] = struct({
         key_items_available = {0x00, data(0x40)}, -- Likely to the key items resource with a 1024 offset, so position 0 is KI 1024
         key_items_examined  = {0x40, data(0x40)}, -- Likely to the key items resource with a 1024 offset, so position 0 is KI 1024
     }),
-    
+
     [0x03] = struct({
         key_items_available = {0x00, data(0x40)}, -- Likely to the key items resource with a 1536 offset, so position 0 is KI 1536
         key_items_examined  = {0x40, data(0x40)}, -- Likely to the key items resource with a 1536 offset, so position 0 is KI 1536
     }),
-    
+
     [0x04] = struct({
         key_items_available = {0x00, data(0x40)}, -- Likely to the key items resource with a 2048 offset, so position 0 is KI 2048
         key_items_examined  = {0x40, data(0x40)}, -- Likely to the key items resource with a 2048 offset, so position 0 is KI 2048
     }),
-    
+
     [0x05] = struct({
         key_items_available = {0x00, data(0x40)}, -- Likely to the key items resource with a 2560 offset, so position 0 is KI 2560
         key_items_examined  = {0x40, data(0x40)}, -- Likely to the key items resource with a 2560 offset, so position 0 is KI 2560
     }),
-    
+
     [0x06] = struct({
         key_items_available = {0x00, data(0x40)}, -- Likely to the key items resource with a 3072 offset, so position 0 is KI 3072
         key_items_examined  = {0x40, data(0x40)}, -- Likely to the key items resource with a 3072 offset, so position 0 is KI 3072
@@ -1384,7 +1382,7 @@ types.incoming[0x055] = multiple({
 -- Weather Change
 types.incoming[0x057] = struct({
     vanadiel_time       = {0x00, time}, -- Units of minutes.
-    weather             = {0x04, uint8, lookup='weather'},
+    weather             = {0x04, weather},
 })
 
 -- Emote
@@ -1491,12 +1489,12 @@ types.incoming[0x05E] = struct({
     mamool_ja_orders    = {0x9C, bit(uint32,3), offset=16}, -- #BYRTH# Why is this three bits when there are only 3 recorded states for orders?
     halvung_orders      = {0x9C, bit(uint32,3), offset=19},
     arrapago_orders     = {0x9C, bit(uint32,3), offset=22},
-    
+
     -- This is for the stronghold information:
     mamool_ja_stronghold    = {0xA0, bmap_region_info},
     halvung_ja_stronghold   = {0xA4, bmap_region_info},
     arrapago_ja_stronghold  = {0xA8, bmap_region_info},
-    
+
     imperial_standing   = {0xAC, int32},
 })
 
@@ -1547,10 +1545,13 @@ types.incoming[0x063] = multiple({
     base = struct({
         type            = {0x00, uint16},
     }),
+
     lookups = {'type'},
+
     [0x02] = struct({
         flags           = {0x02, data(7)}, -- The 3rd bit of the last byte is the flag that indicates whether or not you are xp capped (blue levels)
     }),
+
     [0x03] = struct({
         flags1          = {0x02, data(2)}, -- Consistently D8 for me
         flags2          = {0x04, data(2)}, -- Vary when I change species
@@ -1560,15 +1561,18 @@ types.incoming[0x063] = multiple({
         instinct_flags  = {0x18, data(0x40)}, -- Bitpacked 2-bit values. 0 = no instincts from that species, 1 == first instinct, 2 == first and second instinct, 3 == first, second, and third instinct.
         monster_levels  = {0x58, data(0x80)}, -- Mapped onto the item ID for these creatures. (00 doesn't exist, 01 is rabbit, 02 is behemoth, etc.)
     }),
+
     [0x04] = struct({
         slime_level     = {0x82, uint8},
         spriggan_level  = {0x83, uint8},
         instinct_flags  = {0x84, data(0x0C)}, -- Contains job/race instincts from the 0x03 set. Has 8 unused bytes. This is a 1:1 mapping.
         variants_flags  = {0x90, data(0x20)}, -- Does not show normal monsters, only variants. Bit is 1 if the variant is owned. Length is an estimation including the possible padding.
     }),
+
     [0x05] = struct({
         job_points      = {0x08, job_point_info[0x18], lookup='jobs'}
     }),
+
     [0x09] = struct({
         status_effects  = {0x04, uint16[0x20]},
         durations       = {0x44, time[0x20]},
@@ -1601,8 +1605,9 @@ types.incoming[0x065] = struct({
         type            = {0x00, bit(uint16, 6), offset=0},
         packet_length   = {0x00, bit(uint16, 10), offset=6}, -- Length of packet in bytes excluding the header and any padding after the pet name
     }),
+
     lookups = {'type'},
-    
+
     [0x02] = struct({
         pet_index       = {0x02, entity_index},
         pet_id          = {0x04, entity},
@@ -1654,7 +1659,7 @@ types.incoming[0x06F] = struct({
     -- 0x03: fields.lua implies this byte is junk
     item                = {0x04, item},
     lost_item           = {0x06, item[8]},
-    skill               = {0x16, uint8[4], lookup='skills'},
+    skill               = {0x16, skill[4]},
     skillup             = {0x1A, uint8[4]}, -- divided by 10
     crystal             = {0x1E, item},
 })
@@ -1667,7 +1672,7 @@ types.incoming[0x070] = struct({
     -- 0x03: fields.lua implies this byte is junk
     item                = {0x04, item},
     lost_item           = {0x06, item[8]},
-    skill               = {0x16, uint8[4], lookup='skills'}, -- Not totally sure about this
+    skill               = {0x16, skill[4]}, -- Not totally sure about this
     player_name         = {0x1A, pc_name},
 })
 
@@ -1794,9 +1799,9 @@ types.incoming[0x0C9] = multiple({
         target_index    = {0x04, entity_index},
         type            = {0x06, uint8}, -- fn=e+{0x0C9} ?
     }),
+
     lookups = {'type'},
-    
-    
+
     -- Metadata
     [0x01] = struct({
         icon_set_subtype= {0x0A, uint8},
@@ -1811,7 +1816,7 @@ types.incoming[0x0C9] = multiple({
         sub_job_level   = {0x21, uint8},
         -- 0x22~0x4C: At least the first two bytes and the last twelve bytes are junk, possibly more.
     }),
-    
+
     -- Equipment listing
     [0x03] = struct({
         count           = {0x07, uint8},
@@ -2056,9 +2061,9 @@ types.incoming[0x110] = struct({
 
 -- Eminence Update
 types.incoming[0x111] = struct({
-    roe_quests          = {0x00, roe_quest[30]},
+    roe_quests              = {0x00, roe_quest[30]},
     -- 0x78~0xFB: All 0s observed. Likely reserved in case they decide to expand allowed objectives.
-    limited_time_roe_quest = {0xFC, roe_quest},
+    limited_time_roe_quest  = {0xFC, roe_quest},
 })
 
 -- RoE Quest Log
@@ -2128,84 +2133,84 @@ types.incoming[0x115] = struct({
 
 -- Equipset Build Response
 types.incoming[0x116] = struct({
-    equipment       = {0x00, equipset_build[0x10], lookup='slots'}, -- Ordered according to equipment slot ID
+    equipment           = {0x00, equipset_build[0x10], lookup='slots'}, -- Ordered according to equipment slot ID
 })
 
 -- Equipset
 types.incoming[0x117] = struct({
-    count           = {0x00, uint8},
-    equipment       = {0x04, equipset_entry[0x10]}, -- #BYRTH# This is problematic. Should be indexed by count
-    old_equipment   = {0x44, equipset_entry[0x10]}, -- This is my memory
+    count               = {0x00, uint8},
+    equipment           = {0x04, equipset_entry[0x10]}, -- #BYRTH# This is problematic. Should be indexed by count
+    old_equipment       = {0x44, equipset_entry[0x10]}, -- This is my memory
 })
 
 -- Currency Info (Currencies2)
 types.incoming[0x118] = struct({
-    bayld           = {0x00, int32},
-    kinetic_units   = {0x04, uint16},
+    bayld                   = {0x00, int32},
+    kinetic_units           = {0x04, uint16},
     coalition_imprimaturs   = {0x06, uint8},
     -- 0x07 seems to be unused currently
-    obsidian_fragments  = {0x08, int32},
-    lebondopt_wings = {0x0C, uint16},
-    pulchridopt_wings   = {0x0E, uint16},
-    mweya_plasm     = {0x10, int32},
-    ghastly_stones  = {0x14, uint8},
-    ['ghastly_stones_1']   = {0x15, uint8}, -- #BYRTH# Should revisit if structs.lua becomes compatible with + in keys
-    ['ghastly_stones_2']   = {0x16, uint8},
-    verdigris_stones   = {0x17, uint8},
-    ['verdigris_stones_1'] = {0x18, uint8},
-    ['verdigris_stones_2'] = {0x19, uint8},
-    wailing_stones  = {0x1A, uint8},
-    ['wailing_stones_1']   = {0x1B, uint8},
-    ['wailing_stones_2']   = {0x1C, uint8},
-    snowslit_stones = {0x1D, uint8},
-    ['snowslit_stones_1']  = {0x1E, uint8},
-    ['snowslit_stones_2']  = {0x1F, uint8},
-    snowtip_stones  = {0x20, uint8},
-    ['snowtip_stones_1']   = {0x21, uint8},
-    ['snowtip_stones_2']   = {0x22, uint8},
-    snowdim_stones  = {0x23, uint8},
-    ['snowdim_stones_1']   = {0x24, uint8},
-    ['snowdim_stones_2']   = {0x25, uint8},
-    snoworb_stones  = {0x26, uint8},
-    ['snoworb_stones_1']   = {0x27, uint8},
-    ['snoworb_stones_2']   = {0x28, uint8},
-    leafslit_stones = {0x29, uint8},
-    ['leafslit_stones_1']  = {0x2A, uint8},
-    ['leafslit_stones_2']  = {0x2B, uint8},
-    leaftip_stones  = {0x2C, uint8},
-    ['leaftip_stones_1']   = {0x2D, uint8},
-    ['leaftip_stones_2']   = {0x2E, uint8},
-    leafdim_stones  = {0x2F, uint8},
-    ['leafdim_stones_1']   = {0x30, uint8},
-    ['leafdim_stones_2']   = {0x31, uint8},
-    leaforb_stones  = {0x32, uint8},
-    ['leaforb_stones_1']   = {0x33, uint8},
-    ['leaforb_stones_2']   = {0x34, uint8},
-    duskslit_stones = {0x35, uint8},
-    ['duskslit_stones_1']  = {0x36, uint8},
-    ['duskslit_stones_2']  = {0x37, uint8},
-    dusktip_stones  = {0x38, uint8},
-    ['dusktip_stones_1']   = {0x39, uint8},
-    ['dusktip_stones_2']   = {0x3A, uint8},
-    duskdim_stones  = {0x3B, uint8},
-    ['duskdim_stones_1']   = {0x3C, uint8},
-    ['duskdim_stones_2']   = {0x3D, uint8},
-    duskorb_stones  = {0x3E, uint8},
-    ['duskorb_stones_1']   = {0x3F, uint8},
-    ['duskorb_stones_2']   = {0x40, uint8},
-    pellucid_stone  = {0x41, uint8},
-    fern_stone      = {0x42, uint8},
-    taupe_stone     = {0x43, uint8},
+    obsidian_fragments      = {0x08, int32},
+    lebondopt_wings         = {0x0C, uint16},
+    pulchridopt_wings       = {0x0E, uint16},
+    mweya_plasm             = {0x10, int32},
+    ghastly_stones          = {0x14, uint8},
+    ghastly_stones_1        = {0x15, uint8}, -- #BYRTH# Should revisit if structs.lua becomes compatible with + in keys
+    ghastly_stones_2        = {0x16, uint8},
+    verdigris_stones        = {0x17, uint8},
+    verdigris_stones_1      = {0x18, uint8},
+    verdigris_stones_2      = {0x19, uint8},
+    wailing_stones          = {0x1A, uint8},
+    wailing_stones_1        = {0x1B, uint8},
+    wailing_stones_2        = {0x1C, uint8},
+    snowslit_stones         = {0x1D, uint8},
+    snowslit_stones_1       = {0x1E, uint8},
+    snowslit_stones_2       = {0x1F, uint8},
+    snowtip_stones          = {0x20, uint8},
+    snowtip_stones_1        = {0x21, uint8},
+    snowtip_stones_2        = {0x22, uint8},
+    snowdim_stones          = {0x23, uint8},
+    snowdim_stones_1        = {0x24, uint8},
+    snowdim_stones_2        = {0x25, uint8},
+    snoworb_stones          = {0x26, uint8},
+    snoworb_stones_1        = {0x27, uint8},
+    snoworb_stones_2        = {0x28, uint8},
+    leafslit_stones         = {0x29, uint8},
+    leafslit_stones_1       = {0x2A, uint8},
+    leafslit_stones_2       = {0x2B, uint8},
+    leaftip_stones          = {0x2C, uint8},
+    leaftip_stones_1        = {0x2D, uint8},
+    leaftip_stones_2        = {0x2E, uint8},
+    leafdim_stones          = {0x2F, uint8},
+    leafdim_stones_1        = {0x30, uint8},
+    leafdim_stones_2        = {0x31, uint8},
+    leaforb_stones          = {0x32, uint8},
+    leaforb_stones_1        = {0x33, uint8},
+    leaforb_stones_2        = {0x34, uint8},
+    duskslit_stones         = {0x35, uint8},
+    duskslit_stones_1       = {0x36, uint8},
+    duskslit_stones_2       = {0x37, uint8},
+    dusktip_stones          = {0x38, uint8},
+    dusktip_stones_1        = {0x39, uint8},
+    dusktip_stones_2        = {0x3A, uint8},
+    duskdim_stones          = {0x3B, uint8},
+    duskdim_stones_1        = {0x3C, uint8},
+    duskdim_stones_2        = {0x3D, uint8},
+    duskorb_stones          = {0x3E, uint8},
+    duskorb_stones_1        = {0x3F, uint8},
+    duskorb_stones_2        = {0x40, uint8},
+    pellucid_stone          = {0x41, uint8},
+    fern_stone              = {0x42, uint8},
+    taupe_stone             = {0x43, uint8},
     -- 0x44~0x45: Unknown
-    escha_beads     = {0x46, uint16},
-    escha_silt      = {0x48, int32},
-    potpourri       = {0x4C, uint16},
+    escha_beads             = {0x46, uint16},
+    escha_silt              = {0x48, int32},
+    potpourri               = {0x4C, uint16},
     -- Rest of the packet is either useless or unmapped
 })
 
 -- Ability timers
 types.incoming[0x119] = struct({
-    recasts         = {0x00, ability_recast[0x1F]},
+    recasts             = {0x00, ability_recast[0x1F]},
 })
 
 return types
