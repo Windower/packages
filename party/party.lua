@@ -16,6 +16,19 @@ return setmetatable({}, {
         local member = memory.party.members[key - 1]
         return member.active and member or nil
     end,
+    __pairs = function(_)
+        return function(_, k)
+            k = k + 1
+            for i = k, 17 do
+                local member = memory.party.members[k]
+                if member.active then
+                    return k, member
+                end
+            end
+
+            return nil, nil
+        end, nil, -1
+    end,
 })
 
 --[[
