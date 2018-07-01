@@ -1379,6 +1379,83 @@ types.incoming[0x055] = multiple({
     }),
 })
 
+--[[enums.quest_mission_log = {
+    [0x0030] = 'Completed Campaign Missions',
+    [0x0038] = 'Completed Campaign Missions (2)',       -- Starts at index 256
+    [0x0050] = 'Current San d\'Oria Quests',
+    [0x0058] = 'Current Bastok Quests',
+    [0x0060] = 'Current Windurst Quests',
+    [0x0068] = 'Current Jeuno Quests',
+    [0x0070] = 'Current Other Quests',
+    [0x0078] = 'Current Outlands Quests',
+    [0x0080] = 'Current TOAU Quests and Missions (TOAU, WOTG, Assault, Campaign)',
+    [0x0088] = 'Current WOTG Quests',
+    [0x0090] = 'Completed San d\'Oria Quests',
+    [0x0098] = 'Completed Bastok Quests',
+    [0x00A0] = 'Completed Windurst Quests',
+    [0x00A8] = 'Completed Jeuno Quests',
+    [0x00B0] = 'Completed Other Quests',
+    [0x00B8] = 'Completed Outlands Quests',
+    [0x00C0] = 'Completed TOAU Quests and Assaults',
+    [0x00C8] = 'Completed WOTG Quests',
+    [0x00D0] = 'Completed Missions (Nations, Zilart)',
+    [0x00D8] = 'Completed Missions (TOAU, WOTG)',
+    [0x00E0] = 'Current Abyssea Quests',
+    [0x00E8] = 'Completed Abyssea Quests',
+    [0x00F0] = 'Current Adoulin Quests',
+    [0x00F8] = 'Completed Adoulin Quests',
+    [0x0100] = 'Current Coalition Quests', 
+    [0x0108] = 'Completed Coalition Quests', 
+    [0xFFFF] = 'Current Missions',               
+}]]
+
+-- There are 27 variations of this packet to populate different quest information.
+-- Current quests, completed quests, and completed missions (where applicable) are represented by bit flags where the position
+-- corresponds to the quest index in the respective DAT.
+-- "Current Mission" fields refer to the mission ID, except COP, SOA, and ROV, which represent a mapping of some sort(?)
+-- Additionally, COP, SOA, and ROV do not have a "completed" missions packet, they are instead updated with the current mission.
+-- Quests will remain in your 'current' list after they are completed unless they are repeatable.
+
+types.incoming[0x056] = multiple({
+    base = struct({
+        type        = {0x20, uint16},
+    }),
+    lookups = {'type'},
+    
+    [0x0080] = struct({
+        current_toau_quest  = {0x00, data(16)},
+        current_assault_mission = {0x10, uint32},
+        current_toau_mission    = {0x14, uint32},
+        current_wotg_mission    = {0x18, uint32},
+        current_campaign_mission= {0x1C, uint32},
+    }),
+    [0x00C0] = struct({
+        completed_toau_quests   = {0x00, data(16)},
+        completed_assaults      = {0x10, data(16)},
+    }),
+    [0x00D0] = struct({
+        completed_sandoria_missions = {0x00, data(8)},
+        completed_bastok_missions   = {0x08, data(8)},
+        completed_windurst_missions = {0x10, data(8)},
+        completed_rotz_missions     = {0x18, data(8)},
+    }),
+    [0x00D8] = struct({
+        completed_toau_missions = {0x00, data(8)},
+        completed_wotg_missions = {0x08, data(8)},
+    }),
+    [0xFFFF] = struct({
+        nation      = {0x00, uint32},
+        current_nation_mission  = {0x04, uint32},
+        current_rotz_mission    = {0x08, uint32},
+        current_cop_mission     = {0x0C, uint32}, -- doesn't correspond directly to .dat
+        current_acp_mission     = {0x14, bit(uint16, 4), offset=0},
+        current_mkd_mission     = {0x14, bit(uint16, 4), offset=4},
+        current_asa_mission     = {0x14, bit(uint16, 4), offset=8},
+        current_soa_mission     = {0x18, uint32},
+        current_rov_mission     = {0x1C, uint32},
+    }),
+})
+
 -- Weather Change
 types.incoming[0x057] = struct({
     vanadiel_time       = {0x00, time}, -- Units of minutes.
