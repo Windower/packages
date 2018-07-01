@@ -187,7 +187,7 @@ packets.incoming[0x0DF]:register(function(p)
     data.tp = p.tp
     data.hp_percent = p.hp_percent
     data.mp_percent = p.mp_percent
-    data.main_job.id = p.main_job
+    data.main_job.id = p.main_job_id
     data.main_job.level = p.main_job_level
     data.sub_job.id = p.sub_job
     data.sub_job.level = p.sub_job_level

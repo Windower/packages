@@ -4,34 +4,29 @@ local shared = require('shared')
 
 local fetch = shared.get('items_service', 'items')
 
-local indexer = function(data, bag, index)
-    if type(index) == 'number' then
-        return data.bags[bag].contents[index]
-    end
-
-    return data.bags[bag][index]
-end
-
 local iterate = function(data, bag, index)
-    return next(data.bags[bag].contents, index)
+    return next(data.bags[bag], index)
 end
 
 local iterate_bag = function(data, bag)
-    local k, v = next(data.bags, bag)
-    return k, (v or {}).contents
+    return next(data.bags, bag)
 end
 
 local constructors = setmetatable({}, {
     __index = function(mts, bag)
-        fetch:call(function(data, bag)
+        local ok = fetch:call(function(data, bag)
             return data.bags[bag] ~= nil
         end, bag)
 
-        assert(data, 'Unknown bag: ' .. bag)
+        assert(ok, 'Unknown bag: ' .. bag)
 
         local meta = {
             __index = function(_, index)
-                return fetch:read(bag, index)
+                if index == 'size' then
+                    return fetch:read('sizes', bag)
+                end
+
+                return fetch:read('bags', bag, index)
             end,
 
             __pairs = function(t)
@@ -41,7 +36,7 @@ local constructors = setmetatable({}, {
             end,
         }
 
-        local constructor = enumerable(meta)
+        local constructor = enumerable.init_type(meta)
         mts[bag] = constructor
         return constructor
     end,

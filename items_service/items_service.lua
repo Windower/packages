@@ -13,20 +13,21 @@ equipment.env = {
 
 items.data = {
     bags = {
-        [0]  = { size = 0, contents = {} },
-        [1]  = { size = 0, contents = {} },
-        [2]  = { size = 0, contents = {} },
-        [3]  = { size = 0, contents = {} },
-        [4]  = { size = 0, contents = {} },
-        [5]  = { size = 0, contents = {} },
-        [6]  = { size = 0, contents = {} },
-        [7]  = { size = 0, contents = {} },
-        [8]  = { size = 0, contents = {} },
-        [9]  = { size = 0, contents = {} },
-        [10] = { size = 0, contents = {} },
-        [11] = { size = 0, contents = {} },
-        [12] = { size = 0, contents = {} },
+        [0]  = { },
+        [1]  = { },
+        [2]  = { },
+        [3]  = { },
+        [4]  = { },
+        [5]  = { },
+        [6]  = { },
+        [7]  = { },
+        [8]  = { },
+        [9]  = { },
+        [10] = { },
+        [11] = { },
+        [12] = { },
     },
+    sizes = {},
     gil = 0,
 }
 
@@ -46,15 +47,15 @@ local update_item = function(bag, index, count, status, id, bazaar, extdata)
     end
 
     if count == 0 then
-        items.data.bags[bag].contents[index] = nil
+        items.data.bags[bag][index] = nil
         return
     end
 
-    if not items.data.bags[bag].contents[index] then 
-        items.data.bags[bag].contents[index] = new_item(bag, index)
+    if not items.data.bags[bag][index] then 
+        items.data.bags[bag][index] = new_item(bag, index)
     end
 
-    local item = items.data.bags[bag].contents[index]
+    local item = items.data.bags[bag][index]
 
     item.count = count
     item.status = status
@@ -70,7 +71,7 @@ end
 
 packets.incoming[0x01C]:register(function(p)
     for i = 0, #items.data.bags do
-        items.data.bags[i].size = p.size[i] - 1
+        items.data.sizes[i] = p.size[i] - 1
     end
 end)
 
@@ -90,9 +91,9 @@ packets.incoming[0x050]:register(function(p)
     if p.bag_index == 0 then
         equipment.data[p.slot_id] = nil
     else
-        if not items.data.bags[p.bag_id].contents[p.bag_index] then
-            items.data.bags[p.bag_id].contents[p.bag_index] = new_item(p.bag_id, p.bag_index)
+        if not items.data.bags[p.bag_id][p.bag_index] then
+            items.data.bags[p.bag_id][p.bag_index] = new_item(p.bag_id, p.bag_index)
         end
-        equipment.data[p.slot_id] = items.data.bags[p.bag_id].contents[p.bag_index]
+        equipment.data[p.slot_id] = items.data.bags[p.bag_id][p.bag_index]
     end
 end)
