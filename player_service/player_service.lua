@@ -1,4 +1,3 @@
-local bit = require('bit')
 local pack = require('pack')
 local packet = require('packet')
 local packets = require('packets')
@@ -12,8 +11,6 @@ player.env = {
 }
   
 player.data = {
-    linkshell1 = { message = {}, },
-    linkshell2 = { message = {}, },
     skills = { combat = {}, crafting = {} },
     model = {},
     job_levels = {},
@@ -55,9 +52,6 @@ packets.incoming[0x00D]:register(function(p)
     if p.update_vitals then
         data.hp_percent = p.hp_percent
         data.state = p.state
-        data.linkshell1.red = p.linkshell_red
-        data.linkshell1.green = p.linkshell_green
-        data.linkshell1.blue = p.linkshell_blue
     end
 
     if p.update_name then
@@ -110,9 +104,6 @@ packets.incoming[0x037]:register(function(p)
     data.id = p.player_id
     data.hp_percent = p.hp_percent
     data.state = p.state
-    data.linkshell1.red = p.linkshell1_red
-    data.linkshell1.green = p.linkshell1_green
-    data.linkshell1.blue = p.linkshell1_blue
     data.pet_index = p.pet_index
 end)
 
@@ -163,16 +154,6 @@ packets.incoming[0x062]:register(function(p)
         skill.rank_id = packet.rank_id
         skill.capped = packet.capped
     end
-end)
-
-packets.incoming[0x0CC]:register(function(p)
-    local ls_number = bit.band(p.flags, 0x40) == 0x40 and 2 or 1
-    local data = player.data['linkshell' .. ls_number]
-    data.name = p.linkshell_name
-    data.message.text = p.message
-    data.message.player_name = p.player_name
-    data.message.timestamp = p.timestamp
-    data.message.permissions = p.permissions
 end)
 
 packets.incoming[0x0DF]:register(function(p)
