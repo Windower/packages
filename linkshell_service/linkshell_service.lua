@@ -1,23 +1,23 @@
 local packets = require('packets')
 local shared = require('shared')
 
-local linkshell_data = shared.new('linkshell')
+local linkshell = shared.new('linkshell')
 
 -- Does this file need this?
 local linkshell.env = {
     next = next,
 }
   
-local linkshell = {
+local linkshell.data = {
     [1] = { message = { }, color = { }, },
     [2] = { message = { }, },
 }
 
-handle_color = function(p)
-    local data = linkshell[1]
-        data.color.red = p.linkshell_red
-        data.color.green = p.linkshell_green
-        data.color.blue = p.linkshell_blue
+local handle_color = function(p)
+local data = linkshell[1]
+    data.color.red = p.linkshell_red
+    data.color.green = p.linkshell_green
+    data.color.blue = p.linkshell_blue
 end
 
 packets.incoming[0x0CC]:register(function(p)
@@ -39,13 +39,9 @@ packets.incoming[0x00D]:register(handle_color)
 packets.incoming[0x037]:register(handle_color)
 packets.incoming[0x0C9]:register(handle_color)
 
-local last_00D = packets.incoming[0x00D].last
-local last_037 = packets.incoming[0x037].last
-local last_0C9 = packets.incoming[0x0C9].last
-
-local handler_color(last_00D)
-local handler_color(last_037)
-local handler_color(last_0C9)
+handler_color(packets.incoming[0x00D].last)
+handler_color(packets.incoming[0x037].last)
+handler_color(packets.incoming[0x0C9].last)
 
 --[[
 Copyright © 2018, Windower Dev Team

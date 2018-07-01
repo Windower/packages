@@ -1,6 +1,6 @@
 local shared = require('shared')
 
-local fetch_data = shared.get('linkshell_service', 'linkshell_data')
+local fetch_data = shared.get('linkshell_service', 'linkshell')
 
 local iterate = function(data, key)
     return next(data, key)
