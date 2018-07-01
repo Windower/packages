@@ -20,7 +20,7 @@ entities.get_by_id = function(id)
         return memory.entities[index]
     end
 
-    for i = 0, array_size do
+    for i = player_begin, ally_begin - 1 do
         local entity = memory.entities[i]
         if entity and entity.id == id then
             return entity
