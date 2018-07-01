@@ -256,8 +256,8 @@ types.incoming[0x00A] = struct({
     job_levels          = {0xB8, uint8[0x10], lookup='jobs'},
     stats_base          = {0xC8, stats},
     stats_bonus         = {0xD6, stats},
-    max_hp              = {0xE4, uint32},
-    max_mp              = {0xE8, uint32},
+    hp_max              = {0xE4, uint32},
+    mp_max              = {0xE8, uint32},
 })
 
 -- Zone Response
@@ -397,8 +397,8 @@ types.incoming[0x017] = struct({
 -- Job Info
 types.incoming[0x01B] = struct({
     main_job_id         = {0x04, job},
-    -- 09: Flags or main job level?
-    -- 0A: Flags or sub job level?
+    main_job_level      = {0x05, uint8}, -- #BYRTH# for some reason there is ambiguity about this. Could be flags?
+    sub_job_level       = {0x06, uint8}, 
     sub_job_id          = {0x07, job},
     sub_job_unlocked    = {0x08, boolbit(uint32)},
     sub_jobs_unlocked   = {0x08, bit(uint32, 0x16), offset=1}, -- flags field
@@ -813,9 +813,9 @@ types.incoming[0x037] = struct({
     movement_speed_half = {0x28, bit(uint16, 12), offset=0},
     yalms_per_step      = {0x2A, bit(uint16, 9), offset=0}, -- Determines how quickly your animation walks
     state               = {0x2C, state},
-    linkshell_red       = {0x2D, uint8},
-    linkshell_green     = {0x2E, uint8},
-    linkshell_blue      = {0x2F, uint8},
+    linkshell1_red      = {0x2D, uint8},
+    linkshell1_green    = {0x2E, uint8},
+    linkshell1_blue     = {0x2F, uint8},
     pet_index           = {0x30, bit(uint32, 16), offset=3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
     ballista_stuff      = {0x30, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
     time_offset_maybe   = {0x38, uint32}, -- For me, this is the number of seconds in 66 hours
@@ -1521,7 +1521,7 @@ types.incoming[0x061] = struct({
     attack              = {0x2C, uint16},
     defense             = {0x2E, uint16},
     resistance          = {0x30, resistances},
-    title               = {0x40, title},
+    title_id            = {0x40, title},
     nation_rank         = {0x42, uint16},
     nation_rank_points  = {0x44, uint16}, -- Capped at 0xFFF
     home_point_zone_id  = {0x46, zone},
