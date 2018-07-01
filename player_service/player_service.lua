@@ -14,25 +14,18 @@ player.env = {
 player.data = {
     linkshell1 = { message = {}, },
     linkshell2 = { message = {}, },
-    skills = { combat = {}, crafting = {} },
+    skills = {},
     model = {},
     job_levels = {},
     position = {},
 }
 
 do
-    local skills = player.data.skills.combat
-    for i = 0x00, 0x2F do
+    local skills = player.data.skills
+    for i = 0x00, 0x38 do
         skills[i] = {}
     end
 end
-do
-    local skills = player.data.skills.crafting
-    for i = 0x00, 0x09 do
-        skills[i] = {}
-    end
-end
-    
 
 packets.incoming[0x00D]:register(function(p)
     local data = player.data
@@ -135,29 +128,16 @@ packets.incoming[0x061]:register(function(p)
     data.exp_required = p.exp_required
 end)
 
---[[ #BYRTH# I am not sure what this was meant to be
 packets.incoming[0x062]:register(function(p)
-    local data = player.data
-    data.main_job_id = p.main_job_id
-    data.main_job_level = p.main_job_level
-    data.sub_job_id = p.sub_job_id
-    data.sub_job_level = p.sub_job_level
-    data.hp_max = p.hp_max
-    data.mp_max = p.mp_max
-end)]]
-
-packets.incoming[0x062]:register(function(p)
-    local data = player.data.skills
-    local combat = data.combat
-    local crafting = data.crafting
+    local skills = player.data.skills
     for i = 0x00, 0x2F do
-        local skill = combat[i]
+        local skill = skills[i]
         local packet = p.combat_skills[i]
         skill.level = packet.level
         skill.capped = packet.capped
     end
     for i = 0x00, 0x09 do
-        local skill = crafting[i]
+        local skill = skills[i + 0x2F]
         local packet = p.crafting_skills[i]
         skill.level = packet.level
         skill.rank_id = packet.rank_id
