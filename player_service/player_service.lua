@@ -10,7 +10,7 @@ player = shared.new('player')
 player.env = {
     next = next,
 }
-  
+
 player.data = {
     linkshell1 = { message = {}, },
     linkshell2 = { message = {}, },

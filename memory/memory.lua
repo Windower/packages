@@ -7,15 +7,20 @@ local scan_results = {}
 local fixed_types = {}
 
 local modules = {'FFXiMain.dll', 'polcore.dll', 'polcoreEU.dll'}
-local byte_ptr = ffi.typeof('char**')
+local byte_ptr = ffi.typeof('char*')
+local void_ptr_ptr = ffi.typeof('void**')
 
 local meta_array
 local meta_struct
 
 local do_get_magic
 do_get_magic = function(instance, type)
+    if instance == nil then
+        return nil
+    end
+
     if type.ptr == true then
-        return do_get_magic(instance[0], type.base)
+        return instance and do_get_magic(instance[0], type.base)
     elseif type.count ~= nil and type.cdef ~= 'char' then
         return setmetatable({ cdata = instance, type = type.base }, meta_array)
     elseif type.fields ~= nil then
@@ -89,7 +94,7 @@ local setup_name = function(name)
         assert(ptr ~= nil, 'Signature ' .. type.signature .. ' not found.')
 
         for _, offset in ipairs(type.static_offsets) do
-            ptr = ffi.cast(byte_ptr, ptr)[offset]
+            ptr = ffi.cast(void_ptr_ptr, (ffi.cast(byte_ptr, ptr) + offset))[0]
         end
 
         scan_results[name] = ptr

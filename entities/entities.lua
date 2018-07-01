@@ -1,30 +1,48 @@
 local memory = require('memory')
+local bit = require('bit')
 
 local entities = {}
 
-function entities.get_by_id(id)
-    for k = 0, 0x900, 1 do
-        local entity = memory.entities[k]
-        if entity.cdata ~= nil and entity.id == id then
+local array_size = 0x900
+
+local mob_begin = 0x000
+local player_begin = 0x400
+local ally_begin = 0x700
+
+entities.get_by_id = function(id)
+    if bit.band(id, 0xFF000000) ~= 0 then
+        local sub_mask = bit.band(id, 0x7FF)
+        local index = sub_mask + (bit.band(id, 0x800) ~= 0 and ally_begin or 0)
+        if index < 0 or index > array_size then
+            return nil
+        end
+
+        return memory.entities[index]
+    end
+
+    for i = 0, array_size do
+        local entity = memory.entities[i]
+        if entity and entity.id == id then
             return entity
         end
     end
 end
 
-function entities.get_by_name(name)
-    for k = 0, 0x900, 1 do
-        local entity = memory.entities[k]
-        if entity.cdata ~= nil and entity.name == name then
+entities.get_by_name = function(name)
+    for i = 0, array_size do
+        local entity = memory.entities[i]
+        if entity and entity.name == name then
             return entity
         end
     end
 end
 
-function entities.get_by_index(index)
-    local entity = memory.entities[index]
-    if entity.cdata ~= nil then
-        return entity
-    end
-end
+return setmetatable(entities, {
+    __index = function(_, key)
+        if type(key) ~= 'number' or key < 0 or key > array_size then
+            return nil
+        end
 
-return entities
+        return memory.entities[key]
+    end,
+})
