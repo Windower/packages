@@ -43,6 +43,7 @@ local entity_index = tag(uint16, 'entity_index')
 local percent = tag(uint8, 'percent')
 local ip = tag(uint32, 'ip')
 local rgba = tag(uint8[4], 'rgba')
+local zone = tag(uint16, 'zone')
 
 local pc_name = string(0x10)
 local npc_name = string(0x18)
@@ -158,6 +159,42 @@ local target_array_entry = struct({
     checksum                = {0x24, uint16},
 })
 
+local alliance_info = struct({
+    alliance_leader_id      = {0x00, entity_id},
+    party_1_leader_id       = {0x04, entity_id},
+    party_2_leader_id       = {0x08, entity_id},
+    party_3_leader_id       = {0x0C, entity_id},
+    party_1_index           = {0x10, uint8},
+    party_2_index           = {0x11, uint8},
+    party_3_index           = {0x12, uint8},
+    party_1_count           = {0x13, uint8},
+    party_2_count           = {0x14, uint8},
+    party_3_count           = {0x15, uint8},
+    st_selection            = {0x4C, uint8},
+    st_selection_max        = {0x5E, uint8}, -- 6 for <stpt>, 18 for <stal>
+    _unknown_5F             = {0x5F, uint8}, -- Seems to be FF when in <stpt> or <stal>, otherwise 00
+})
+
+local party_member = struct({
+    alliance_info           = {0x00, ptr(alliance_info)},
+    name                    = {0x06, pc_name},
+    id                      = {0x18, entity_id},
+    index                   = {0x1C, entity_index},
+    hp                      = {0x24, uint32},
+    mp                      = {0x28, uint32},
+    tp                      = {0x2C, uint32},
+    hp_percent              = {0x30, percent},
+    mp_percent              = {0x31, percent},
+    zone_id                 = {0x32, zone},
+    _zone_id2               = {0x34, zone},
+    flags                   = {0x38, uint32},
+    _id2                    = {0x74, entity_id},
+    _hp_percent2            = {0x78, percent},
+    _mp_percent2            = {0x79, percent},
+    active                  = {0x7A, bool},
+    _last                   = {0x7B, data(1)},
+})
+
 local types = {}
 
 types.misc2_graphics = struct({'894E188B15????????33FF6A24893D'}, {
@@ -246,6 +283,10 @@ types.target_array = struct({'53568BF18B480433DB3BCB75065E33C05B59C38B0D&', stat
     _unknown_ptr2           = {0xC4, ptr()}, -- Something related to action target, seems there's one address for spells and one for JA/WS
     _unknown_ptr3           = {0xC8, ptr()}, -- Something related to action target, seems there's one address for spells and one for JA/WS
     _unknown_ptr4           = {0xD0, ptr()}, -- Something related to action target, seems there's one address for spells and one for JA/WS
+})
+
+types.party = struct({'6a0e8bce89442414e8????????8b0d'}, {
+    members                 = {0x2C, party_member[18]},
 })
 
 return types

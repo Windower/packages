@@ -1,0 +1,9 @@
+<package>
+  <name>party</name>
+  <version>1.0.0.0</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>memory</dependency>
+    <dependency>entities</dependency>
+  </dependencies>
+</package>
