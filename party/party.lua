@@ -17,17 +17,17 @@ return setmetatable({}, {
         return member.active and member or nil
     end,
     __pairs = function(_)
-        return function(_, k)
-            k = k + 1
-            for i = k, 17 do
-                local member = memory.party.members[k]
+        return function(_, key)
+            key = key + 1
+            for i = key, 18 do
+                local member = memory.party.members[key - 1]
                 if member.active then
-                    return k, member
+                    return key, member
                 end
             end
 
             return nil, nil
-        end, nil, -1
+        end, nil, 0
     end,
 })
 
