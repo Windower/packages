@@ -1,9 +1,10 @@
 <package>
   <name>items</name>
-  <version>0</version> <!-- 2nd 3rd and 4th numbers are optional, can also have an optional tag string suffix -->
-  <type>library</type> <!-- can also be "service" or "addon" -->
+  <version>0</version>
+  <type>library</type>
   <dependencies>
     <dependency>enumerable</dependency> 
+    <dependency>items_service</dependency>
     <dependency>resources</dependency> 
   </dependencies>
 </package>
