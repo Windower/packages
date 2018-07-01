@@ -16,11 +16,7 @@ local linkshell = setmetatable({}, {
 
         return setmetatable({}, {
             __index = function(_, l)
-                if indexers[k] then
-                    return indexers[k](result, l)
-                else
-                    return result[l]
-                end
+                return result[l]
             end,
             __newindex = function() error('This value is read-only.') end,
             __pairs = function(_) 
