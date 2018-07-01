@@ -43,6 +43,10 @@ local last_00D = packets.incoming[0x00D].last
 local last_037 = packets.incoming[0x037].last
 local last_0C9 = packets.incoming[0x0C9].last
 
+local handler_color(last_00D)
+local handler_color(last_037)
+local handler_color(last_0C9)
+
 --[[
 Copyright © 2018, Windower Dev Team
 All rights reserved.
