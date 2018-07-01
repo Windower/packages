@@ -76,15 +76,15 @@ packets.incoming[0x01C]:register(function(p)
 end)
 
 packets.incoming[0x01E]:register(function(p)
-    update_item(p.bag_id, p.bag_index, p.count, p.status)
+    update_item(p.bag, p.bag_index, p.count, p.status)
 end)
 
 packets.incoming[0x01F]:register(function(p)
-    update_item(p.bag_id, p.bag_index, p.count, p.status, p.item_id)
+    update_item(p.bag, p.bag_index, p.count, p.status, p.item_id)
 end)
 
 packets.incoming[0x020]:register(function(p)
-    update_item(p.bag_id, p.bag_index, p.count, p.status, p.item_id, p.bazaar, p.extdata)
+    update_item(p.bag, p.bag_index, p.count, p.status, p.item_id, p.bazaar, p.extdata)
 end)
 
 packets.incoming[0x050]:register(function(p)
