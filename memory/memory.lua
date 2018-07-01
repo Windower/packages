@@ -20,7 +20,7 @@ do_get_magic = function(instance, type)
     end
 
     if type.ptr == true then
-        return instance and do_get_magic(instance[0], type.base)
+        return do_get_magic(instance[0], type.base)
     elseif type.count ~= nil and type.cdef ~= 'char' then
         return setmetatable({ cdata = instance, type = type.base }, meta_array)
     elseif type.fields ~= nil then
