@@ -17,7 +17,12 @@ entities.get_by_id = function(id)
             return nil
         end
 
-        return memory.entities[index]
+        local entity = memory.entities[index]
+        if not entity or entity.id ~= id then
+            return nil
+        end
+
+        return entity
     end
 
     for i = player_begin, ally_begin - 1 do
