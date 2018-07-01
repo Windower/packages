@@ -1,18 +1,6 @@
-local io = require('io')
 local shared = require('shared')
-local table = require('table')
-local windower = require('windower')
 
 resources = shared.new('resources')
-
-resources.data = {}
-
---TODO: Temporary....
-for path in io.popen('dir "' .. windower.package_path .. '\\res\\" /s/b'):lines() do
-    local res, slot_table = dofile(path)
-    local res_name = path:match('\\([%a_]+.lua)'):sub(1, -5)
-    resources.data[res_name] = res
-end
 
 local remap = {
     en = 'english',
@@ -23,18 +11,23 @@ local remap = {
     jpl = 'japanese_log',
 }
 
--- Set id property and adjust language identifiers of each resource entry
-for _, resource in pairs(resources.data) do
-    for id, entry in pairs(resource) do
-        for from, to in pairs(remap) do
-            entry[to] = entry[from]
-            entry[from] = nil
+resources.data = setmetatable({}, {
+    __index = function(t, k)
+        local resource = require('resources_data:' .. k)
+        t[k] = resource
+
+        -- Set id property and adjust language identifiers of each resource entry
+        for id, entry in pairs(resource) do
+            for from, to in pairs(remap) do
+                entry[to] = entry[from]
+                entry[from] = nil
+            end
         end
-    end
-end
+
+        return resource
+    end,
+})
 
 resources.env = {
-    pairs = pairs,
     next = next,
-    table = table,
 }
