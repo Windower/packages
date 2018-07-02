@@ -2,33 +2,34 @@ local account = require('account')
 local ffi = require('ffi')
 
 ffi.cdef[[
-  bool SetWindowTextW(void* hWnd, wchar_t const* title);
-  void* GetActiveWindow();
-  ]]
+    bool SetWindowTextW(void* hWnd, wchar_t const* title);
+    void* GetActiveWindow();
+]]
   
 local user32 = ffi.load('user32')
 
+--[[
+  Temporary until we provide a command mechanism for wchar_t support
+]]
 local wide = function(str)
-  local ctor = ffi.typeof('wchar_t[?]')
-  local wstr = ctor(#str + 1)
-  for i = 1, #str do
-    wstr[i - 1] = str:byte(i)
-  end
-  return wstr
+    local ctor = ffi.typeof('wchar_t[?]')
+    local wstr = ctor(#str + 1)
+    for i = 1, #str do
+      wstr[i - 1] = str:byte(i)
+    end
+    return wstr
 end
 
 local set_window_title = function(title)
-  local hwnd = user32.GetActiveWindow() 
-  assert(hwnd, 'Could not obtain the current window handle.')
-  assert(type(title) == 'string', 'The window title must be a string.')
-  assert(user32.SetWindowTextW(hwnd, wide(title)), 'Critical error occurred renaming the window.')
+    local hwnd = user32.GetActiveWindow() 
+    assert(hwnd, 'Could not obtain the current window handle.')
+    assert(type(title) == 'string', 'The window title must be a string.')
+    assert(user32.SetWindowTextW(hwnd, wide(title)), 'Critical error occurred renaming the window.')
 end
 
-do 
-  set_window_title(account.logged_in and account.name or 'Final Fantasy XI')
-  account.login:register(function() set_window_title(account.name) end)
-  account.logout:register(function() set_window_title('Final Fantasy XI') end)
-end
+set_window_title(account.logged_in and account.name or 'Final Fantasy XI')
+account.login:register(function() set_window_title(account.name) end)
+account.logout:register(function() set_window_title('Final Fantasy XI') end)
 
 --[[
 Copyright © 2018, Windower Dev Team
