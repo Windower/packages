@@ -1,5 +1,3 @@
-local bit = require('bit')
-local pack = require('pack')
 local shared = require('shared')
 local packets = require('packets')
 
