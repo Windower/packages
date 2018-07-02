@@ -25,10 +25,7 @@ local set_window_title = function(title)
 end
 
 do 
-  if account.logged_in then
-    set_window_title(account.name)
-  end
-
+  set_window_title(account.logged_in and account.name or 'Final Fantasy XI')
   account.login:register(function() set_window_title(account.name) end)
   account.logout:register(function() set_window_title('Final Fantasy XI') end)
 end
