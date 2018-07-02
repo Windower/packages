@@ -1,0 +1,9 @@
+<package>
+  <name>target</name>
+  <version>1.0.0.0</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>memory</dependency>
+    <dependency>player</dependency>
+  </dependencies>
+</package>
