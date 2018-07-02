@@ -1,16 +1,33 @@
 local memory = require('memory')
-local player = require('player')
 
 local key_fns = {
-    t = function() return memory.target_array.targets[memory.target_array.sub_target_active and 1 or 0].entity end,
-    st = function() return memory.target_array.sub_target_active and memory.target_array.targets[0].entity or nil end,
-    me = function() return memory.entities[player.index] end,
+    alliance = function() return memory.party.members[0].alliance_info end
 }
 
 return setmetatable({}, {
     __index = function(_, key)
-        local fn = key_fns[key]
-        return fn and fn() or nil
+        if type(key) ~= 'number' then
+            local fn = key_fns[key]
+            return fn and fn()
+        elseif key < 1 or key > 18 then
+            return nil
+        end
+
+        local member = memory.party.members[key - 1]
+        return member.active and member or nil
+    end,
+    __pairs = function(_)
+        return function(_, key)
+            key = key + 1
+            for i = key, 18 do
+                local member = memory.party.members[key - 1]
+                if member.active then
+                    return key, member
+                end
+            end
+
+            return nil, nil
+        end, nil, 0
     end,
 })
 
