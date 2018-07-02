@@ -1685,15 +1685,15 @@ types.incoming[0x067] = struct({
 -- 2 occurs often even with no pet, contains player index, id and main job level
 -- 3 identifies (potential) pets and who owns them
 -- 4 gives status information about your pet
-    type            = {0x00, bit(uint16, 6), offset=0},
-    packet_length   = {0x00, bit(uint16, 10), offset=6}, -- Length of packet in bytes excluding the header and any padding after the pet name
-        pet_index       = {0x02, entity_index},
-        pet_id          = {0x04, entity},
-        owner_index     = {0x08, entity_index},
+        type                = {0x00, bit(uint16, 6), offset=0},
+        packet_length       = {0x00, bit(uint16, 10), offset=6}, -- Length of packet in bytes excluding the header and any padding after the pet name
+        pet_index           = {0x02, entity_index},
+        pet_id              = {0x04, entity},
+        owner_index         = {0x08, entity_index},
         current_hp_percent  = {0x0A, percent},
         current_mp_percent  = {0x0B, percent},
-        pet_tp          = {0x0C, uint32},
-        --pet_name    = {0x10, pc_name},    -- Is variable-length and isn't always included
+        pet_tp              = {0x0C, uint32},
+        --pet_name            = {0x10, pc_name},    -- Is variable-length and isn't always included
 })
 
 -- Pet Status
