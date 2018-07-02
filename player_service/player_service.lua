@@ -161,8 +161,6 @@ packets.incoming[0x0E2]:register(function(p)
     data.mp_percent = p.mp_percent
 end)
 
-
-
 --[[
 Copyright © 2018, Windower Dev Team
 All rights reserved.
