@@ -98,11 +98,11 @@ local display = struct({
 })
 
 local entity = struct({
-    pos_display             = {0x004, world_coord},
+    position_display        = {0x004, world_coord},
     heading                 = {0x018, float}, -- E=0  N=+pi/2   W=+/-pi S=-pi/2
-    pos                     = {0x024, world_coord},
+    position                = {0x024, world_coord},
     _dupe_heading           = {0x038, float},
-    _dupe_pos               = {0x044, world_coord},
+    _dupe_position          = {0x044, world_coord},
     index                   = {0x074, entity_index},
     id                      = {0x078, entity_id},
     name                    = {0x07C, npc_name},
