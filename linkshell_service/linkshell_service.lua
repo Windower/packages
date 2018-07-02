@@ -13,7 +13,7 @@ local linkshell.data = {
 }
 
 local handle_color = function(p)
-local data = linkshell[1]
+    local data = linkshell[1]
     data.color.red = p.linkshell_red
     data.color.green = p.linkshell_green
     data.color.blue = p.linkshell_blue
