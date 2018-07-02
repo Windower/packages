@@ -1,4 +1,3 @@
-local command = require('command')
 local account = require('account')
 local ffi = require('ffi')
 
