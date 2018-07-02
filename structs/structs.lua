@@ -385,7 +385,7 @@ structs.boolbit = function(base, bits)
 end
 
 structs.ptr = function(base)
-    local new = structs.make_type(base.cdef .. '*')
+    local new = structs.make_type((base and base.cdef or 'void') .. '*')
 
     new.base = base
     new.ptr = true
