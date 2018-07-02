@@ -2,5 +2,7 @@
   <name>window_title</name>
   <version>1.0</version>
   <type>addon</type>
-  <dependency>account</dependency>
+  <dependencies>
+    <dependency>account</dependency>
+  </dependencies>
 </package>
