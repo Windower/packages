@@ -3,6 +3,7 @@ local shared = require('shared')
 local entities = require('entities')
 
 local fetch_player = shared.get('player_service', 'player')
+local entity_value = {position = true, heading = true, target_index = true}
 
 local indexers = {
     job_levels = function(t, k)
@@ -61,7 +62,7 @@ end
 local player = setmetatable({}, {
     __index = function(_, k)
 
-        if k == 'position' or k == 'heading' or k == 'target_index' then
+        if entity_value[k] then
             return entities[fetch_player:read('index')][k]
         end
 
