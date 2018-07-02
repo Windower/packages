@@ -335,9 +335,9 @@ types.incoming[0x00D] = struct({
     hp_percent          = {0x1A, percent},
     state               = {0x1B, state},
     flags               = {0x1C, flags},
-    linkshell_red       = {0x20, uint8},
-    linkshell_green     = {0x21, uint8},
-    linkshell_blue      = {0x22, uint8},
+    linkshell1_red      = {0x20, uint8},
+    linkshell1_green    = {0x21, uint8},
+    linkshell1_blue     = {0x22, uint8},
     face_flags          = {0x3F, uint8}, -- 0, 3, 4 or 8
     model               = {0x44, model},
     name                = {0x56, string()},
@@ -816,9 +816,9 @@ types.incoming[0x037] = struct({
     movement_speed_half = {0x28, bit(uint16, 12), offset=0},
     yalms_per_step      = {0x2A, bit(uint16, 9), offset=0}, -- Determines how quickly your animation walks
     state               = {0x2C, state},
-    linkshell_red      = {0x2D, uint8},
-    linkshell_green    = {0x2E, uint8},
-    linkshell_blue     = {0x2F, uint8},
+    linkshell1_red      = {0x2D, uint8},
+    linkshell1_green    = {0x2E, uint8},
+    linkshell1_blue     = {0x2F, uint8},
     pet_index           = {0x30, bit(uint32, 16), offset=3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
     ballista_stuff      = {0x30, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
     time_offset_maybe   = {0x38, uint32}, -- For me, this is the number of seconds in 66 hours
@@ -1806,9 +1806,9 @@ types.incoming[0x0C9] = multiple({
     [0x01] = struct({
         icon_set_subtype= {0x0A, uint8},
         icon_set_id     = {0x0B, uint8},
-        linkshell_red   = {0x0C, bit(uint16, 4), offset=0},
-        linkshell_green = {0x0C, bit(uint16, 4), offset=4},
-        linkshell_blue  = {0x0C, bit(uint16, 4), offset=8},
+        linkshell1_red   = {0x0C, bit(uint16, 4), offset=0},
+        linkshell1_green = {0x0C, bit(uint16, 4), offset=4},
+        linkshell1_blue  = {0x0C, bit(uint16, 4), offset=8},
         main_job_id     = {0x0E, job},
         sub_job_id      = {0x0F, job},
         linkshell_name  = {0x10, ls_name},

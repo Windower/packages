@@ -4,17 +4,17 @@ local shared = require('shared')
 local linkshell = shared.new('linkshell')
 
 -- Does this file need this?
-linkshell.env = {
+local linkshell.env = {
     next = next,
 }
   
 local linkshell.data = {
-    [1] = { message = { }, color = { }, },
-    [2] = { message = { }, },
+    [1] = { lsmes = { }, color = { }, },
+    [2] = { lsmes = { }, },
 }
 
-local handle_color = function(p)
-local data = linkshell.data[1]
+local handler_color = function(p)
+local data = linkshell[1]
     data.color.red = p.linkshell_red
     data.color.green = p.linkshell_green
     data.color.blue = p.linkshell_blue
@@ -22,12 +22,12 @@ end
 
 packets.incoming[0x0CC]:register(function(p)
     local ls_number = bit.band(p.flags, 0x40) == 0x40 and 2 or 1
-    local data = linkshell.data[ls_number]
+    local data = linkshell[ls_number]
     data.name = p.linkshell_name
-    data.message.timestamp = p.timestamp
-    data.message.author = p.player_name
-    data.message.text = p.message
-    data.message.permissions = p.permissions
+    data.lsmes.timestamp = p.timestamp
+    data.lsmes.author = p.player_name
+    data.lsmes.text = p.message
+    data.lsmes.permissions = p.permissions
 end)
 
 packets.incoming[0x0E0]:register(function(p)
@@ -35,13 +35,13 @@ packets.incoming[0x0E0]:register(function(p)
     data.bag_index = p.bag_index
 end)
 
-packets.incoming[0x00D]:register(handle_color)
-packets.incoming[0x037]:register(handle_color)
-packets.incoming[0x0C9]:register(handle_color)
+packets.incoming[0x00D]:register(handler_color)
+packets.incoming[0x037]:register(handler_color)
+packets.incoming[0x0C9][0x01]:register(handler_color) -?? types.lua:1796/1806
 
 handler_color(packets.incoming[0x00D].last)
 handler_color(packets.incoming[0x037].last)
-handler_color(packets.incoming[0x0C9].last)
+handler_color(packets.incoming[0x0C9][0x01].last)
 
 --[[
 Copyright © 2018, Windower Dev Team
