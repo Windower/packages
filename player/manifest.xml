@@ -3,8 +3,9 @@
   <version>1.0.0.0</version>
   <type>library</type>
   <dependencies>  
-    <dependency>enumerable</dependency>   
+    <dependency>entities</dependency>
     <dependency>resources</dependency>	  
+    <dependency>enumerable</dependency>       
     <dependency>player_service</dependency>   
   </dependencies>
 </package>

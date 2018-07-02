@@ -1,5 +1,6 @@
 local res = require('resources')
 local shared = require('shared')
+local entities = require('entities')
 
 local fetch_player = shared.get('player_service', 'player')
 
@@ -59,6 +60,11 @@ end
 
 local player = setmetatable({}, {
     __index = function(_, k)
+
+        if k == 'position' or k == 'heading' then
+            return entities[fetch_player:read('index')][k]
+        end
+
         local result = fetch_player:read(k)
 
         if type(result) ~= 'table' then
