@@ -112,7 +112,10 @@ packets.env = {
     get_last = function(...)
         local history = history
         for i = 1, select('#', ...) do
-            history = history[select(i, ...)]
+            history = rawget(history, select(i, ...))
+            if not history then
+                return nil
+            end
         end
 
         return history

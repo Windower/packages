@@ -10,11 +10,6 @@ account_data.data = {
     logged_in = false,
 }
 
-account_data.env = {
-    print = print,
-    pairs = pairs,
-}
-
 account_events.data = {
     login = event.new(),
     logout = event.new(),
@@ -63,11 +58,8 @@ packets.incoming[0x00B]:register(handle_00B)
 local last_00A = packets.incoming[0x00A].last
 local last_00B = packets.incoming[0x00B].last
 
-if last_00A then
+if last_00A and (not last_00B or last_00B.timestamp < last_00A.timestamp) then
     handle_00A(last_00A)
-end
-if last_00B then
-    handle_00B(last_00B)
 end
 
 --[[
