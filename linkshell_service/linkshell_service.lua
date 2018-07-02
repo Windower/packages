@@ -13,7 +13,7 @@ local linkshell.data = {
 }
 
 local handle_color = function(p)
-    local data = linkshell[1]
+    local data = linkshell.data[1]
     data.color.red = p.linkshell1_red
     data.color.green = p.linkshell1_green
     data.color.blue = p.linkshell1_blue
@@ -21,7 +21,7 @@ end
 
 packets.incoming[0x0CC]:register(function(p)
     local ls_number = bit.band(p.flags, 0x40) == 0x40 and 2 or 1
-    local data = linkshell[ls_number]
+    local data = linkshell.data[ls_number]
     data.name = p.linkshell_name
     data.lsmes.timestamp = p.timestamp
     data.lsmes.author = p.player_name
@@ -30,7 +30,7 @@ packets.incoming[0x0CC]:register(function(p)
 end)
 
 packets.incoming[0x0E0]:register(function(p)
-    local data = linkshell[p.linkshell_number]
+    local data = linkshell.data[p.linkshell_number]
     data.bag_index = p.bag_index
 end)
 
