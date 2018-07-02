@@ -45,7 +45,7 @@ local enum_tw_cb = function(hwnd, l)
     local wide_name = wstr_ctor(max_class_name)
     local result_count = user32.GetClassNameW(hwnd, wide_name, max_class_name)
     
-    assert(result_count > 0, 'Erroring obtaining class name for window handle.')
+    assert(result_count > 0, 'Error obtaining class name for window handle.')
 
     if narrow(wide_name, result_count) == 'FFXiClass' then
         game_window = hwnd
