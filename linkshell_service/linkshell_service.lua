@@ -14,9 +14,9 @@ local linkshell.data = {
 
 local handle_color = function(p)
     local data = linkshell[1]
-    data.color.red = p.linkshell_red
-    data.color.green = p.linkshell_green
-    data.color.blue = p.linkshell_blue
+    data.color.red = p.linkshell1_red
+    data.color.green = p.linkshell1_green
+    data.color.blue = p.linkshell1_blue
 end
 
 packets.incoming[0x0CC]:register(function(p)
