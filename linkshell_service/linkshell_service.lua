@@ -12,7 +12,7 @@ local linkshell.data = {
     [2] = { lsmes = { }, },
 }
 
-local handler_color = function(p)
+local handle_color = function(p)
 local data = linkshell[1]
     data.color.red = p.linkshell_red
     data.color.green = p.linkshell_green
@@ -34,13 +34,18 @@ packets.incoming[0x0E0]:register(function(p)
     data.bag_index = p.bag_index
 end)
 
-packets.incoming[0x00D]:register(handler_color)
-packets.incoming[0x037]:register(handler_color)
-packets.incoming[0x0C9][0x01]:register(handler_color) -?? types.lua:1796/1806
+packets.incoming[0x00D]:register(handle_color)
+packets.incoming[0x037]:register(handle_color)
 
-handler_color(packets.incoming[0x00D].last)
-handler_color(packets.incoming[0x037].last)
-handler_color(packets.incoming[0x0C9][0x01].last)
+last_00D = packets.incoming[0x00D].last
+last_037 = packets.incoming[0x037].last
+
+if last_00D then
+    handle_color(last_00D)
+end
+if last_037 then
+    handle_color(last_00B)
+end
 
 --[[
 Copyright © 2018, Windower Dev Team
