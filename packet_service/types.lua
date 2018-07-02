@@ -51,7 +51,7 @@ local ip = tag(uint32, 'ip')
 local chat = tag(uint8, 'chat')
 local ability_recast = tag(uint8, 'ability_recast')
 local action_message = tag(uint16, 'action_messages')
-local roe_quest = tag(bit(uint16, 12), 'roe_quest')
+local roe_quest = tag(bit(uint32, 12), 'roe_quest')
 
 local pc_name = string(0x10)
 local fourcc = string(0x04)
