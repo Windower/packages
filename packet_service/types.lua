@@ -138,8 +138,8 @@ local bmap_region_info = struct({
     -- No clear purpose for the remaining 9 bits
 })
 
-local roe_quest = struct({
-    roe_quest_id        = {0x00, bit(uint32, 12), offset=0},
+local roe_quest_entry = struct({
+    roe_quest_id        = {0x00, roe_quest},
     roe_quest_progress  = {0x00, bit(uint32, 20), offset=12},
 })
 
@@ -1434,7 +1434,7 @@ types.incoming[0x056] = multiple({
     lookups = {'type'},
     
     [0x0080] = struct({
-        current_toau_quest  = {0x00, data(16)},
+        current_toau_quests = {0x00, data(16)},
         current_assault_mission = {0x10, uint32},
         current_toau_mission    = {0x14, uint32},
         current_wotg_mission    = {0x18, uint32},
@@ -2121,9 +2121,9 @@ types.incoming[0x110] = struct({
 
 -- Eminence Update
 types.incoming[0x111] = struct({
-    roe_quests              = {0x00, roe_quest[30]},
+    roe_quests              = {0x00, roe_quest_entry[30]},
     -- 0x78~0xFB: All 0s observed. Likely reserved in case they decide to expand allowed objectives.
-    limited_time_roe_quest  = {0xFC, roe_quest},
+    limited_time_roe_quest  = {0xFC, roe_quest_entry},
 })
 
 -- RoE Quest Log
@@ -2559,7 +2559,6 @@ types.outgoing[0x050] = struct({
     slot_id             = {0x01, slot},
     bag_id              = {0x02, bag},
 })
--- equipset_entry
 
 types.outgoing[0x051] = struct({
     count               = {0x00, uint8},
