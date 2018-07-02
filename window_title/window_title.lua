@@ -9,13 +9,13 @@ ffi.cdef[[
 local user32 = ffi.load('user32')
 
 --[[
-  Temporary until we provide a common mechanism for wchar_t support
+    Temporary until we provide a command mechanism for wchar_t support
 ]]
 local wide = function(str)
     local ctor = ffi.typeof('wchar_t[?]')
     local wstr = ctor(#str + 1)
     for i = 1, #str do
-      wstr[i - 1] = str:byte(i)
+        wstr[i - 1] = str:byte(i)
     end
     return wstr
 end
