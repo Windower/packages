@@ -3,7 +3,6 @@ local shared = require('shared')
 
 local linkshell = shared.new('linkshell')
 
--- Does this file need this?
 local linkshell.env = {
     next = next,
 }
