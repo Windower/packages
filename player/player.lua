@@ -61,7 +61,7 @@ end
 local player = setmetatable({}, {
     __index = function(_, k)
 
-        if k == 'position' or k == 'heading' then
+        if k == 'position' or k == 'heading' or k == 'target_index' then
             return entities[fetch_player:read('index')][k]
         end
 

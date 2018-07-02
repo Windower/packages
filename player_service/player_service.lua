@@ -29,7 +29,6 @@ packets.incoming[0x00D]:register(function(p)
     end
 
     if p.update_position then
-        data.target_index = p.target_index
         data.movement_speed = p.movement_speed / 8
         data.animation_speed = p.animation_speed / 8
     end
