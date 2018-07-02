@@ -3,7 +3,6 @@
   <version>1.0.1.0</version>
   <type>service</type>
   <dependencies>
-		<dependency>pack</dependency>
 		<dependency>packets</dependency>
   </dependencies>
 </package>
