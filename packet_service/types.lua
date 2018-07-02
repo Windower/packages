@@ -51,6 +51,7 @@ local ip = tag(uint32, 'ip')
 local chat = tag(uint8, 'chat')
 local ability_recast = tag(uint8, 'ability_recast')
 local action_message = tag(uint16, 'action_messages')
+local roe_quest = tag(bit(uint16, 12), 'roe_quest')
 
 local pc_name = string(0x10)
 local fourcc = string(0x04)
@@ -137,8 +138,8 @@ local bmap_region_info = struct({
     -- No clear purpose for the remaining 9 bits
 })
 
-local roe_quest = struct({
-    roe_quest_id        = {0x00, bit(uint32, 12), offset=0},
+local roe_quest_entry = struct({
+    roe_quest_id        = {0x00, roe_quest},
     roe_quest_progress  = {0x00, bit(uint32, 20), offset=12},
 })
 
@@ -219,6 +220,16 @@ local ability_recast = struct({
     _known1         = {0x02, uint8, const=0},
     recast          = {0x03, ability_recast},
 })
+
+local lockstyle_entry = struct({
+    bag_index           = {0x00, uint8},
+    slot_id             = {0x01, slot},
+    bag_id              = {0x02, bag},
+    _padding1           = {0x03, uint8},
+    item_id             = {0x04, item},
+    _padding2           = {0x06, uint16},
+})
+
 
 local types = {
     incoming = {},
@@ -1379,6 +1390,83 @@ types.incoming[0x055] = multiple({
     }),
 })
 
+--[[enums.quest_mission_log = {
+    [0x0030] = 'Completed Campaign Missions',
+    [0x0038] = 'Completed Campaign Missions (2)',       -- Starts at index 256
+    [0x0050] = 'Current San d\'Oria Quests',
+    [0x0058] = 'Current Bastok Quests',
+    [0x0060] = 'Current Windurst Quests',
+    [0x0068] = 'Current Jeuno Quests',
+    [0x0070] = 'Current Other Quests',
+    [0x0078] = 'Current Outlands Quests',
+    [0x0080] = 'Current TOAU Quests and Missions (TOAU, WOTG, Assault, Campaign)',
+    [0x0088] = 'Current WOTG Quests',
+    [0x0090] = 'Completed San d\'Oria Quests',
+    [0x0098] = 'Completed Bastok Quests',
+    [0x00A0] = 'Completed Windurst Quests',
+    [0x00A8] = 'Completed Jeuno Quests',
+    [0x00B0] = 'Completed Other Quests',
+    [0x00B8] = 'Completed Outlands Quests',
+    [0x00C0] = 'Completed TOAU Quests and Assaults',
+    [0x00C8] = 'Completed WOTG Quests',
+    [0x00D0] = 'Completed Missions (Nations, Zilart)',
+    [0x00D8] = 'Completed Missions (TOAU, WOTG)',
+    [0x00E0] = 'Current Abyssea Quests',
+    [0x00E8] = 'Completed Abyssea Quests',
+    [0x00F0] = 'Current Adoulin Quests',
+    [0x00F8] = 'Completed Adoulin Quests',
+    [0x0100] = 'Current Coalition Quests', 
+    [0x0108] = 'Completed Coalition Quests', 
+    [0xFFFF] = 'Current Missions',               
+}]]
+
+-- There are 27 variations of this packet to populate different quest information.
+-- Current quests, completed quests, and completed missions (where applicable) are represented by bit flags where the position
+-- corresponds to the quest index in the respective DAT.
+-- "Current Mission" fields refer to the mission ID, except COP, SOA, and ROV, which represent a mapping of some sort(?)
+-- Additionally, COP, SOA, and ROV do not have a "completed" missions packet, they are instead updated with the current mission.
+-- Quests will remain in your 'current' list after they are completed unless they are repeatable.
+
+types.incoming[0x056] = multiple({
+    base = struct({
+        type        = {0x20, uint16},
+    }),
+    lookups = {'type'},
+    
+    [0x0080] = struct({
+        current_toau_quests = {0x00, data(16)},
+        current_assault_mission = {0x10, uint32},
+        current_toau_mission    = {0x14, uint32},
+        current_wotg_mission    = {0x18, uint32},
+        current_campaign_mission= {0x1C, uint32},
+    }),
+    [0x00C0] = struct({
+        completed_toau_quests   = {0x00, data(16)},
+        completed_assaults      = {0x10, data(16)},
+    }),
+    [0x00D0] = struct({
+        completed_sandoria_missions = {0x00, data(8)},
+        completed_bastok_missions   = {0x08, data(8)},
+        completed_windurst_missions = {0x10, data(8)},
+        completed_rotz_missions     = {0x18, data(8)},
+    }),
+    [0x00D8] = struct({
+        completed_toau_missions = {0x00, data(8)},
+        completed_wotg_missions = {0x08, data(8)},
+    }),
+    [0xFFFF] = struct({
+        nation      = {0x00, uint32},
+        current_nation_mission  = {0x04, uint32},
+        current_rotz_mission    = {0x08, uint32},
+        current_cop_mission     = {0x0C, uint32}, -- doesn't correspond directly to .dat
+        current_acp_mission     = {0x14, bit(uint16, 4), offset=0},
+        current_mkd_mission     = {0x14, bit(uint16, 4), offset=4},
+        current_asa_mission     = {0x14, bit(uint16, 4), offset=8},
+        current_soa_mission     = {0x18, uint32},
+        current_rov_mission     = {0x1C, uint32},
+    }),
+})
+
 -- Weather Change
 types.incoming[0x057] = struct({
     vanadiel_time       = {0x00, time}, -- Units of minutes.
@@ -1592,49 +1680,21 @@ types.incoming[0x065] = struct({
 })
 
 -- Pet Info
---[[types.incoming[0x067] = multiple({
+types.incoming[0x067] = struct({
 -- The lower 6 bits of the Mask is the type of packet:
 -- 2 occurs often even with no pet, contains player index, id and main job level
 -- 3 identifies (potential) pets and who owns them
 -- 4 gives status information about your pet
-    base = struct({
-        -- #BYRTH# This is currently a hack to get this packet working in game.
-        -- Sometimes this packet does not have pet_name at the end (packet_length is 0).
-        -- This creates a packet with a string() on to the end but no more bytes. Instead of creating a 0-length string, it errors.
-        -- The below hack did not work for some reason.
-        type            = {0x00, bit(uint16, 6), offset=0},
-        packet_length   = {0x00, bit(uint16, 10), offset=6}, -- Length of packet in bytes excluding the header and any padding after the pet name
-    }),
-
-    lookups = {'type'},
-
-    [0x02] = struct({
-        pet_index       = {0x02, entity_index},
-        pet_id          = {0x04, entity},
-        owner_index     = {0x08, entity_index},
+        type                = {0x00, bit(uint16, 6), offset=0},
+        packet_length       = {0x00, bit(uint16, 10), offset=6}, -- Length of packet in bytes excluding the header and any padding after the pet name
+        pet_index           = {0x02, entity_index},
+        pet_id              = {0x04, entity},
+        owner_index         = {0x08, entity_index},
         current_hp_percent  = {0x0A, percent},
         current_mp_percent  = {0x0B, percent},
-        pet_tp          = {0x0C, uint32},
-    }),
-    [0x03] = struct({
-        pet_index       = {0x02, entity_index},
-        pet_id          = {0x04, entity},
-        owner_index     = {0x08, entity_index},
-        current_hp_percent  = {0x0A, percent},
-        current_mp_percent  = {0x0B, percent},
-        pet_tp          = {0x0C, uint32},
-        pet_name        = {0x14, string()},
-    }),
-    [0x04] = struct({
-        pet_index       = {0x02, entity_index},
-        pet_id          = {0x04, entity},
-        owner_index     = {0x08, entity_index},
-        current_hp_percent  = {0x0A, percent},
-        current_mp_percent  = {0x0B, percent},
-        pet_tp          = {0x0C, uint32},
-        pet_name        = {0x14, string()},
-    }),
-})]]
+        pet_tp              = {0x0C, uint32},
+        --pet_name            = {0x10, pc_name},    -- Is variable-length and isn't always included
+})
 
 -- Pet Status
 -- It is sent every time a pet performs an action, every time anything about its vitals changes (HP, MP, TP) and every time its target changes
@@ -1887,7 +1947,7 @@ types.incoming[0x0DD] = struct({
     mp                  = {0x08, uint32},
     tp                  = {0x0C, uint32},
     flags               = {0x10, uint16}, -- #BYRTH# Should be a bitfield
-    index               = {0x14, entity_index},
+    player_index        = {0x14, entity_index},
     hp_percent          = {0x19, percent},
     mp_percent          = {0x1A, percent},
     zone_id             = {0x1C, zone},
@@ -2061,9 +2121,9 @@ types.incoming[0x110] = struct({
 
 -- Eminence Update
 types.incoming[0x111] = struct({
-    roe_quests              = {0x00, roe_quest[30]},
+    roe_quests              = {0x00, roe_quest_entry[30]},
     -- 0x78~0xFB: All 0s observed. Likely reserved in case they decide to expand allowed objectives.
-    limited_time_roe_quest  = {0xFC, roe_quest},
+    limited_time_roe_quest  = {0xFC, roe_quest_entry},
 })
 
 -- RoE Quest Log
@@ -2211,6 +2271,814 @@ types.incoming[0x118] = struct({
 -- Ability timers
 types.incoming[0x119] = struct({
     recasts             = {0x00, ability_recast[0x1F]},
+})
+
+
+-- Zone In 1
+-- Likely triggers specific incoming packets.
+-- Does not trigger any packets when randomly injected.
+types.outgoing[0x00C] = struct({
+    _known1             = {0x00, data(8), const=0},
+})
+
+-- Client Leave
+-- Last packet sent when zoning. Disconnects from the zone server.
+types.outgoing[0x00D] = struct({
+    _known1             = {0x00, uint32, const=0},
+})
+
+-- Zone In 2
+-- Likely triggers specific incoming packets.
+-- Does not trigger any packets when randomly injected.
+types.outgoing[0x00F] = struct({
+    _known1             = {0x00, data(32), const=0},
+})
+
+-- Zone In 3
+-- Likely triggers specific incoming packets.
+-- Does not trigger any packets when randomly injected.
+types.outgoing[0x011] = struct({
+    _known1             = {0x00, uint32, const=0x02000000},
+})
+
+-- Standard Client
+types.outgoing[0x015] = struct({
+    x                   = {0x00, float},
+    z                   = {0x04, float},
+    y                   = {0x08, float},
+    run_count           = {0x0E, uint16}, -- Counter that indicates how long you've been running?
+    heading             = {0x10, uint8},
+    _flags1             = {0x11, uint8}, -- Bit 0x04 indicates that maintenance mode is activated
+    target_index        = {0x12, entity_index},
+    timestamp           = {0x14, time}, -- Milliseconds
+})
+
+-- Update Request
+types.outgoing[0x016] = struct({
+    target_index        = {0x00, entity_index},
+})
+
+-- NPC Race Error
+types.outgoing[0x017] = struct({
+    target_index        = {0x00, entity_index},
+    target_id           = {0x04, entity},
+    reported_npc_type   = {0x0E, uint8},
+})
+
+--[[enums['action'] = {
+    [0x00] = 'NPC Interaction',
+    [0x02] = 'Engage monster',
+    [0x03] = 'Magic cast',
+    [0x04] = 'Disengage',
+    [0x05] = 'Call for Help',
+    [0x07] = 'Weaponskill usage',
+    [0x09] = 'Job ability usage',
+    [0x0C] = 'Assist',
+    [0x0D] = 'Reraise dialogue',
+    [0x0E] = 'Cast Fishing Rod',
+    [0x0F] = 'Switch target',
+    [0x10] = 'Ranged attack',
+    [0x12] = 'Dismount Chocobo',
+    [0x14] = 'Zoning/Appear', -- I think, the resource for this is ambiguous.
+    [0x19] = 'Monsterskill',
+    [0x1A] = 'Mount',
+}]]
+
+-- Action
+types.outgoing[0x01A] = struct({
+    target_id           = {0x00, entity},
+    target_index        = {0x04, entity_index},
+    action_category     = {0x06, uint16}, -- Why is this a short?
+    param               = {0x08, uint16},
+    _known1             = {0x0A, uint16, const=0},
+    x_offset            = {0x0C, float}, -- non-zero values only observed for geo spells cast using a repositioned subtarget
+    z_offset            = {0x10, float},
+    y_offset            = {0x14, float},
+})
+
+-- /volunteer
+types.outgoing[0x01E] = struct({
+    target_name         = {0x00, string()}, -- null terminated string. Length of name to the nearest 4 bytes.
+})
+
+-- Drop Item
+types.outgoing[0x028] = struct({
+    count               = {0x00, uint32},
+    bag_id              = {0x04, bag},
+    bag_index           = {0x05, uint8},
+})
+
+-- Move Item
+types.outgoing[0x029] = struct({
+    count               = {0x00, uint32},
+    current_bag_id      = {0x04, bag},
+    target_bag_id       = {0x05, bag},
+    current_bag_index   = {0x06, uint8},
+    target_bag_id       = {0x07, uint8}, -- This byte is normally 0x52 (max index + 1) when moving items between bags, but setting it specifically works. It takes other values when manually sorting.
+})
+
+-- Translate
+-- German and French translations appear to no longer be supported.
+types.outgoing[0x02B] = struct({
+    current_language    = {0x00, uint8}, -- 0 == JP, 1 == EN
+    target_language     = {0x01, uint8}, -- 0 == JP, 1 == EN
+    _known1             = {0x02, uint16, const=0},
+    phrase              = {0x04, string(64)}, -- Quotation marks are removed. Phrase is truncated at 64 characters.
+})
+
+-- Trade request
+types.outgoing[0x032] = struct({
+    target_id           = {0x00, entity},
+    target_index        = {0x04, entity_index},
+})
+
+--[[enums[0x033] = {
+    [0] = 'Accept trade',
+    [1] = 'Cancel trade',
+    [2] = 'Confirm trade',
+}]]
+
+-- Trade confirm
+-- Sent when accepting, confirming or canceling a trade
+types.outgoing[0x033] = struct({
+    type                = {0x00, uint32}, -- #BYRTH# Why is this 4 bytes?
+    trade_count         = {0x04, uint32}, -- Necessary to set if you are receiving items, comes from incoming packet 0x023
+})
+
+-- Trade offer
+types.outgoing[0x034] = struct({
+    count               = {0x00, uint32},
+    item_id             = {0x04, item},
+    bag_index           = {0x06, uint8},
+    trade_slot          = {0x07, uint8},
+})
+
+-- Menu Item
+types.outgoing[0x036] = struct({
+-- Item order is Gil -> top row left-to-right -> bottom row left-to-right, but
+-- they slide up and fill empty slots
+    target_id           = {0x00, entity},
+    item_counts         = {0x04, uint32[9]},
+    bag_indices         = {0x2C, uint8[9]}, -- Gil has a bag_index of 0
+    target_index        = {0x36, entity_index},
+    number_of_items     = {0x38, uint8},
+})
+
+-- Use Item
+types.outgoing[0x037] = struct({
+    player_id           = {0x00, entity},
+    -- 0x04~0x07: 00 00 00 00 observed
+    player_index        = {0x08, entity_index},
+    bag_index           = {0x0A, uint8},
+    -- 0x0B: takes values, but the meaning is unclear
+    bag_id              = {0x0C, bag},
+})
+
+-- Sort Item
+types.outgoing[0x03A] = struct({
+    bag_id              = {0x00, bag},
+})
+
+-- Blacklist (add/delete)
+types.outgoing[0x03D] = struct({
+    -- 0x00~0x03: Looks like a player ID, but does not match the sender or the receiver. Perhaps the blacklister is nominally an NPC.
+    player_name         = {0x04, pc_name},
+    add_or_remove       = {0x14, bool}, -- 0 = add, 1 = remove
+    -- 0x15~0x17: Values observed on adding but not deleting.
+})
+
+-- Lot item
+types.outgoing[0x041] = struct({
+    pool_location       = {0x00, uint8},
+})
+
+-- Pass item
+types.outgoing[0x042] = struct({
+    pool_location       = {0x00, uint8},
+})
+
+-- Servmes
+-- First 4 bytes resemble the first 4 bytes of the incoming servmessage packet
+types.outgoing[0x04B] = struct({
+    -- 0x00: Always 1?
+    -- 0x01: Can be 1 or 0
+    -- 0x02: Always 1?
+    -- 0x03: Always 2?
+    -- 0x04~0x0F: Always 0?
+    -- 0x10~0x13: EC 00 00 00 observed. May be junk.
+})
+
+-- Delivery Box
+types.outgoing[0x04D] = struct({
+    -- Removing an item from the d-box sends type 0x08
+    -- It then responds to the server's 0x4B (id=0x08) with a 0x0A type packet.
+    -- Their assignment is the same, as far as I can see.
+    type                = {0x00, uint8},
+    
+    -- 0x01: 01 observed
+    delivery_slot       = {0x02, uint8},
+    -- 0x03~0x07: FF FF FF FF FF observed
+    -- 0x08~0x1F: 00s observed
+})
+
+--[[enums['ah otype'] = {
+    [0x04] = 'Sell item request',
+    [0x05] = 'Check sales',
+    [0x0A] = 'Open AH menu',
+    [0x0B] = 'Sell item confirmation',
+    [0x0C] = 'Stop sale',
+    [0x0D] = 'Sale status confirmation',
+    [0x0E] = 'Place bid',
+    [0x10] = 'Item sold',
+} ]]
+
+types.outgoing[0x04E] = multiple({
+    base = struct({
+        type            = {0x00, uint8}, 
+    }),
+    lookup = {"type"},
+    
+    -- Sent when putting an item up for auction (request)
+    [0x04] = struct({
+        price           = {0x04, uint32},
+        bag_index       = {0x08, uint8}, -- This was a short in fields.lua
+        item_id         = {0x0A, item},
+        stack           = {0x0C, bool},
+    }),
+    
+    -- Sent when checking your sale status
+    [0x05] = struct({
+        -- Labeled junk in fields.lua
+    }),
+    
+    -- Sent when initially opening the AH menu
+    [0x0A] = struct({
+        _known1         = {0x01, uint8, const=0xFF},
+    }),
+    
+    -- Sent when putting an item up for auction (confirmation)
+    [0x0B] = struct({
+        sale_slot       = {0x01, uint8},
+        price           = {0x04, uint32},
+        bag_index       = {0x08, uint8}, -- This was a short in fields.lua
+        stack           = {0x0C, bool},
+    }),
+    
+    -- Sent when stopping an item from sale
+    [0x0C] = struct({
+        sale_slot       = {0x01, uint8},
+    }),
+    
+    -- Sent after receiving the sale status list for each item
+    [0x0D] = struct({
+        sale_slot       = {0x01, uint8},
+    }),
+    
+    -- Sent when bidding on an item
+    [0x0E] = struct({
+        sale_slot       = {0x01, uint8},
+        price           = {0x04, uint32},
+        item_id         = {0x08, item},
+        stack           = {0x0C, bool},
+    }),
+    
+    -- ???
+    [0x0D] = struct({
+        sale_slot       = {0x01, uint8},
+    }),
+    
+    -- Sent when taking a sold item from the list
+    [0x10] = struct({
+        sale_slot       = {0x01, uint8},
+    }),
+})
+
+-- Equip
+types.outgoing[0x050] = struct({
+    bag_index           = {0x00, uint8},
+    slot_id             = {0x01, slot},
+    bag_id              = {0x02, bag},
+})
+
+types.outgoing[0x051] = struct({
+    count               = {0x00, uint8},
+    -- Same as _unknown1 is outgoing 0x052
+    equipment           = {0x04, equipset_entry[0x01]}, -- Should be count entries instead of 0x01
+    -- There is also a bunch of junk at the end of the packet.
+})
+
+-- Equipset Build
+types.outgoing[0x052] = struct({
+    -- First 8 bytes are for the newly changed item
+    slot_id             = {0x00, slot},
+    new_equipment       = {0x04, equipset_build},
+    
+    -- The next 16 are the entire current equipset, excluding the newly changed item
+    previous_equipment  = {0x08, equipset_build[0x10], lookup='slots'},
+})
+
+-- lockstyleset
+types.outgoing[0x53] = struct({
+    -- First 4 bytes are a header for the set
+    count               = {0x00, uint8},
+    type                = {0x01, uint8}, -- 0 = "Stop locking style", 1 = "Continue locking style", 3 = "Lock style in this way". Might be flags?
+    _known1             = {0x02, uint16, const=0},
+    lockstyle_equipment = {0x04, lockstyle_entry[0x10], lookup='slots'},
+})
+
+-- End Synth
+-- This packet is sent after receiving a result when synthesizing.
+types.outgoing[0x059] = struct({
+    -- 0x00~0x03: Often 00 00 00 00, but 01 00 00 00 observed.
+    -- 0x04~0x0B: Often 00 00 00 00, likely junk from a non-zero'd buffer.
+})
+
+-- Conquest
+types.outgoing[0x05A] = struct({ })
+
+-- Dialogue options
+types.outgoing[0x05B] = struct({
+    target_id           = {0x00, entity},
+    option_index        = {0x04, uint16},
+    option_index_2      = {0x06, uint16},
+    target_index        = {0x08, entity_index},
+    not_exiting         = {0x0A, bool}, -- 1 if you are not exiting a menu with a multi-packet exchange
+    zone_id             = {0x0C, zone},
+    menu_id             = {0x0E, uint16},
+})
+
+-- Warp Request
+types.outgoing[0x05C] = struct({
+    x                   = {0x00, float},
+    z                   = {0x04, float},
+    y                   = {0x08, float},
+    target_id           = {0x0C, entity},
+    -- 0x10~0x13: 01 00 00 00 observed
+    zone_id             = {0x14, zone},
+    menu_id             = {0x16, uint16},
+    target_index        = {0x18, entity_index},
+    -- 0x1A~0x1B: Not zone ID
+})
+
+-- Outgoing emote
+types.outgoing[0x05D] = struct({
+    target_id           = {0x00, entity},
+    target_index        = {0x04, entity_index},
+    emote_id            = {0x06, uint8},
+    motion              = {0x07, boolbit(uint8), offset=1},
+    _known1             = {0x08, uint32, const=0},
+})
+
+-- Zone request
+-- Sent when crossing a zone line.
+types.outgoing[0x05E] = struct({
+    zone_line           = {0x00, fourcc}, -- This seems to be a fourCC consisting of the following chars:
+                                          -- 'z' (apparently constant)
+                                          -- Region-specific char ('6' for Jeuno, '3' for Qufim, etc.)
+                                          -- Zone-specific char ('u' for Port Jeuno, 't' for Lower Jeuno, 's' for Upper Jeuno, etc.)
+                                          -- Zone line identifier ('4' for Port Jeuno > Qufim Island, '2' for Port Jeuno > Lower Jeuno, etc.)
+    _known1             = {0x04, data(14), const=0},
+    _known2             = {0x12, uint8, const=4}, -- Seemed to never vary for me
+    type                = {0x13, uint8}, -- 03 for leaving the MH, 00 otherwise
+})
+
+-- Equipment Screen (0x02 length) -- Also observed when zoning
+types.outgoing[0x061] = struct({ })
+
+-- Digging Finished
+-- This packet alone is responsible for generating the digging result, meaning that anyone that can inject
+-- this packet is capable of digging with 0 delay.
+types.outgoing[0x063] = struct({
+    player_id           = {0x00, entity},
+    player_index        = {0x08, entity_index},
+    digging_action      = {0x0A, uint8}, -- Changing it to anything other than 0x11 causes the packet to fail
+    -- Last byte is likely junk. Has no effect on anything notable.
+})
+
+--"New" Key Item examination packet
+types.outgoing[0x064] = struct({
+    player_id           = {0x00, entity},
+    flags               = {0x04, data(0x40)}, -- These correspond to a particular section of the 0x55 incoming packet
+    which_half          = {0x44, uint32}, -- This field somehow denotes which half-0x55-packet the flags corresponds to
+})
+
+-- Party invite
+types.outgoing[0x06E] = struct({
+    target_id           = {0x00, entity}, -- This is so weird. The client only knows IDs from searching for people or running into them. So if neither has happened, the manual invite will fail, as the ID cannot be retrieved.
+    target_index        = {0x04, entity_index}, -- 00 if target not in zone
+    alliance            = {0x06, uint8}, -- 05 for alliance, 00 for party or if invalid alliance target (the client somehow knows..)
+    _known1             = {0x07, uint8, const=0x41},
+})
+
+-- Party leaving
+types.outgoing[0x06F] = struct({
+    alliance            = {0x00, uint8}, -- 05 for alliance, 00 for party
+})
+
+-- Party breakup
+types.outgoing[0x070] = struct({
+    alliance            = {0x00, uint8}, -- 02 for alliance, 00 for party
+})
+
+-- Kick
+types.outgoing[0x071] = struct({
+    kick_type           = {0x06, uint8}, -- 0 for party, 1 for linkshell, 2 for alliance (maybe)
+    target_name         = {0x08, pc_name},
+})
+
+-- Party invite response
+types.outgoing[0x074] = struct({
+    join                = {0x00, bool},
+})
+
+--[[ -- Unnamed 0x76
+-- Observed when zoning (sometimes). Probably triggers some information to be sent (perhaps about linkshells?)
+types.outgoing[0x076] = struct({
+    flags               = {0x00, uint8}, -- Only 01 observed
+    -- 0x01~0x03: Only 00 00 00 observed.
+})]]
+
+-- Change Permissions
+types.outgoing[0x077] = struct({
+    target_name         = {0x00, pc_name}, -- Name of the person to give leader to
+    party_type          = {0x10, uint8}, -- 0 = party, 1 = linkshell, 2 = alliance
+    permissions         = {0x11, uint16}, -- 01 for alliance leader, 00 for party leader, 03 for linkshell "to sack", 02 for linkshell "to pearl"
+})
+
+-- Party list request (4 byte packet)
+types.outgoing[0x078] = struct({ })
+
+-- Guild NPC Buy
+-- Sent when buying an item from a guild NPC
+types.outgoing[0x082] = struct({
+    item_id             = {0x00, item},
+    _known1             = {0x02, uint8, const=0},
+    count               = {0x03, uint8}, -- Number you are buying
+})
+
+-- NPC Buy Item
+-- Sent when buying an item from a generic NPC vendor
+types.outgoing[0x083] = struct({
+    count               = {0x00, uint32},
+    -- 0x04~0x05: Redirection Index? When buying from a guild helper, this was the index of the real guild NPC.
+    shop_slot           = {0x06, uint8}, -- The same index sent in incoming packet 0x03C
+    -- 0x07~0x0B: Always 0?
+})
+
+-- NPC Sell price query
+-- Sent when trying to sell an item to an NPC
+-- Clicking on the item the first time will determine the price
+-- Also sent automatically when finalizing a sale, immediately preceeding packet 0x085
+types.outgoing[0x084] = struct({
+    count               = {0x00, uint32},
+    item                = {0x04, item},
+    bag_index           = {0x06, uint8}, 
+    -- 0x07: Always 0? Likely padding
+})
+
+-- NPC Sell confirm
+-- Sent when confirming a sell of an item to an NPC
+types.outgoing[0x085] = struct({
+    _known1             = {0x00, uint32, const=1}, -- Always 1? Possibly a type
+})
+
+-- Synth
+types.outgoing[0x096] = struct({
+    hash                = {0x00, uint16}, -- #BYRTH# Check the craft addon
+    crystal_id          = {0x02, item},
+    crystal_bag_index   = {0x04, uint8},
+    ingredient_count    = {0x05, uint8},
+    ingredients         = {0x06, item[0x08]},
+    ingredients_bag_indices = {0x16, uint8[0x08]},
+})
+
+-- /nominate or /proposal
+types.outgoing[0x0A0] = struct({
+    type                = {0x00, uint8}, -- Not typical mapping. 0=Open poll (say), 1 = Open poll (party), 3 = conclude poll
+    -- Just padding if the poll is being concluded.
+    proposal            = {0x01, string()}, -- Proposal exactly as written. Space delimited with quotes and all. Null terminated.
+})
+
+-- /vote
+types.outgoing[0x0A1] = struct({
+    voting_option       = {0x00, uint8}, -- Voting option
+    player_name         = {0x01, pc_name}, -- Character name. Null terminated.
+})
+
+-- /random
+types.outgoing[0x0A2] = struct({
+    -- 0x00~0x03: No clear purpose
+})
+
+-- Guild Buy Item
+-- Sent when buying an item from a guild NPC
+types.outgoing[0x0AA] = struct({
+    item_id             = {0x00, item},
+    _known1             = {0x02, uint8, const=0},
+    count               = {0x03, uint8}, -- Number you are buying
+})
+
+-- Get Guild Inv List
+-- It's unclear how the server figures out which guild you're asking about, but this triggers 0x83 Incoming.
+types.outgoing[0x0AB] = struct({ })
+
+-- Guild Sell Item
+-- Sent when selling an item to a guild NPC
+types.outgoing[0x0AC] = struct({
+    item_id             = {0x00, item},
+    count               = {0x03, uint8}, -- Number you are selling
+})
+
+-- Get Guild Sale List
+-- It's unclear how the server figures out which guild you're asking about, but this triggers 0x85 Incoming.
+types.outgoing[0x0AD] = struct({ })
+
+-- Speech
+types.outgoing[0x0B5] = struct({
+    mode                = {0x00, chat},
+    gm                  = {0x01, bool},
+    message             = {0x02, string()},
+})
+
+-- Tell
+types.outgoing[0x0B6] = struct({
+    _known1             = {0x00, uint8, const=0}, -- Varying this does nothing.
+    target_name         = {0x01, string(15)},
+    message             = {0x10, string()},
+})
+
+-- Merit Point Increase
+types.outgoing[0x0BE] = struct({
+    _known1             = {0x00, uint8, const=3}, -- No idea what it is, but it's always 0x03 for me
+    increasing          = {0x01, bool}, -- 1 when you're increasing a merit point. 0 when you're decreasing it.
+    merit_point_id      = {0x02, uint16}, -- No known mapping, but unique to each merit point. Could be an int.
+    _known2             = {0x04, uint32, const=0},
+})
+
+-- Job Point Increase
+types.outgoing[0x0BF] = struct({
+    type                = {0x00, bit(uint16, 5), offset=0},
+    job_id              = {0x00, bit(uint16, 11), offset=5},
+    _known1             = {0x00, uint16, const=0}, -- No values seen so far
+})
+
+-- Job Point Menu
+-- This packet has no content bytes
+types.outgoing[0x0C0] = struct({ })
+
+-- /makelinkshell
+types.outgoing[0x0C3] = struct({
+    linkshell_number    = {0x05, uint8},
+})
+
+-- Equip Linkshell
+types.outgoing[0x0C4] = struct({
+    -- 0x00~0x01: 0x00 0x0F for me
+    bag_index           = {0x02, uint8}, -- bag_index that holds the linkshell
+    linkshell_number    = {0x03, uint8},
+    -- 0x04~0x13: Probably going to be used in the future system somehow. Currently "dummy"..string.char(0,0,0).."%s %s "..string.char(0,1)
+})
+
+-- Open Mog
+types.outgoing[0x0CB] = struct({
+    type                = {0x00, uint8}, -- 1 = open mog, 2 = close mog
+})
+
+-- Party Marker Request
+types.outgoing[0x0D2] = struct({
+    zone_id             = {0x00, zone},
+})
+
+-- Open Help Submenu
+types.outgoing[0x0D4] = struct({
+    number_of_opens     = {0x00, uint32}, -- Number of times you've opened the submenu.
+})
+
+-- Check
+types.outgoing[0x0DD] = struct({
+    target_id           = {0x00, entity},
+    target_index        = {0x04, entity_index},
+    check_type          = {0x08, uint8}, -- 00 = Normal /check, 01 = /checkname, 02 = /checkparam
+})
+
+-- Search Comment
+types.outgoing[0x0E0] = struct({
+    line_1              = {0x00, string(0x28)}, -- Spaces (0x20) fill out any empty characters.
+    line_2              = {0x28, string(0x28)}, -- Spaces (0x20) fill out any empty characters.
+    line_3              = {0x50, string(0x28)}, -- Spaces (0x20) fill out any empty characters.
+    -- 0x78~0x7B: 20 20 20 00 observed.
+    -- 0x7C~0x93: Likely contains information about the flags.
+})
+
+-- Get LS Message
+types.outgoing[0x0E1] = struct({
+    _known1             = {0x00, data(136), const=0}, -- analogous to the set ls message, but with no content
+})
+
+-- Set LS Message
+types.outgoing[0x0E2] = struct({
+    _known1             = {0x00, uint32, const=0x00000040},
+    -- 0x04~0x07: Usually 0, but sometimes contains some junk
+    message             = {0x08, string(128)},
+})
+
+-- Logout
+types.outgoing[0x0E7] = struct({
+    -- 0x00~0x01: Observed to be 00 00
+    logout_type         = {0x02, uint8}, -- /logout = 01, /pol == 02 (removed), /shutdown = 03
+    -- 0x03: Observed to be 00
+})
+
+-- Sit
+types.outgoing[0x0EA] = struct({
+    movement            = {0x00, uint8},
+})
+
+-- Cancel
+types.outgoing[0x0F1] = struct({
+    buff                = {0x00, uint8},
+})
+
+-- Declare Subregion
+types.outgoing[0x0F2] = struct({
+    _known1             = {0x00, uint8, const=1},
+    _known2             = {0x01, uint8, const=0},
+    subregion_index     = {0x02, uint16},
+})
+
+-- Unknown packet 0xF2
+types.outgoing[0x0F2] = struct({
+    _known1             = {0x00, uint8, const=1},
+    _known2             = {0x01, uint8, const=0},
+    synergy_index       = {0x02, entity_index}, -- Has always been the index of a synergy enthusiast or furnace for me
+})
+
+-- Widescan
+types.outgoing[0x0F4] = struct({
+    getting_widescan    = {0x00, bool}, -- 1 when requesting widescan information. No other values observed.
+})
+
+-- Widescan Track
+types.outgoing[0x0F5] = struct({
+    target_index        = {0x00, entity_index}, -- Setting an index of 0 stops tracking
+})
+
+-- Widescan Cancel
+types.outgoing[0x0F6] = struct({
+    _known1             = {0x00, uint32, const=0},
+})
+
+-- Place/Move Furniture
+types.outgoing[0x0FA] = struct({
+    item_id             = {0x00, item}, -- 00 00 just gives the general update
+    bag_id              = {0x02, bag},
+    grid_x              = {0x03, uint8}, -- 0 to 0x12
+    grid_z              = {0x04, uint8}, -- 0 to ?
+    grid_y              = {0x05, uint8}, -- 0 to 0x17
+    _known1             = {0x06, uint16, const=0},
+})
+
+-- Remove Furniture
+types.outgoing[0x0FB] = struct({
+    item_id             = {0x00, item},
+    bag_id              = {0x02, bag},
+})
+
+-- Plant Flowerpot
+types.outgoing[0x0FC] = struct({
+    flowerpot_item_id   = {0x00, item},
+    seed_item_id        = {0x02, item},
+    flowerpot_bag_index = {0x04, uint8},
+    seed_bag_index      = {0x05, uint8},
+    -- 0x06~0x07: 00 00 observed
+})
+
+-- Examine Flowerpot
+types.outgoing[0x0FD] = struct({
+    flowerpot_item_id   = {0x00, item},
+    flowerpot_bag_index = {0x02, uint8},
+})
+
+-- Uproot Flowerpot
+types.outgoing[0x0FE] = struct({
+    flowerpot_item_id   = {0x00, item},
+    flowerpot_bag_index = {0x02, uint8},
+    -- 0x03: Value of 1 observed.
+})
+
+-- Job Change
+types.outgoing[0x100] = struct({
+    main_job_id         = {0x00, job},
+    sub_job_id          = {0x01, job},
+})
+
+-- Untraditional Equip
+-- Currently only commented for changing instincts in Monstrosity. Refer to the doku wiki for information on Autos/BLUs. #BYRTH#
+-- https://gist.github.com/nitrous24/baf9980df69b3dc7d3cf
+types.outgoing[0x102] = struct({
+    -- 0x00~0x01: 00 00 for Monipulators
+    -- 0x02~0x03: Varies by Monster family for the species change packet. Monipulators that share the same tnl seem to have the same value. 00 00 for instinct changing.
+    main_job_id         = {0x04, job}, -- 00x17 for Monipulators
+    sub_job_id          = {0x05, job}, -- 00x00 for Monipulators
+    flag                = {0x06, uint16}, -- 04 00 for Monipulators changing instincts. 01 00 for changing Monipulators. Possibly the type byte.
+    species             = {0x08, uint16}, -- True both for species change and instinct change packets
+    -- 0x0A~0x0B: 00 00 for Monipulators
+    instincts           = {0x0C, item[0x0C]},
+    name_1              = {0x24, uint8}, -- Indicates your monster's first name
+    name_2              = {0x25, uint8}, -- Indicates your moster's middle name
+    -- 0x25~*: All 00s for Monipulators
+})
+
+-- Open Bazaar
+-- Sent when you open someone's bazaar from the /check window
+types.outgoing[0x105] = struct({
+    target_id           = {0x00, entity},
+    target_index        = {0x04, entity_index},
+})
+
+-- Bid Bazaar
+-- Sent when you bid on an item in someone's bazaar
+types.outgoing[0x106] = struct({
+    bag_index           = {0x00, uint8}, -- The seller's inventory index of the wanted item
+    count               = {0x04, uint32},
+})
+
+-- Close own Bazaar
+-- Sent when you close your bazaar window
+types.outgoing[0x109] = struct({ })
+
+-- Bazaar price set
+-- Sent when you set the price of an item in your bazaar
+types.outgoing[0x10A] = struct({
+    bag_index           = {0x00, uint8}, -- The seller's inventory index of the wanted item
+    price               = {0x04, uint32},
+})
+
+-- Open own Bazaar
+-- Sent when you attempt to open your bazaar to set prices
+types.outgoing[0x10B] = struct({
+    _known1             = {0x00, uint32, const=0},
+})
+
+-- Start RoE Quest
+types.outgoing[0x10C] = struct({
+    roe_quest_id        = {0x00, roe_quest},
+})
+
+-- Cancel RoE Quest
+types.outgoing[0x10D] = struct({
+    roe_quest_id        = {0x00, roe_quest},
+})
+
+-- Accept RoE Quest reward that was denied due to a full inventory
+types.outgoing[0x10E] = struct({
+    roe_quest_id        = {0x00, roe_quest},
+})
+  
+-- Currency Menu
+types.outgoing[0x10F] = struct({ })
+
+--[[enums['fishing'] = {
+    [2] = 'Cast rod',
+    [3] = 'Release/catch',
+    [4] = 'Put away rod',
+}]]
+
+-- Fishing Action
+types.outgoing[0x110] = struct({
+    player_id           = {0x00, entity},
+    fish_hp             = {0x04, uint32}, -- Always 200 when releasing, zero when casting and putting away rod
+    player_index        = {0x08, entity_index},
+    action_type         = {0x0A, uint8},
+    -- 0x0B: Always zero (pre-March fishing update this value would increase over time, probably zone fatigue)
+    catch_key           = {0x0C, uint32}, -- When catching this matches the catch key from the 0x115 packet, otherwise zero
+})
+
+-- Lockstyle
+types.outgoing[0x111] = struct({
+    lock                = {0x00, bool}, -- 0 = unlock, 1 = lock
+})
+
+-- ROE quest log request
+types.outgoing[0x112] = struct({ })
+
+-- Homepoint Map Trigger :: 4 bytes, sent when entering a specific zone's homepoint list to cause maps to appear.
+types.outgoing[0x114] = struct({ })
+
+-- Currency 2 Menu
+types.outgoing[0x115] = struct({ })
+
+-- Open Unity Menu :: Two of these are sent whenever I open my unity menu. The first one has a bool of 0 and the second of 1.
+types.outgoing[0x116] = struct({
+    is_second_packet    = {0x00, bool},
+})
+
+-- Unity Ranking Results  :: Sent when I open my Unity Ranking Results menu. Triggers a Sparks Update packet and may trigger ranking packets that I could not record.
+types.outgoing[0x117] = struct({ })
+
+-- Open Chat status
+types.outgoing[0x118] = struct({
+    chat_status         = {0x00, bool}, -- 0 for Inactive and 1 for Active
 })
 
 return types
