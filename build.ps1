@@ -22,9 +22,9 @@ if ($env:CI) {
     $buildAll = -not $?
 
     if($env:APPVEYOR_PULL_REQUEST_NUMBER) {
-        $changedFiles = & git log --name-only --pretty=oneline --full-index master..
+        $changedFiles = & git diff --name-only master..
     } else {
-        $changedFiles = & git log --name-only --pretty=oneline --full-index HEAD^..HEAD
+        $changedFiles = & git diff --name-only HEAD^..HEAD
     }
     $buildAll = $buildAll -or -not $?
 
