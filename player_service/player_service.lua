@@ -1,9 +1,7 @@
 local bit = require('bit')
 local pack = require('pack')
-local packet = require('packet')
-local packets = require('packets')
-local res = require('resources')
 local shared = require('shared')
+local packets = require('packets')
 
 player = shared.new('player')
 
@@ -163,6 +161,8 @@ packets.incoming[0x0E2]:register(function(p)
     data.hp_percent = p.hp_percent
     data.mp_percent = p.mp_percent
 end)
+
+
 
 --[[
 Copyright © 2018, Windower Dev Team
