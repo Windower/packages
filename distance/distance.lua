@@ -5,18 +5,22 @@ local target = require('target')
 
 local config_state = {
     style = 'chromeless',
-    x = 20,
+    x = 35,
     y = 0,
     width = 32,
     height = 18,
-    color = ui.color.transparent,
+    color = ui.color.black,
 }
 
 ui.display(function()
-    config_state2 = ui.window('distance', config_state, function()
+    ui.window('distance', config_state, function()
         local entity = target.t
 
         if entity then
+            if config_state.color ~= 'ui.color.black' then
+                config_state['color'] = ui.color.black
+            end
+ 
             ui.location(2, 1)
             ui.text(string.format('%.2f', (math.sqrt(entity.distance))))
             config_state['color'] = ui.color.black
@@ -49,3 +53,4 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+]]
