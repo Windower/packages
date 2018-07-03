@@ -1,7 +1,6 @@
 local math = require('math')
 local string = require('string')
 local ui = require('ui')
-local player = require('player')
 local target = require('target')
 
 local config_state = {
@@ -14,12 +13,11 @@ local config_state = {
 
 ui.display(function()
     config_state = ui.window('distance', config_state, function()
-        local entity = target.t
+        local entity = target.st or target.t
         
         if entity then
-            local distance = string.format("%.2f", (math.sqrt(entity.distance)))
             ui.location(2, 1)
-            ui.text(tostring(distance))
+            ui.text(string.format('%.2f', (math.sqrt(entity.distance))))
         end
     end)
 end)
