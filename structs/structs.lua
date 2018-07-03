@@ -298,48 +298,67 @@ do
     end
 end
 
-structs.encoded = function(size, bits, lookup_string)
-    local new = structs.make_type('char')[size]
-    local pack_str = ('b%u'):format(bits):rep(math.floor(8 * size / bits))
+do
+    local band = bit.band
+    local bor = bit.bor
+    local rshift = bit.rshift
+    local lshift = bit.lshift
+    local byte = string.byte
+    local min = math.min
+    local ffi_string = ffi.string
 
-    local lua_lookup = {}
-    do
-        local index = 0
-        for char in lookup_string:gmatch('.') do
-            lua_lookup[index] = char
-            index = index + 1
-        end
-    end
+    structs.packed_string = function(size, lookup_string)
+        local new = structs.make_type('char')[size]
 
-    local c_lookup = {}
-    for i, v in pairs(lua_lookup) do
-        c_lookup[v] = i
-    end
+        local unpacked_size = math.floor(4 * size / 3 + 0.1)
+        local type = ffi.typeof('char[' .. unpacked_size .. ']')
 
-    new.tolua = function()
-        return function(value, field)
-            local res = {}
-            for i, v in ipairs({value:unpack(pack_str)}) do
-                res[i] = lua_lookup[v]
+        local lua_lookup = {}
+        do
+            for i = 1, 0x40 do
+                local char = lookup_string:sub(i, i)
+                lua_lookup[i - 1] = char and char:byte() or 0
             end
-            return table.concat(res)
         end
-    end
 
-    new.toc = function()
-        return function(instance, index, value, field)
-            local res = {}
-            local index = 0
-            for c in value:gmatch('.') do
-                res[index] = c_lookup[c]
-                index = index + 1
+        local c_lookup = {}
+        for i, v in pairs(lua_lookup) do
+            c_lookup[v] = i
+        end
+
+        new.tolua = function(value, field)
+            local res = type()
+            local ptr = res
+            for i = 1, size - 2, 3 do
+                local v1 = value[0]
+                local v2 = value[1]
+                local v3 = value[2]
+                ptr[0] = lua_lookup[rshift(band(v1, 0xFC), 2)];
+                ptr[1] = lua_lookup[bor(lshift(band(v1, 0x03), 4), rshift(band(v2, 0xF0), 4))];
+                ptr[2] = lua_lookup[bor(lshift(band(v2, 0x0F), 2), rshift(band(v3, 0xC0), 6))];
+                ptr[3] = lua_lookup[band(v3, 0x3F)];
+                value = value + 3
+                ptr = ptr + 4
             end
-            local str = pack_str:pack(unpack(res))
-            ffi.copy(instance[index], #str >= size and str:sub(1, size - 1) .. '\0' or str .. ('\0'):rep(#str - size))
+            return ffi_string(res)
         end
-    end
 
-    return new
+        new.toc = function(instance, index, value, field)
+            for i = 1, min(unpacked_size - 3, #value), 4 do
+                local v1, v2, v3, v4 = byte(value, i, i + 3)
+                v1 = c_lookup[v1]
+                v2 = c_lookup[v2]
+                v3 = c_lookup[v3]
+                v4 = c_lookup[v4]
+                instance[0] = bor(lshift(v1, 2), rshift(v2, 6))
+                instance[1] = bor(lshift(v2, 4), rshift(v3, 4))
+                instance[2] = bor(lshift(v3, 6), rshift(v4, 2))
+                instance = instance + 3
+            end
+        end
+
+        return new
+    end
 end
 
 structs.bit = function(base, bits)
