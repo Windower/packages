@@ -1,9 +1,8 @@
 <package>
   <name>packet_service</name>
-  <version>1.0.0.2</version>
+  <version>1.0.1.0</version>
   <type>service</type>
   <dependencies>
-    <dependency>pack</dependency>
     <dependency>structs</dependency>
   </dependencies>
 </package>

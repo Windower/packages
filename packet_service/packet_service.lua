@@ -1,6 +1,5 @@
 local event = require('event')
 local ffi = require('ffi')
-local pack = require('pack')
 local packet = require('packet')
 local shared = require('shared')
 local string = require('string')
@@ -144,6 +143,24 @@ local trigger_events = function(events, packet)
     end
 end
 
+local make_timestamp
+do
+    local last_time = os.time()
+    local now_count = 0
+
+    make_timestamp = function()
+        local now = os.time()
+        if last_time == now then
+            now_count = now_count + 1
+            return now + now_count / 10000
+        end
+
+        now_count = 0
+        last_time = now
+        return now
+    end
+end
+
 local handle_packet = function(direction, raw)
     local id = raw.id
 
@@ -154,7 +171,7 @@ local handle_packet = function(direction, raw)
         blocked = raw.blocked,
         modified = raw.modified,
         injected = raw.injected,
-        timestamp = os.time(),
+        timestamp = make_timestamp(),
     }
 
     local indices = {direction, id, parse_single(packet, char_ptr(packet.data), types[direction][id])}
