@@ -17,8 +17,8 @@ ui.display(function()
         local entity = target.t
         
         if entity then
-            ui.location(2, 1)
             local distance = string.format("%.2f", (math.sqrt(entity.distance)))
+            ui.location(2, 1)
             ui.text(tostring(distance))
         end
     end)
