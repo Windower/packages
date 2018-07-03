@@ -1866,9 +1866,9 @@ types.incoming[0x0C9] = multiple({
     [0x01] = struct({
         icon_set_subtype= {0x0A, uint8},
         icon_set_id     = {0x0B, uint8},
-        linkshell1_red   = {0x0C, bit(uint16, 4), offset=0},
-        linkshell1_green = {0x0C, bit(uint16, 4), offset=4},
-        linkshell1_blue  = {0x0C, bit(uint16, 4), offset=8},
+        linkshell1_red  = {0x0C, bit(uint16, 4), offset=0},
+        linkshell1_green= {0x0C, bit(uint16, 4), offset=4},
+        linkshell1_blue = {0x0C, bit(uint16, 4), offset=8},
         main_job_id     = {0x0E, job},
         sub_job_id      = {0x0F, job},
         linkshell_name  = {0x10, ls_name},
