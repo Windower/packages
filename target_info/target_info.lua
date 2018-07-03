@@ -13,17 +13,17 @@ local config_state = {
     height = 48,
     color = ui.color.black,
 }
-function math.round(num, prec)
+function round(num, prec)
     local mult = 10^(prec or 0)
     return math.floor((num * mult + 0.5) / mult)
 end
 
 ui.display(function()
-    ui.window('Target_Info', config_state, function()
+    ui.window('target_info', config_state, function()
         local entity = target.st or target.t
         if entity then
            
-            local entity_speed = ((entity.status == 5 or entity.status == 85) and math.round((100 * (entity.movement_speed / 4)),2)) or math.round((100 * (entity.movement_speed / 5 - 1)),2)
+            local entity_speed = ((entity.status == 5 or entity.status == 85) and round((100 * (entity.movement_speed / 4)),2)) or round((100 * (entity.movement_speed / 5 - 1)),2)
             local entity_hex = (entity.id % 0x1000)
            
             if entity_speed > 0 then
