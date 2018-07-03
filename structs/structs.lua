@@ -13,7 +13,10 @@ local make_cdef = function(arranged)
     local index = 0x00
     local offset = 0
     local bit_type
+    local bit_size
     local unknown_count = 1
+    local cdef_count = 0
+
     for _, field in ipairs(arranged) do
         -- Can only happen with char*, should only appear at the end
         local type = field.type
@@ -25,7 +28,15 @@ local make_cdef = function(arranged)
 
         local diff = field.position - index
         if diff > 0 then
-            cdefs[#cdefs + 1] = 'char _unknown' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
+            cdef_count = cdef_count + 1
+            if bit_type then
+                cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_size - offset)
+                offset = 0
+                bit_type = nil
+                bit_size = nil
+            else
+                cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
+            end
             unknown_count = unknown_count + 1
         end
         index = index + diff
@@ -36,28 +47,24 @@ local make_cdef = function(arranged)
             end
             local bit_diff = field.offset - offset
             if bit_diff > 0 then
-                cdefs[#cdefs + 1] = (bit_type or type.cdef) .. ' _unknown' .. tostring(unknown_count) .. ':' .. tostring(bit_diff)
+                cdef_count = cdef_count + 1
+                cdefs[cdef_count] = (bit_type or type.cdef) .. ' __' .. tostring(unknown_count) .. ':' .. tostring(bit_diff)
                 unknown_count = unknown_count + 1
             end
             offset = offset + bit_diff
-        elseif bit_type ~= nil then
-            local bit_diff = field.offset - offset
-            if bit_diff > 0 then
-                cdefs[#cdefs + 1] = bit_type .. ' _unknown' .. tostring(unknown_count) .. ':' .. tostring(bit_diff)
-                unknown_count = unknown_count + 1
-            end
-            offset = 0
-            bit_type = nil
         end
 
+        cdef_count = cdef_count + 1
         if is_bit then
-            cdefs[#cdefs + 1] = type.cdef .. ' ' .. field.cname .. ':' .. tostring(type.bits)
+            cdefs[cdef_count] = type.cdef .. ' ' .. field.cname .. ':' .. tostring(type.bits)
             offset = offset + type.bits
             if offset == 8 * type.size then
                 offset = 0
                 bit_type = nil
+                bit_size = nil
             else
                 bit_type = type.cdef
+                bit_size = type.size
             end
         else
             if type.count ~= nil then
@@ -67,9 +74,9 @@ local make_cdef = function(arranged)
                     counts = '[' .. tostring(base.count) .. ']' .. counts
                     base = base.base
                 end
-                cdefs[#cdefs + 1] = type.cdef .. ' ' .. field.cname .. counts
+                cdefs[cdef_count] = type.cdef .. ' ' .. field.cname .. counts
             else
-                cdefs[#cdefs + 1] = type.cdef .. ' ' .. field.cname
+                cdefs[cdef_count] = type.cdef .. ' ' .. field.cname
             end
             index = index + type.size
         end
@@ -369,35 +376,15 @@ structs.bit = function(base, bits)
     return new
 end
 
-structs.boolbit = function(base, bits)
-    local new = structs.bit(base, bits or 1)
+structs.boolbit = function(base)
+    local new = structs.bit(base, 1)
 
-    if bits ~= nil then
-        new.tolua = function(value, field)
-            local res = {}
-            for i = 1, bits do
-                res[i] = bit.band(bit.rshift(value, i - 1), 1) == 1
-            end
-            return res
-        end
+    new.tolua = function(value, field)
+        return value == 1
+    end
 
-        new.toc = function(instance, index, value, field)
-            local res = 0
-            for i, v in pairs(value) do
-                if v then
-                    res = bit.bor(res, bit.lshift(1, i - 1))
-                end
-            end
-            instance[index] = res
-        end
-    else
-        new.tolua = function(value, field)
-            return value == 1
-        end
-
-        new.toc = function(instance, index, value, field)
-            instance[index] = value and 1 or 0
-        end
+    new.toc = function(instance, index, value, field)
+        instance[index] = value and 1 or 0
     end
 
     return new
