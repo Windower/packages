@@ -9,15 +9,19 @@ local config_state = {
     y = 0,
     width = 32,
     height = 18,
+    color = ui.color.transparent,
 }
 
 ui.display(function()
-    config_state = ui.window('distance', config_state, function()
-        local entity = target.st or target.t
-        
+    config_state2 = ui.window('distance', config_state, function()
+        local entity = target.t
+
         if entity then
             ui.location(2, 1)
             ui.text(string.format('%.2f', (math.sqrt(entity.distance))))
+            config_state['color'] = ui.color.black
+        else
+            config_state['color'] = ui.color.transparent
         end
     end)
 end)
@@ -45,4 +49,3 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-]]
