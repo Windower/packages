@@ -1897,13 +1897,16 @@ types.incoming[0x0CA] = struct({
 })
 
 -- LS Message
-types.incoming[0x0CC] = struct({
-    flags               = {0x00, flags},
-    message             = {0x04, string(0x80)},
-    timestamp           = {0x84, time},
-    player_name         = {0x88, pc_name},
-    permissions         = {0x94, data(4)},
-    linkshell_name      = {0x98, ls_name},
+types.incoming[0x0CC] = multiple({
+    base = struct ({
+        ls_index            = {0x00, bit(uint32, 1), offset=14},
+        message             = {0x04, string(0x80)},
+        timestamp           = {0x84, time},
+        player_name         = {0x88, pc_name},
+        permissions         = {0x94, data(4)},
+        linkshell_name      = {0x98, ls_name},
+    }),
+    lookups = {'ls_index'},
 })
 
 -- Found Item
