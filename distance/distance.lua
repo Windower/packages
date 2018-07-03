@@ -23,7 +23,6 @@ ui.display(function()
  
             ui.location(2, 1)
             ui.text(string.format('%.2f', (math.sqrt(entity.distance))))
-            config_state['color'] = ui.color.black
         else
             config_state['color'] = ui.color.transparent
         end
