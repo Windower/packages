@@ -33,7 +33,7 @@ local key_fns = {
     -- ht = function() return memory.entities[] end,
     -- scan = function() return memory.entities[] end,
     locked = function() return memory.target_array.target_locked end,
-    set = function() return function(id) command.input('/ta ' .. tostring(id), 'client') end end,
+    set = function() return function(id) command.input('/:ta ' .. tostring(id), 'client') end end,
 }
 
 return setmetatable({}, {
