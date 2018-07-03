@@ -1,51 +1,38 @@
 local packets = require('packets')
 local shared = require('shared')
-
 local linkshell = shared.new('linkshell')
 
-local linkshell.env = {
+linkshell.env = {
     next = next,
 }
   
-local linkshell.data = {
+linkshell.data = {
     [1] = { lsmes = { }, color = { }, },
     [2] = { lsmes = { }, },
 }
 
-local handle_color = function(p)
-    local data = linkshell.data[1]
-    data.color.red = p.linkshell1_red
-    data.color.green = p.linkshell1_green
-    data.color.blue = p.linkshell1_blue
-end
-
-packets.incoming[0x0CC]:register(function(p)
-    local ls_number = bit.band(p.flags, 0x40) == 0x40 and 2 or 1
-    local data = linkshell.data[ls_number]
+local handle_0CC = function(p)
+    local data = linkshell.data[p.ls_index + 1]
     data.name = p.linkshell_name
     data.lsmes.timestamp = p.timestamp
     data.lsmes.author = p.player_name
     data.lsmes.text = p.message
     data.lsmes.permissions = p.permissions
-end)
-
-packets.incoming[0x0E0]:register(function(p)
-    local data = linkshell.data[p.linkshell_number]
-    data.bag_index = p.bag_index
-end)
-
-packets.incoming[0x00D]:register(handle_color)
-packets.incoming[0x037]:register(handle_color)
-
-last_00D = packets.incoming[0x00D].last
-last_037 = packets.incoming[0x037].last
-
-if last_00D then
-    handle_color(last_00D)
 end
-if last_037 then
-    handle_color(last_00B)
-end
+packets.incoming:register_init({
+    [{0x0CC, 0}] = handle_0CC,
+    [{0x0CC, 1}] = handle_0CC,
+    [{0x037}] = function(p)
+        local data = linkshell.data[1]
+        data.color.red = p.linkshell1_red
+        data.color.green = p.linkshell1_green
+        data.color.blue = p.linkshell1_blue
+    end,
+    [{0x0E0}]    = function(p)
+        local data = linkshell.data[p.linkshell_number]
+        data.bag_index = p.bag_index
+    end,
+})
 
 --[[
 Copyright © 2018, Windower Dev Team
