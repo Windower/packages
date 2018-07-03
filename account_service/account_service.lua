@@ -52,15 +52,10 @@ local handle_00B = function(p)
     end)
 end
 
-packets.incoming[0x00A]:register(handle_00A)
-packets.incoming[0x00B]:register(handle_00B)
-
-local last_00A = packets.incoming[0x00A].last
-local last_00B = packets.incoming[0x00B].last
-
-if last_00A and (not last_00B or last_00B.timestamp < last_00A.timestamp) then
-    handle_00A(last_00A)
-end
+packets.incoming:register_init({
+    [{0x00A}] = handle_00A,
+    [{0x00B, 0x01}] = handle_00B,
+})
 
 --[[
 Copyright © 2018, Windower Dev Team

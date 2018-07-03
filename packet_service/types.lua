@@ -209,16 +209,16 @@ local equipset_build = struct({
 })
 
 local equipset_entry = struct({
-    bag_index       = {0x00, uint8},
-    slot_id         = {0x01, slot},
-    bag_id          = {0x02, bag},
-    _padding        = {0x03, uint8}, -- Thought to be padding
+    bag_index           = {0x00, uint8},
+    slot_id             = {0x01, slot},
+    bag_id              = {0x02, bag},
+    _padding            = {0x03, uint8}, -- Thought to be padding
 })
 
 local ability_recast = struct({
-    duration        = {0x00, uint16},
-    _known1         = {0x02, uint8, const=0},
-    recast          = {0x03, ability_recast},
+    duration            = {0x00, uint16},
+    _known1             = {0x02, uint8, const=0},
+    recast              = {0x03, ability_recast},
 })
 
 local lockstyle_entry = struct({
@@ -275,10 +275,14 @@ types.incoming[0x00A] = struct({
 })
 
 -- Zone Response
-types.incoming[0x00B] = struct({
-    type                = {0x00, uint8},
-    ip                  = {0x04, ip},
-    port                = {0x08, uint16},
+types.incoming[0x00B] = multiple({
+    base = struct({
+        type            = {0x00, uint8},
+        ip              = {0x04, ip},
+        port            = {0x08, uint16},
+    }),
+
+    lookups = {'type'},
 })
 
 -- PC Update
