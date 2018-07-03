@@ -4,7 +4,6 @@
   <type>library</type>
   <dependencies>
     <dependency>memory</dependency>
-    <dependency>packets</dependency>
     <dependency>party</dependency>
     <dependency>player</dependency>
   </dependencies>
