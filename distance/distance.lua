@@ -14,7 +14,7 @@ local config_state = {
 
 ui.display(function()
     ui.window('distance', config_state, function()
-        local entity = target.t
+        local entity = target.st or target.t
 
         if entity then
             if config_state.color ~= 'ui.color.black' then
