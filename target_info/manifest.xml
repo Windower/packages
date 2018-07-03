@@ -1,0 +1,8 @@
+<package>
+  <name>target_info</name>
+  <version>1.0.0.0</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>target</dependency>
+  </dependencies>
+</package>
