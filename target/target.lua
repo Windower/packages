@@ -1,10 +1,37 @@
 local memory = require('memory')
 local player = require('player')
+local party = require('party')
 
 local key_fns = {
     t = function() return memory.target_array.targets[memory.target_array.sub_target_active and 1 or 0].entity end,
     st = function() return memory.target_array.sub_target_active and memory.target_array.targets[0].entity or nil end,
     me = function() return memory.entities[player.index] end,
+    p0 = function() return memory.party.members[0] end,
+    p1 = function() return memory.party.members[1] end,
+    p2 = function() return memory.party.members[2] end,
+    p3 = function() return memory.party.members[3] end,
+    p4 = function() return memory.party.members[4] end,
+    p5 = function() return memory.party.members[5] end,
+    a10 = function() return memory.party.members[6] end,
+    a11 = function() return memory.party.members[7] end,
+    a12 = function() return memory.party.members[8] end,
+    a13 = function() return memory.party.members[9] end,
+    a14 = function() return memory.party.members[10] end,
+    a15 = function() return memory.party.members[11] end,
+    a20 = function() return memory.party.members[12] end,
+    a21 = function() return memory.party.members[13] end,
+    a22 = function() return memory.party.members[14] end,
+    a23 = function() return memory.party.members[15] end,
+    a24 = function() return memory.party.members[16] end,
+    a25 = function() return memory.party.members[17] end,
+    lastst = function() return memory.entities[memory.target_array.last_st_index] end,
+    focusst = function() return memory.entities[memory.target_array.focus_index] end,
+    pet = function() return player.pet_index and memory.entities[player.pet_index] end,
+    -- ft = function() return memory.entities[player.fellow_index] end,
+    -- bt = function() return memory.entities[] end,
+    -- ht = function() return memory.entities[] end,
+    -- scan = function() return memory.entities[] end,
+    locked = function() return memory.target_array.target_locked end,
 }
 
 return setmetatable({}, {
