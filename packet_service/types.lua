@@ -1,6 +1,8 @@
 local structs = require('structs')
 
-local struct = structs.struct
+local struct = function(data, size)
+    return structs.struct(data, nil, size)
+end
 
 local multiple = function(info)
     info.multiple = true
@@ -212,8 +214,7 @@ local equipset_entry = struct({
     bag_index           = {0x00, uint8},
     slot_id             = {0x01, slot},
     bag_id              = {0x02, bag},
-    _padding            = {0x03, uint8}, -- Thought to be padding
-})
+}, 4)
 
 local ability_recast = struct({
     duration            = {0x00, uint16},
@@ -225,10 +226,8 @@ local lockstyle_entry = struct({
     bag_index           = {0x00, uint8},
     slot_id             = {0x01, slot},
     bag_id              = {0x02, bag},
-    _padding1           = {0x03, uint8},
     item_id             = {0x04, item},
-    _padding2           = {0x06, uint16},
-})
+}, 8)
 
 
 local types = {
@@ -635,7 +634,7 @@ types.incoming[0x02F] = struct({
     player_id           = {0x00, entity},
     player_index        = {0x04, entity_index},
     animation           = {0x06, uint8}, -- Changing it to anything other than 1 eliminates the animation
-    -- Packet is likely padded with junk. Setting it no effect on anything notable.
+    -- Packet is likely padded with junk. Setting it has no effect on anything notable.
 })
 
 -- Synth Animation
@@ -1435,8 +1434,9 @@ types.incoming[0x056] = multiple({
     base = struct({
         type        = {0x20, uint16},
     }),
+
     lookups = {'type'},
-    
+
     [0x0080] = struct({
         current_toau_quests = {0x00, data(16)},
         current_assault_mission = {0x10, uint32},
@@ -1906,6 +1906,7 @@ types.incoming[0x0CC] = multiple({
         permissions         = {0x94, data(4)},
         linkshell_name      = {0x98, ls_name},
     }),
+
     lookups = {'ls_index'},
 })
 
@@ -2481,7 +2482,7 @@ types.outgoing[0x04D] = struct({
     -- It then responds to the server's 0x4B (id=0x08) with a 0x0A type packet.
     -- Their assignment is the same, as far as I can see.
     type                = {0x00, uint8},
-    
+
     -- 0x01: 01 observed
     delivery_slot       = {0x02, uint8},
     -- 0x03~0x07: FF FF FF FF FF observed
@@ -2503,8 +2504,9 @@ types.outgoing[0x04E] = multiple({
     base = struct({
         type            = {0x00, uint8}, 
     }),
-    lookup = {"type"},
-    
+
+    lookups = {'type'},
+
     -- Sent when putting an item up for auction (request)
     [0x04] = struct({
         price           = {0x04, uint32},
@@ -2512,17 +2514,17 @@ types.outgoing[0x04E] = multiple({
         item_id         = {0x0A, item},
         stack           = {0x0C, bool},
     }),
-    
+
     -- Sent when checking your sale status
     [0x05] = struct({
         -- Labeled junk in fields.lua
     }),
-    
+
     -- Sent when initially opening the AH menu
     [0x0A] = struct({
         _known1         = {0x01, uint8, const=0xFF},
     }),
-    
+
     -- Sent when putting an item up for auction (confirmation)
     [0x0B] = struct({
         sale_slot       = {0x01, uint8},
@@ -2530,17 +2532,17 @@ types.outgoing[0x04E] = multiple({
         bag_index       = {0x08, uint8}, -- This was a short in fields.lua
         stack           = {0x0C, bool},
     }),
-    
+
     -- Sent when stopping an item from sale
     [0x0C] = struct({
         sale_slot       = {0x01, uint8},
     }),
-    
+
     -- Sent after receiving the sale status list for each item
     [0x0D] = struct({
         sale_slot       = {0x01, uint8},
     }),
-    
+
     -- Sent when bidding on an item
     [0x0E] = struct({
         sale_slot       = {0x01, uint8},
@@ -2548,12 +2550,12 @@ types.outgoing[0x04E] = multiple({
         item_id         = {0x08, item},
         stack           = {0x0C, bool},
     }),
-    
+
     -- ???
     [0x0D] = struct({
         sale_slot       = {0x01, uint8},
     }),
-    
+
     -- Sent when taking a sold item from the list
     [0x10] = struct({
         sale_slot       = {0x01, uint8},
@@ -2579,7 +2581,7 @@ types.outgoing[0x052] = struct({
     -- First 8 bytes are for the newly changed item
     slot_id             = {0x00, slot},
     new_equipment       = {0x04, equipset_build},
-    
+
     -- The next 16 are the entire current equipset, excluding the newly changed item
     previous_equipment  = {0x08, equipset_build[0x10], lookup='slots'},
 })
@@ -3041,7 +3043,7 @@ types.outgoing[0x10D] = struct({
 types.outgoing[0x10E] = struct({
     roe_quest_id        = {0x00, roe_quest},
 })
-  
+
 -- Currency Menu
 types.outgoing[0x10F] = struct({ })
 

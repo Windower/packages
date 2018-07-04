@@ -1,11 +1,15 @@
 local structs = require('structs')
 
-local struct = function(info, type)
-    if type == nil then
+local struct = function(info, data, size)
+    if data == nil then
         return structs.struct(info)
     end
 
-    return structs.struct(type, info)
+    if type(data) == 'number' then
+        structs.struct(info, nil, data)
+    end
+
+    return structs.struct(data, info)
 end
 
 local array = function(info, type, count)
@@ -249,7 +253,7 @@ types.target = struct({'53568BF18B480433DB3BCB75065E33C05B59C38B0D&', static_off
 types.target_array = struct({'53568BF18B480433DB3BCB75065E33C05B59C38B0D&', static_offsets = {0x18, 0x2F0}}, {
     targets                 = {0x00, target_array_entry[2]},
     auto_target             = {0x51, bool},
-    sub_target_active       = {0x52, bool},
+    both_targets_active     = {0x52, bool},
     movement_input          = {0x57, bool}, -- True whenever character moves (or tries to move) via user input
     alliance_target_active  = {0x59, bool}, -- This includes party targeting
     target_locked           = {0x5C, boolbit(uint32), offset=0},
@@ -285,7 +289,7 @@ types.target_array = struct({'53568BF18B480433DB3BCB75065E33C05B59C38B0D&', stat
     _unknown_ptr4           = {0xD0, ptr()}, -- Something related to action target, seems there's one address for spells and one for JA/WS
 })
 
-types.party = struct({'6a0e8bce89442414e8????????8b0d'}, {
+types.party = struct({'6A0E8BCE89442414E8????????8B0D'}, {
     members                 = {0x2C, party_member[18]},
 })
 
