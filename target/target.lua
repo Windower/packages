@@ -4,8 +4,8 @@ local player = require('player')
 local party = require('party')
 
 local key_fns = {
-    t = function() return memory.target_array.targets[memory.target_array.sub_target_active and 1 or 0].entity end,
-    st = function() return memory.target_array.sub_target_active and memory.target_array.targets[0].entity or nil end,
+    t = function() return memory.target_array.targets[memory.target_array.sub_target_mask ~= 0xFFFFFFFF and 1 or 0].entity end,
+    st = function() return memory.target_array.sub_target_mask ~= 0xFFFFFFFF and memory.target_array.targets[0].entity or nil end,
     me = function() return memory.entities[player.index] end,
     p0 = function() return memory.party.members[0] end,
     p1 = function() return memory.party.members[1] end,

@@ -8,12 +8,13 @@ local pack = require('pack')
 
 local structs = {}
 
-local make_cdef = function(arranged)
+local make_cdef = function(arranged, size)
+    local debug = arranged[1] and arranged[1].cname == 'ls_index'
     local cdefs = {}
     local index = 0x00
     local offset = 0
     local bit_type
-    local bit_size
+    local bit_type_size
     local unknown_count = 1
     local cdef_count = 0
 
@@ -28,23 +29,29 @@ local make_cdef = function(arranged)
 
         local diff = field.position - index
         if diff > 0 then
-            cdef_count = cdef_count + 1
             if bit_type then
-                cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_size - offset)
+                cdef_count = cdef_count + 1
+                cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset)
+                unknown_count = unknown_count + 1
+
+                diff = diff - bit_type_size
+                index = index + bit_type_size
+
                 offset = 0
                 bit_type = nil
-                bit_size = nil
-            else
-                cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
+                bit_type_size = nil
             end
-            unknown_count = unknown_count + 1
+            if diff > 0 then
+                cdef_count = cdef_count + 1
+                cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
+                unknown_count = unknown_count + 1
+            end
         end
         index = index + diff
 
         if is_bit then
-            if bit_type ~= nil then
-                assert(type.cdef == bit_type, 'Bit field must have the same base types for every member.')
-            end
+            assert(bit_type == nil or type.cdef == bit_type, 'Bit field must have the same base types for every member.')
+
             local bit_diff = field.offset - offset
             if bit_diff > 0 then
                 cdef_count = cdef_count + 1
@@ -61,10 +68,10 @@ local make_cdef = function(arranged)
             if offset == 8 * type.size then
                 offset = 0
                 bit_type = nil
-                bit_size = nil
+                bit_type_size = nil
             else
                 bit_type = type.cdef
-                bit_size = type.size
+                bit_type_size = type.size
             end
         else
             if type.count ~= nil then
@@ -82,6 +89,12 @@ local make_cdef = function(arranged)
         end
     end
 
+    if size and index < size then
+        cdef_count = cdef_count + 1
+        cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(size - index) .. ']'
+    end
+
+    if debug then print('struct{' .. table.concat(cdefs, ';') .. ';}') end
     return next(cdefs) and ('struct{' .. table.concat(cdefs, ';') .. ';}') or 'struct{}'
 end
 
@@ -194,7 +207,7 @@ do
         return new
     end
 
-    structs.struct = function(fields, info)
+    structs.struct = function(fields, info, size)
         local arranged = {}
         for label, data in pairs(fields) do
             local full = {
@@ -217,6 +230,9 @@ do
         local new = build_type(make_cdef(arranged), info)
 
         new.fields = arranged
+        if size then
+            new.size = size
+        end
 
         return new
     end
