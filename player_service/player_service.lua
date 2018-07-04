@@ -20,144 +20,146 @@ do
     end
 end
 
-packets.incoming[0x00D]:register(function(p)
-    local data = player.data
-    if p.player_id ~= data.id then
-        return
-    end
+packets.incoming:register_init({
+    [{0x00D}] = function(p)
+        local data = player.data
+        if p.player_id ~= data.id then
+            return
+        end
 
-    if p.update_position then
-        data.movement_speed = p.movement_speed / 8
-        data.animation_speed = p.animation_speed / 8
-    end
+        if p.update_position then
+            data.movement_speed = p.movement_speed / 8
+            data.animation_speed = p.animation_speed / 8
+        end
 
-    if p.update_vitals then
+        if p.update_vitals then
+            data.hp_percent = p.hp_percent
+            data.state = p.state
+        end
+
+        if p.update_name then
+            data.name = p.name
+        end
+
+        if p.update_model then
+            local model = data.model
+            local m = p.model
+            model.face = m.face
+            model.race = m.race
+            model.head = m.head
+            model.body = m.body
+            model.hands = m.hands
+            model.legs = m.legs
+            model.feet = m.feet
+            model.main = m.main
+            model.sub = m.sub
+            model.range = m.range
+        end
+    end,
+
+    [{0x00A}] = function(p)
+        local data = player.data
+        data.id = p.player_id
+        data.index = p.player_index
+        data.name = p.player_name
+        data.main_job_id = p.main_job_id
+        data.sub_job_id = p.sub_job_id
+        data.hp_max = p.hp_max
+        data.mp_max = p.mp_max
+        data.hp_percent = p.hp_percent
+    end,
+
+    [{0x01B}] = function(p)
+        local data = player.data
+        data.main_job_id = p.main_job_id
+        data.main_job_level = p.main_job_level
+        data.sub_job_id = p.sub_job_id
+        data.sub_job_level = p.sub_job_level
+        data.hp_max = p.hp_max
+        data.mp_max = p.mp_max
+        for i = 0, 0x17 do
+            data.job_levels[i] = p.job_levels[i]
+        end
+    end,
+
+    [{0x037}] = function(p)
+        local data = player.data
+        data.id = p.player_id
         data.hp_percent = p.hp_percent
         data.state = p.state
-    end
+        data.pet_index = p.pet_index
+    end,
 
-    if p.update_name then
-        data.name = p.name
-    end
+    [{0x061}] = function(p)
+        local data = player.data
+        data.main_job_id = p.main_job_id
+        data.main_job_level = p.main_job_level
+        data.sub_job_id = p.sub_job_id
+        data.sub_job_level = p.sub_job_level
+        data.hp_max = p.hp_max
+        data.mp_max = p.mp_max
+        data.title_id = p.title_id
+        data.nation_rank = p.nation_rank
+        data.nation_rank_points = p.nation_rank_points
+        data.home_point_zone_id = p.home_point_zone_id
+        data.nation_id = p.nation_id
+        data.superior_level = p.superior_level
+        data.item_level = p.item_level_over_99 + p.main_job_level
+        data.exp = p.exp
+        data.exp_required = p.exp_required
+    end,
 
-    if p.update_model then
-        local model = data.model
-        local m = p.model
-        model.face = m.face
-        model.race = m.race
-        model.head = m.head
-        model.body = m.body
-        model.hands = m.hands
-        model.legs = m.legs
-        model.feet = m.feet
-        model.main = m.main
-        model.sub = m.sub
-        model.range = m.range
-    end
-end)
+    [{0x062}] = function(p)
+        local skills = player.data.skills
+        for i = 0x00, 0x2F do
+            local skill = skills[i]
+            local packet = p.combat_skills[i]
+            skill.level = packet.level
+            skill.capped = packet.capped
+        end
+        for i = 0x00, 0x09 do
+            local skill = skills[i + 0x2F]
+            local packet = p.crafting_skills[i]
+            skill.level = packet.level
+            skill.rank_id = packet.rank_id
+            skill.capped = packet.capped
+        end
+    end,
 
-packets.incoming[0x00A]:register(function(p)
-    local data = player.data
-    data.id = p.player_id
-    data.index = p.player_index
-    data.name = p.player_name
-    data.main_job_id = p.main_job_id
-    data.sub_job_id = p.sub_job_id
-    data.hp_max = p.hp_max
-    data.mp_max = p.mp_max
-    data.hp_percent = p.hp_percent
-end)
+    [{0x0DF}] = function(p)
+        local data = player.data
+        if data.id ~= p.id then
+            return
+        end
 
-packets.incoming[0x01B]:register(function(p)
-    local data = player.data
-    data.main_job_id = p.main_job_id
-    data.main_job_level = p.main_job_level
-    data.sub_job_id = p.sub_job_id
-    data.sub_job_level = p.sub_job_level
-    data.hp_max = p.hp_max
-    data.mp_max = p.mp_max
-    for i = 0, 0x17 do
-        data.job_levels[i] = p.job_levels[i]
-    end
-end)
+        data.id = p.id
+        data.index = p.index
+        data.hp = p.hp
+        data.mp = p.mp
+        data.tp = p.tp
+        data.hp_percent = p.hp_percent
+        data.mp_percent = p.mp_percent
+        data.main_job_id = p.main_job_id
+        data.main_job_level = p.main_job_level
+        data.sub_job_id = p.sub_job
+        data.sub_job_level = p.sub_job_level
+    end,
 
-packets.incoming[0x037]:register(function(p)
-    local data = player.data
-    data.id = p.player_id
-    data.hp_percent = p.hp_percent
-    data.state = p.state
-    data.pet_index = p.pet_index
-end)
+    [{0x0E2}] = function(p)
+        local data = player.data
+        if data.id ~= p.id then
+            return
+        end
 
-packets.incoming[0x061]:register(function(p)
-    local data = player.data
-    data.main_job_id = p.main_job_id
-    data.main_job_level = p.main_job_level
-    data.sub_job_id = p.sub_job_id
-    data.sub_job_level = p.sub_job_level
-    data.hp_max = p.hp_max
-    data.mp_max = p.mp_max
-    data.title_id = p.title_id
-    data.nation_rank = p.nation_rank
-    data.nation_rank_points = p.nation_rank_points
-    data.home_point_zone_id = p.home_point_zone_id
-    data.nation_id = p.nation_id
-    data.superior_level = p.superior_level
-    data.item_level = p.item_level_over_99 + p.main_job_level
-    data.exp = p.exp
-    data.exp_required = p.exp_required
-end)
-
-packets.incoming[0x062]:register(function(p)
-    local skills = player.data.skills
-    for i = 0x00, 0x2F do
-        local skill = skills[i]
-        local packet = p.combat_skills[i]
-        skill.level = packet.level
-        skill.capped = packet.capped
-    end
-    for i = 0x00, 0x09 do
-        local skill = skills[i + 0x2F]
-        local packet = p.crafting_skills[i]
-        skill.level = packet.level
-        skill.rank_id = packet.rank_id
-        skill.capped = packet.capped
-    end
-end)
-
-packets.incoming[0x0DF]:register(function(p)
-    local data = player.data
-    if data.id ~= p.id then
-        return
-    end
-
-    data.id = p.id
-    data.index = p.index
-    data.hp = p.hp
-    data.mp = p.mp
-    data.tp = p.tp
-    data.hp_percent = p.hp_percent
-    data.mp_percent = p.mp_percent
-    data.main_job_id = p.main_job_id
-    data.main_job_level = p.main_job_level
-    data.sub_job_id = p.sub_job
-    data.sub_job_level = p.sub_job_level
-end)
-
-packets.incoming[0x0E2]:register(function(p)
-    local data = player.data
-    if data.id ~= p.id then
-        return
-    end
-
-    data.id = p.id
-    data.index = p.index
-    data.hp = p.hp
-    data.mp = p.mp
-    data.tp = p.tp
-    data.hp_percent = p.hp_percent
-    data.mp_percent = p.mp_percent
-end)
+        data.id = p.id
+        data.index = p.index
+        data.hp = p.hp
+        data.mp = p.mp
+        data.tp = p.tp
+        data.hp_percent = p.hp_percent
+        data.mp_percent = p.mp_percent
+    end,
+})
 
 --[[
 Copyright © 2018, Windower Dev Team

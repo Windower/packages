@@ -69,34 +69,36 @@ local update_item = function(bag, index, count, status, id, bazaar, extdata)
     if extdata then item.extdata = extdata end
 end
 
-packets.incoming[0x01C]:register(function(p)
-    for i = 0, #items.data.bags do
-        items.data.sizes[i] = p.size[i] - 1
-    end
-end)
-
-packets.incoming[0x01E]:register(function(p)
-    update_item(p.bag_id, p.bag_index, p.count, p.status)
-end)
-
-packets.incoming[0x01F]:register(function(p)
-    update_item(p.bag_id, p.bag_index, p.count, p.status, p.item_id)
-end)
-
-packets.incoming[0x020]:register(function(p)
-    update_item(p.bag_id, p.bag_index, p.count, p.status, p.item_id, p.bazaar, p.extdata)
-end)
-
-packets.incoming[0x050]:register(function(p)
-    if p.bag_index == 0 then
-        equipment.data[p.slot_id] = nil
-    else
-        if not items.data.bags[p.bag_id][p.bag_index] then
-            items.data.bags[p.bag_id][p.bag_index] = new_item(p.bag_id, p.bag_index)
+packets.incoming:register_init({
+    [{0x01C}] = function(p)
+        for i = 0, #items.data.bags do
+            items.data.sizes[i] = p.size[i] - 1
         end
-        equipment.data[p.slot_id] = items.data.bags[p.bag_id][p.bag_index]
-    end
-end)
+    end,
+
+    [{0x01E}] = function(p)
+        update_item(p.bag_id, p.bag_index, p.count, p.status)
+    end,
+
+    [{0x01F}] = function(p)
+        update_item(p.bag_id, p.bag_index, p.count, p.status, p.item_id)
+    end,
+
+    [{0x020}] = function(p)
+        update_item(p.bag_id, p.bag_index, p.count, p.status, p.item_id, p.bazaar, p.extdata)
+    end,
+
+    [{0x050}] = function(p)
+        if p.bag_index == 0 then
+            equipment.data[p.slot_id] = nil
+        else
+            if not items.data.bags[p.bag_id][p.bag_index] then
+                items.data.bags[p.bag_id][p.bag_index] = new_item(p.bag_id, p.bag_index)
+            end
+            equipment.data[p.slot_id] = items.data.bags[p.bag_id][p.bag_index]
+        end
+    end,
+})
 
 --[[
 Copyright © 2018, Windower Dev Team
