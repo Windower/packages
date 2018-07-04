@@ -19,7 +19,7 @@ packets.incoming:register_init({
     [{0x063, 9}] = function(p)
         for i = 1, 0x20 do
             local buff_id = p.status_effects[i - 1]
-            if buff_id == 0 or buff_id == 0xFF then 
+            if buff_id == 0 or buff_id == 0xFF then
                 status_effects.data.player[i] = nil
             else
                 status_effects.data.player[i] = {
