@@ -3,7 +3,7 @@ local string = require('string')
 local ui = require('ui')
 local target = require('target')
 
-local text_color = ui.color.lightgrey
+local text_color = ui.color.grey
 local config_state = {
     title = 'Target Info',
     style = 'chromeless',
@@ -22,18 +22,17 @@ ui.display(function()
     ui.window('target_info', config_state, function()
         local entity = target.st or target.t
         if entity then
-           
-            local entity_speed = ((entity.status == 5 or entity.status == 85) and round((100 * (entity.movement_speed / 4)),2)) or round((100 * (entity.movement_speed / 5 - 1)),2)
-            local entity_hex = (entity.id % 0x1000)
-           
+
+            local entity_speed = ((entity.status == 5 or entity.status == 85) and round((100 * (entity.movement_speed / 4)), 2)) or round((100 * (entity.movement_speed / 5 - 1)), 2)
+
             if entity_speed > 0 then
                 text_color = ui.color.lightgreen
             elseif entity_speed < 0 then
                text_color = ui.color.red
             else
-                text_color = ui.color.grey  
+                text_color = ui.color.grey
             end
-           
+
             if config_state.color ~= 'ui.color.black' then
                 config_state['color'] = ui.color.black
             end
@@ -45,11 +44,11 @@ ui.display(function()
             ui.location(2, 16)
             ui.text('Hex:')
             ui.location(45, 16)
-            ui.text(string.format('%.3X', entity_hex))
+            ui.text(string.format("%03X", entity.index))
             ui.location(2, 31)
             ui.text('Speed:')
             ui.location(45, 31)
-            ui.text(tostring(entity_speed..'%'),{color = text_color})
+            ui.text(tostring(entity_speed..'%'), {color = text_color})
         else
             config_state['color'] = ui.color.transparent
         end
