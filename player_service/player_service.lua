@@ -26,21 +26,21 @@ packets.incoming:register_init({
         if p.player_id ~= data.id then
             return
         end
-    
+
         if p.update_position then
             data.movement_speed = p.movement_speed / 8
             data.animation_speed = p.animation_speed / 8
         end
-    
+
         if p.update_vitals then
             data.hp_percent = p.hp_percent
             data.state = p.state
         end
-    
+
         if p.update_name then
             data.name = p.name
         end
-    
+
         if p.update_model then
             local model = data.model
             local m = p.model
