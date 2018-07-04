@@ -1,5 +1,6 @@
 local event = require('event')
 local shared = require('shared')
+local table = require('table')
 
 local fetch = shared.get('packet_service', 'packets')
 
@@ -50,11 +51,15 @@ local packet_meta = {
     end,
 }
 
-fns.register = function(t, fn)
-    local base = get_recursive(registry, unpack(t.path))
-    local event = fetch:call(make_event, unpack(t.path))
+local register_path = function(path, fn)
+    local base = get_recursive(registry, unpack(path))
+    local event = fetch:call(make_event, unpack(path))
     base.fns[fn] = event
     event:register(fn)
+end
+
+fns.register = function(t, fn)
+    register_path(t.path, fn)
 end
 
 fns.unregister = function(t, fn)
@@ -64,6 +69,40 @@ end
 
 fns.new = function(t, values)
     error('Not yet implemented.')
+end
+
+fns.register_init = function(t, init_table)
+    local paths = {}
+    for indices, fn in pairs(init_table) do
+        local path = {}
+        for i, index in ipairs(t.path) do
+            path[i] = index
+        end
+
+        for _, index in ipairs(indices) do
+            path[#path + 1] = index
+        end
+
+        register_path(path, fn)
+
+        paths[#paths + 1] = { path = path, fn = fn }
+    end
+
+    local lasts = {}
+    for _, path in ipairs(paths) do
+        local last = fetch:call(get_last, unpack(path.path))
+        if last then
+            lasts[#lasts + 1] = { packet = last, fn = path.fn }
+        end
+    end
+
+    table.sort(lasts, function(l1, l2)
+        return l1.packet.timestamp < l2.packet.timestamp
+    end)
+
+    for _, last in ipairs(lasts) do
+        last.fn(last.packet)
+    end
 end
 
 make_table = function(t)
@@ -77,6 +116,7 @@ make_table = function(t)
         path = new_path,
         register = fns.register,
         unregister = fns.unregister,
+        register_init = fns.register_init,
         new = fns.new,
     }, packet_meta)
 end

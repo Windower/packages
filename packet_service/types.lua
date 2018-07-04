@@ -10,7 +10,7 @@ end
 local tag = structs.tag
 local string = structs.string
 local data = structs.data
-local encoded = structs.encoded
+local packed_string = structs.packed_string
 
 local int8 = structs.int8
 local int16 = structs.int16
@@ -56,9 +56,9 @@ local roe_quest = tag(bit(uint32, 12), 'roe_quest')
 local pc_name = string(0x10)
 local fourcc = string(0x04)
 
-local ls_name = encoded(0x10, 6, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
-local item_inscription = encoded(0x0C, 6, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
-local ls_name_extdata = encoded(0x0C, 6, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+local ls_name = packed_string(0x0F, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+local item_inscription = packed_string(0x0C, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
+local ls_name_extdata = packed_string(0x0C, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
 
 local stats = struct({
     str                 = {0x00, int16},
@@ -209,16 +209,16 @@ local equipset_build = struct({
 })
 
 local equipset_entry = struct({
-    bag_index       = {0x00, uint8},
-    slot_id         = {0x01, slot},
-    bag_id          = {0x02, bag},
-    _padding        = {0x03, uint8}, -- Thought to be padding
+    bag_index           = {0x00, uint8},
+    slot_id             = {0x01, slot},
+    bag_id              = {0x02, bag},
+    _padding            = {0x03, uint8}, -- Thought to be padding
 })
 
 local ability_recast = struct({
-    duration        = {0x00, uint16},
-    _known1         = {0x02, uint8, const=0},
-    recast          = {0x03, ability_recast},
+    duration            = {0x00, uint16},
+    _known1             = {0x02, uint8, const=0},
+    recast              = {0x03, ability_recast},
 })
 
 local lockstyle_entry = struct({
@@ -275,10 +275,14 @@ types.incoming[0x00A] = struct({
 })
 
 -- Zone Response
-types.incoming[0x00B] = struct({
-    type                = {0x00, uint8},
-    ip                  = {0x04, ip},
-    port                = {0x08, uint16},
+types.incoming[0x00B] = multiple({
+    base = struct({
+        type            = {0x00, uint8},
+        ip              = {0x04, ip},
+        port            = {0x08, uint16},
+    }),
+
+    lookups = {'type'},
 })
 
 -- PC Update
@@ -1893,13 +1897,16 @@ types.incoming[0x0CA] = struct({
 })
 
 -- LS Message
-types.incoming[0x0CC] = struct({
-    flags               = {0x00, flags},
-    message             = {0x04, string(0x80)},
-    timestamp           = {0x84, time},
-    player_name         = {0x88, pc_name},
-    permissions         = {0x94, data(4)},
-    linkshell_name      = {0x98, ls_name},
+types.incoming[0x0CC] = multiple({
+    base = struct ({
+        ls_index            = {0x00, bit(uint32, 1), offset=14},
+        message             = {0x04, string(0x80)},
+        timestamp           = {0x84, time},
+        player_name         = {0x88, pc_name},
+        permissions         = {0x94, data(4)},
+        linkshell_name      = {0x98, ls_name},
+    }),
+    lookups = {'ls_index'},
 })
 
 -- Found Item

@@ -19,7 +19,7 @@ end
 local tag = structs.tag
 local string = structs.string
 local data = structs.data
-local encoded = structs.encoded
+local packed_string = structs.packed_string
 
 local int8 = structs.int8
 local int16 = structs.int16

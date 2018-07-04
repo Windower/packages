@@ -19,48 +19,39 @@ local data = account_data.data
 local login_event = account_events.data.login
 local logout_event = account_events.data.logout
 
-local handle_00A = function(p)
-    coroutine.schedule(function()
-        local login = not data.logged_in
-        if not login then
-            return
-        end
+packets.incoming:register_init({
+    [{0x00A}] = function(p)
+        coroutine.schedule(function()
+            local login = not data.logged_in
+            if not login then
+                return
+            end
 
-        local info = memory.account_info
-        data.logged_in = true
-        data.server = info.server
-        data.name = info.name
-        data.id = info.id
+            local info = memory.account_info
+            data.logged_in = true
+            data.server = info.server
+            data.name = info.name
+            data.id = info.id
 
-        login_event:trigger()
-    end)
-end
+            login_event:trigger()
+        end)
+    end,
+    [{0x00B, 0x01}] = function(p)
+        coroutine.schedule(function()
+            local logout = p.type == 1
+            if not logout then
+                return
+            end
 
-local handle_00B = function(p)
-    coroutine.schedule(function()
-        local logout = p.type == 1
-        if not logout then
-            return
-        end
+            data.logged_in = false
+            data.server = nil
+            data.name = nil
+            data.id = nil
 
-        data.logged_in = false
-        data.server = nil
-        data.name = nil
-        data.id = nil
-
-        logout_event:trigger()
-    end)
-end
-
-packets.incoming[0x00A]:register(handle_00A)
-packets.incoming[0x00B]:register(handle_00B)
-
-local last_00A = packets.incoming[0x00A].last
-local last_00B = packets.incoming[0x00B].last
-
-if last_00A and (not last_00B or last_00B.timestamp < last_00A.timestamp) then
-    handle_00A(last_00A)
-end
+            logout_event:trigger()
+        end)
+    end,
+})
 
 --[[
 Copyright © 2018, Windower Dev Team
