@@ -1,6 +1,6 @@
 <package>
-  <name>distance</name>
-  <version>1.0.0.1</version>
+  <name>target_info</name>
+  <version>1.0.0.0</version>
   <type>addon</type>
   <dependencies>
     <dependency>target</dependency>
