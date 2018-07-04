@@ -70,13 +70,13 @@ packets.incoming:register_init({
     end,
 
     [{0x01B}] = function(p)
-    local data = player.data
-    data.main_job_id = p.main_job_id
-    data.main_job_level = p.main_job_level
-    data.sub_job_id = p.sub_job_id
-    data.sub_job_level = p.sub_job_level
-    data.hp_max = p.hp_max
-    data.mp_max = p.mp_max
+        local data = player.data
+        data.main_job_id = p.main_job_id
+        data.main_job_level = p.main_job_level
+        data.sub_job_id = p.sub_job_id
+        data.sub_job_level = p.sub_job_level
+        data.hp_max = p.hp_max
+        data.mp_max = p.mp_max
         for i = 0, 0x17 do
             data.job_levels[i] = p.job_levels[i]
         end
