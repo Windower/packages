@@ -40,7 +40,7 @@ packets.incoming:register_init({
                     local base_value = v.status_effects[pos]
                     local mask_index = bit.rshift((pos), 2)
                     local mask_offset = 2 * (pos % 4)
-                    local mask_value = bit.rshift(v.status_effect_mask[mask_index], mask_offset) % 4
+                    local mask_value = bit.rshift(v.status_effect_mask:byte(mask_index + 1), mask_offset) % 4
                     local temp = base_value + 0x100 * mask_value
                     if temp ~= 0xFF then
                         data[i + 1][pos] = temp
