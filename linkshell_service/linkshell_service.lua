@@ -13,24 +13,27 @@ linkshell.data = {
 
 local handle_0CC = function(p)
     local data = linkshell.data[p.ls_index + 1]
-    data.name = p.linkshell_name
-    data.lsmes.timestamp = p.timestamp
-    data.lsmes.author = p.player_name
-    data.lsmes.text = p.message
+    data.name              = p.linkshell_name
+    data.lsmes.timestamp   = p.timestamp
+    data.lsmes.author      = p.player_name
+    data.lsmes.text        = p.message
     data.lsmes.permissions = p.permissions
 end
+
 packets.incoming:register_init({
     [{0x0CC, 0}] = handle_0CC,
     [{0x0CC, 1}] = handle_0CC,
+
     [{0x037}] = function(p)
         local data = linkshell.data[1]
-        data.color.red = p.linkshell1_red
-        data.color.green = p.linkshell1_green
-        data.color.blue = p.linkshell1_blue
+        data.color.red    = p.linkshell1_red
+        data.color.green  = p.linkshell1_green
+        data.color.blue   = p.linkshell1_blue
     end,
-    [{0x0E0}]    = function(p)
+
+    [{0x0E0}] = function(p)
         local data = linkshell.data[p.linkshell_number]
-        data.bag_index = p.bag_index
+        data.bag_index    = p.bag_index
     end,
 })
 
