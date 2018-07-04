@@ -9,7 +9,6 @@ local pack = require('pack')
 local structs = {}
 
 local make_cdef = function(arranged, size)
-    local debug = arranged[1] and arranged[1].cname == 'ls_index'
     local cdefs = {}
     local index = 0x00
     local offset = 0
@@ -94,7 +93,6 @@ local make_cdef = function(arranged, size)
         cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(size - index) .. ']'
     end
 
-    if debug then print('struct{' .. table.concat(cdefs, ';') .. ';}') end
     return next(cdefs) and ('struct{' .. table.concat(cdefs, ';') .. ';}') or 'struct{}'
 end
 
