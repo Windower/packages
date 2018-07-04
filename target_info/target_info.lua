@@ -13,9 +13,8 @@ local config_state = {
     height = 48,
     color = ui.color.black,
 }
-function round(num, prec)
-    local mult = 10^(prec or 0)
-    return math.floor((num * mult + 0.5) / mult)
+function round(num)
+    return math.floor((num + 0.5))
 end
 
 ui.display(function()
@@ -23,7 +22,7 @@ ui.display(function()
         local entity = target.st or target.t
         if entity then
 
-            local entity_speed = ((entity.status == 5 or entity.status == 85) and round((100 * (entity.movement_speed / 4)), 2)) or round((100 * (entity.movement_speed / 5 - 1)), 2)
+            local entity_speed = ((entity.status == 5 or entity.status == 85) and round(100 * (entity.movement_speed / 4))) or round(100 * (entity.movement_speed / 5 - 1))
 
             if entity_speed > 0 then
                 text_color = ui.color.lightgreen
