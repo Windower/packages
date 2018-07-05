@@ -7,11 +7,12 @@ local cache = setmetatable({}, { __mode = 'k' })
 
 local shared_meta = {}
 
-local new_nesting_table = function(path, client, init)
+local new_nesting_table = function(path, client, overrides, init)
     local result = init or {}
     cache[result] = {
         path = path,
         client = client,
+        overrides = overrides or {},
     }
     return setmetatable(result, shared_meta)
 end
@@ -30,8 +31,18 @@ end
 
 shared_meta.__index = function(t, k)
     local info = cache[t]
-
     local base_path = info.path
+    local client = info.client
+    local overrides = info.overrides
+
+    local override = overrides[k]
+    if type(override) == 'function' then
+        local data = client:call(override)
+        return type(data) == 'table'
+            and new_nesting_table(path, client)
+            or data
+    end
+
     local base_path_count = #base_path
     local path = {}
     for i = 1, base_path_count do
@@ -39,10 +50,9 @@ shared_meta.__index = function(t, k)
     end
     path[base_path_count + 1] = k
 
-    local client = info.client
     local data = client:call(get, unpack(path))
     return type(data) == 'table'
-        and new_nesting_table(path, client)
+        and new_nesting_table(path, client, overrides)
         or data
 end
 
@@ -64,6 +74,7 @@ end
 shared_meta.__pairs = function(t)
     local info = cache[t]
     local client = info.client
+    local overrides = info.overrides
     return function(base_path, k)
         local key, value = client:call(iterate, k, unpack(base_path))
         if type(value) ~= 'table' then
@@ -77,12 +88,12 @@ shared_meta.__pairs = function(t)
         end
         path[base_path_count + 1] = k
 
-        return key, new_nesting_table(path, client)
+        return key, new_nesting_table(path, client, overrides)
     end, info.path, nil
 end
 
 return {
-    library = function(name)
+    library = function(name, overrides)
         local service_name = name .. '_service'
         local data_client = shared.get(service_name, service_name .. '_data')
         local events_client = shared.get(service_name, service_name .. '_events')
@@ -96,7 +107,7 @@ return {
             end)
         end
 
-        return new_nesting_table({}, data_client, events)
+        return new_nesting_table({}, data_client, overrides, events)
     end,
     server = function()
         local name = windower.package_path:gsub('(.+\\)', '')
