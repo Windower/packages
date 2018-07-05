@@ -2201,11 +2201,11 @@ types.incoming[0x113] = struct({
     rems_tale_chapter_8     = {0xD1, uint8},
     rems_tale_chapter_9     = {0xD2, uint8},
     rems_tale_chapter_10    = {0xD3, uint8},
-    bloodshed_plans         = {0xD4, bit(data(8), 9), offset=0},
-    umbrage_plans           = {0xD4, bit(data(8), 9), offset=9},
-    ritualistic_plans       = {0xD4, bit(data(8), 9), offset=18},
-    tutelary_plans          = {0xD4, bit(data(8), 9), offset=27},
-    primacy_plans           = {0xD4, bit(data(8), 9), offset=36}, -- Upper two bytes here aren't used.
+    bloodshed_plans         = {0xD4, bit(uint64, 9), offset=0},
+    umbrage_plans           = {0xD4, bit(uint64, 9), offset=9},
+    ritualistic_plans       = {0xD4, bit(uint64, 9), offset=18},
+    tutelary_plans          = {0xD4, bit(uint64, 9), offset=27},
+    primacy_plans           = {0xD4, bit(uint64, 9), offset=36}, -- Upper two bytes here aren't used.
     reclamation_marks       = {0xDC, int32},
     unity_accolades         = {0xE0, int32},
     fire_crystals           = {0xE4, uint16},
