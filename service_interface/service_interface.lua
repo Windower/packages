@@ -1,4 +1,6 @@
 local shared = require('shared')
+local windower = require('windower')
+local string = require('string')
 
 local cache = setmetatable({}, { __mode = 'k' })
 
@@ -79,9 +81,23 @@ shared_meta.__pairs = function(t)
 end
 
 return {
-    library = function(service_name)
-        local data_client = shared.get(service_name, service_name:gsub('_service', '_data'))
+    library = function(name)
+        local service_name = name .. '_service'
+        local data_client = shared.get(service_name, service_name .. '_data')
 
         return new_nesting_table({}, data_client)
+    end,
+    server = function()
+        local name = windower.package_path:gsub('(.+\\)', '')
+        local data = shared.new(name .. '_data')
+
+        data.data = {}
+        data.env = {
+            select = select,
+            next = next,
+            type = type,
+        }
+
+        return data
     end,
 }
