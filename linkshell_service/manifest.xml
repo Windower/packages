@@ -1,0 +1,8 @@
+<package>
+  <name>linkshell_service</name>
+  <version>1.0.0.0</version>
+  <type>service</type>
+  <dependencies>
+    <dependency>packets</dependency>
+  </dependencies>
+</package>
