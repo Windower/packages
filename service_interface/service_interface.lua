@@ -1,4 +1,5 @@
 local shared = require('shared')
+local event = require('event')
 local windower = require('windower')
 local string = require('string')
 
@@ -6,8 +7,8 @@ local cache = setmetatable({}, { __mode = 'k' })
 
 local shared_meta = {}
 
-local new_nesting_table = function(path, client)
-    local result = {}
+local new_nesting_table = function(path, client, init)
+    local result = init or {}
     cache[result] = {
         path = path,
         client = client,
@@ -84,8 +85,18 @@ return {
     library = function(name)
         local service_name = name .. '_service'
         local data_client = shared.get(service_name, service_name .. '_data')
+        local event_client = shared.get(service_name, service_name .. '_events')
 
-        return new_nesting_table({}, data_client)
+        local events = {}
+        for name, raw_event in pairs(event_client:read()) do
+            local slim_event = event.slim.new()
+            events[name] = slim_event
+            raw_event:register(function(...)
+                slim_event:trigger(...)
+            end)
+        end
+
+        return new_nesting_table({}, data_client, events)
     end,
     server = function()
         local name = windower.package_path:gsub('(.+\\)', '')
