@@ -174,9 +174,9 @@ local alliance_info = struct({
     party_1_count           = {0x13, uint8},
     party_2_count           = {0x14, uint8},
     party_3_count           = {0x15, uint8},
-    st_selection            = {0x4C, uint8},
-    st_selection_max        = {0x5E, uint8}, -- 6 for <stpt>, 18 for <stal>
-    _unknown_5F             = {0x5F, uint8}, -- Seems to be FF when in <stpt> or <stal>, otherwise 00
+    st_selection            = {0x50, uint8},
+    st_selection_max        = {0x63, uint8}, -- 6 for <stpt>, 18 for <stal>
+    _unknown_5F             = {0x64, uint8}, -- Seems to be FF when in <stpt> or <stal>, otherwise 00
 })
 
 local party_member = struct({
