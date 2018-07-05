@@ -85,10 +85,10 @@ return {
     library = function(name)
         local service_name = name .. '_service'
         local data_client = shared.get(service_name, service_name .. '_data')
-        local event_client = shared.get(service_name, service_name .. '_events')
+        local events_client = shared.get(service_name, service_name .. '_events')
 
         local events = {}
-        for name, raw_event in pairs(event_client:read()) do
+        for name, raw_event in pairs(events_client:read()) do
             local slim_event = event.slim.new()
             events[name] = slim_event
             raw_event:register(function(...)
@@ -100,15 +100,16 @@ return {
     end,
     server = function()
         local name = windower.package_path:gsub('(.+\\)', '')
-        local data = shared.new(name .. '_data')
+        local data_server = shared.new(name .. '_data')
+        local events_server = shared.new(name .. '_events')
 
-        data.data = {}
-        data.env = {
+        data_server.data = {}
+        data_server.env = {
             select = select,
             next = next,
             type = type,
         }
 
-        return data
+        return data_server, events_server
     end,
 }
