@@ -92,6 +92,10 @@ shared_meta.__pairs = function(t)
     end, info.path, nil
 end
 
+shared_meta.__newindex = function()
+    error('Library table cannot be modified', 2)
+end
+
 return {
     library = function(name, overrides)
         local service_name = name .. '_service'
