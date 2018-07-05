@@ -2179,7 +2179,7 @@ types.incoming[0x113] = struct({
     therion_ichor           = {0x9C, int32},
     allied_notes            = {0xA0, int32},
     aman_vouchers_stored    = {0xA4, int16},
-    unity_accolades         = {0xA6, int16},
+    login_points            = {0xA6, int16},
     cruor                   = {0xA8, int32},
     resistance_credits      = {0xAC, int32},
     dominion_notes          = {0xB0, int32},
@@ -2190,7 +2190,33 @@ types.incoming[0x113] = struct({
     traverser_stones        = {0xBC, int32},
     voidstones              = {0xC0, int32},
     kupofrieds_corundums    = {0xC4, int32},
-    moblin_pheromone_sacks  = {0xC8, uint8},
+    moblin_pheromone_sacks  = {0xC8, uint8}, -- May actually be uint16
+    rems_tale_chapter_1     = {0xCA, uint8},
+    rems_tale_chapter_2     = {0xCB, uint8},
+    rems_tale_chapter_3     = {0xCC, uint8},
+    rems_tale_chapter_4     = {0xCD, uint8},
+    rems_tale_chapter_5     = {0xCE, uint8},
+    rems_tale_chapter_6     = {0xCF, uint8},
+    rems_tale_chapter_7     = {0xD0, uint8},
+    rems_tale_chapter_8     = {0xD1, uint8},
+    rems_tale_chapter_9     = {0xD2, uint8},
+    rems_tale_chapter_10    = {0xD3, uint8},
+    bloodshed_plans         = {0xD4, bit(uint64, 9), offset=0},
+    umbrage_plans           = {0xD4, bit(uint64, 9), offset=9},
+    ritualistic_plans       = {0xD4, bit(uint64, 9), offset=18},
+    tutelary_plans          = {0xD4, bit(uint64, 9), offset=27},
+    primacy_plans           = {0xD4, bit(uint64, 9), offset=36}, -- Upper two bytes here aren't used.
+    reclamation_marks       = {0xDC, int32},
+    unity_accolades         = {0xE0, int32},
+    fire_crystals           = {0xE4, uint16},
+    ice_crystals            = {0xE6, uint16},
+    wind_crystals           = {0xE8, uint16},
+    earth_crystals          = {0xEA, uint16},
+    lightning_crystals      = {0xEC, uint16},
+    water_crystals          = {0xEE, uint16},
+    light_crystals          = {0xF0, uint16},
+    dark_crystals           = {0xF2, uint16},
+    -- Packet structure current as of 2018-07-05 update.
 })
 
 -- Fish Bite Info
@@ -2216,7 +2242,7 @@ types.incoming[0x118] = struct({
     bayld                   = {0x00, int32},
     kinetic_units           = {0x04, uint16},
     coalition_imprimaturs   = {0x06, uint8},
-    -- 0x07 seems to be unused currently
+    -- 0x07 does not seem to be displayed currently, so its meaning is unclear. Was 0x16 for me.
     obsidian_fragments      = {0x08, int32},
     lebondopt_wings         = {0x0C, uint16},
     pulchridopt_wings       = {0x0E, uint16},
@@ -2269,11 +2295,14 @@ types.incoming[0x118] = struct({
     pellucid_stone          = {0x41, uint8},
     fern_stone              = {0x42, uint8},
     taupe_stone             = {0x43, uint8},
-    -- 0x44~0x45: Unknown
+    mellidopt_wings         = {0x44, uint16},
     escha_beads             = {0x46, uint16},
     escha_silt              = {0x48, int32},
     potpourri               = {0x4C, uint16},
-    -- Rest of the packet is either useless or unmapped
+    hallmarks               = {0x50, int32},
+    total_hallmarks         = {0x54, int32},
+    gallantry               = {0x58, int32},
+    -- Packet structure current as of 2018-07-05 update.
 })
 
 -- Ability timers
