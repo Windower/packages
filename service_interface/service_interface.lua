@@ -113,7 +113,7 @@ return {
 
         return new_nesting_table({}, data_client, overrides, events)
     end,
-    server = function()
+    service = function()
         local name = windower.package_path:gsub('(.+\\)', '')
         local data_server = shared.new(name .. '_data')
         local events_server = shared.new(name .. '_events')
