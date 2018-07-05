@@ -1,6 +1,5 @@
 local packets = require('packets')
 local shared = require('shared')
-local bit = require('bit')
 local linkshell = shared.new('linkshell')
 
 linkshell.env = {
