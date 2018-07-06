@@ -97,10 +97,9 @@ shared_meta.__newindex = function()
 end
 
 return {
-    library = function(name, overrides)
-        local service_name = name .. '_service'
-        local data_client = shared.get(service_name, service_name .. '_data')
-        local events_client = shared.get(service_name, service_name .. '_events')
+    new = function(name, overrides)
+        local data_client = shared.get(name, name .. '_data')
+        local events_client = shared.get(name, name .. '_events')
 
         local events = {}
         for name, raw_event in pairs(events_client:read()) do
@@ -112,19 +111,5 @@ return {
         end
 
         return new_nesting_table({}, data_client, overrides, events)
-    end,
-    service = function()
-        local name = windower.package_path:gsub('(.+\\)', '')
-        local data_server = shared.new(name .. '_data')
-        local events_server = shared.new(name .. '_events')
-
-        data_server.data = {}
-        data_server.env = {
-            select = select,
-            next = next,
-            type = type,
-        }
-
-        return data_server, events_server
     end,
 }

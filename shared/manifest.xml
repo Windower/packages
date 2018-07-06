@@ -1,5 +1,5 @@
 <package>
-  <name>service_interface</name>
+  <name>shared</name>
   <version>1.0.0.0</version>
   <type>library</type>
 </package>
