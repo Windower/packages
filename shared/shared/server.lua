@@ -14,6 +14,9 @@ return {
             type = type,
         }
 
+        events_server.data = {}
+        events_server.env = {}
+
         return data_server, events_server
     end,
 }

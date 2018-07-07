@@ -7,12 +7,13 @@ local cache = setmetatable({}, { __mode = 'k' })
 
 local shared_meta = {}
 
-local new_nesting_table = function(path, client, overrides, init)
+local new_nesting_table = function(path, client, add, disable, init)
     local result = init or {}
     cache[result] = {
         path = path,
         client = client,
-        overrides = overrides or {},
+        add = add or {},
+        disable = disable or {},
     }
     return setmetatable(result, shared_meta)
 end
@@ -33,14 +34,17 @@ shared_meta.__index = function(t, k)
     local info = cache[t]
     local base_path = info.path
     local client = info.client
-    local overrides = info.overrides
+    local add = info.add
+    local disable = info.disable
 
-    local override = overrides[k]
-    if type(override) == 'function' then
-        local data = client:call(override)
-        return type(data) == 'table'
-            and new_nesting_table(path, client)
-            or data
+    local added = add[k]
+    if type(added) == 'function' then
+        return client:call(added)
+    end
+
+    local disabled = disable[k]
+    if type(disabled) == 'boolean' and disabled then
+        return nil
     end
 
     local base_path_count = #base_path
@@ -52,7 +56,7 @@ shared_meta.__index = function(t, k)
 
     local data = client:call(get, unpack(path))
     return type(data) == 'table'
-        and new_nesting_table(path, client, overrides)
+        and new_nesting_table(path, client, added)
         or data
 end
 
@@ -97,7 +101,9 @@ shared_meta.__newindex = function()
 end
 
 return {
-    new = function(name, overrides)
+    new = function(name, options)
+        options = options or {}
+
         local data_client = shared.get(name, name .. '_data')
         local events_client = shared.get(name, name .. '_events')
 
@@ -110,6 +116,6 @@ return {
             end)
         end
 
-        return new_nesting_table({}, data_client, overrides, events)
+        return new_nesting_table({}, data_client, options.add, options.disable, events)
     end,
 }
