@@ -48,7 +48,7 @@ packets.incoming:register_init({
 
             local info = memory.account_info
             data.logged_in = true
-            data.server_id = info.server_id
+            data.server_id = info.server_id % 0x20
             data.server_name = server_names[data.server_id] or 'Unknown'
             data.name = info.name
             data.id = info.id
