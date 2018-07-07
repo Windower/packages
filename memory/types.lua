@@ -77,13 +77,14 @@ local linkshell_color = struct({
 })
 
 local model = struct({
-    head                    = {0x0, uint16},
-    body                    = {0x2, uint16},
-    hands                   = {0x4, uint16},
-    legs                    = {0x6, uint16},
-    feet                    = {0x8, uint16},
-    main                    = {0xA, uint16},
-    ranged                  = {0xC, uint16},
+    head_model_id           = {0x0, uint16},
+    body_model_id           = {0x2, uint16},
+    hands_model_id          = {0x4, uint16},
+    legs_model_id           = {0x6, uint16},
+    feet_model_id           = {0x8, uint16},
+    main_model_id           = {0xA, uint16},
+    sub_model_id            = {0xC, uint16},
+    range_model_id          = {0xE, uint16},
 })
 
 local display = struct({
@@ -118,8 +119,8 @@ local entity = struct({
     owner                   = {0x0E8, entity_id},
     hp_percent              = {0x0EC, percent},
     target_type             = {0x0EE, uint8}, -- 0 = PC, 1 = NPC, 2 = NPC with fixed model (including various types of books), 3 = Doors and similar objects
-    race                    = {0x0EF, uint16},
-    face                    = {0x0FC, uint16},
+    race_id                 = {0x0EF, uint16},
+    face_model_id           = {0x0FC, uint16},
     model                   = {0x0FE, model},
     freeze                  = {0x11C, bool},
     flags                   = {0x120, uint32[0x06]},
