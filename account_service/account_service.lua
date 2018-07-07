@@ -1,10 +1,9 @@
 local event = require('event')
 local memory = require('memory')
 local packets = require('packets')
-local shared = require('shared')
+local server = require('shared.server')
 
-account_data = shared.new('account_data')
-account_events = shared.new('account_events')
+account_data, account_events = server.new()
 
 account_data.data = {
     logged_in = false,
@@ -19,6 +18,26 @@ local data = account_data.data
 local login_event = account_events.data.login
 local logout_event = account_events.data.logout
 
+local server_names = {
+    [2] = 'Undine',
+    [4] = 'Bahamut',
+    [5] = 'Shiva',
+    [8] = 'Phoenix',
+    [9] = 'Carbuncle',
+    [10] = 'Fenrir',
+    [11] = 'Sylph',
+    [12] = 'Valefor',
+    [14] = 'Leviathan',
+    [15] = 'Odin',
+    [19] = 'Quetzalcoatl',
+    [20] = 'Siren',
+    [23] = 'Ragnarok',
+    [26] = 'Cerberus',
+    [28] = 'Bismarck',
+    [30] = 'Lakshmi',
+    [31] = 'Asura',
+}
+
 packets.incoming:register_init({
     [{0x00A}] = function(p)
         coroutine.schedule(function()
@@ -29,7 +48,8 @@ packets.incoming:register_init({
 
             local info = memory.account_info
             data.logged_in = true
-            data.server = info.server
+            data.server_id = info.server_id % 0x20
+            data.server_name = server_names[data.server_id] or 'Unknown'
             data.name = info.name
             data.id = info.id
 
@@ -44,7 +64,8 @@ packets.incoming:register_init({
             end
 
             data.logged_in = false
-            data.server = nil
+            data.server_id = nil
+            data.server_name = nil
             data.name = nil
             data.id = nil
 
