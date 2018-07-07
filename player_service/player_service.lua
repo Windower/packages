@@ -44,16 +44,16 @@ packets.incoming:register_init({
         if p.update_model then
             local model = data.model
             local m = p.model
-            model.face = m.face
-            model.race = m.race
-            model.head = m.head
-            model.body = m.body
-            model.hands = m.hands
-            model.legs = m.legs
-            model.feet = m.feet
-            model.main = m.main
-            model.sub = m.sub
-            model.range = m.range
+            data.race_id = m.race_id
+            model.face_id = m.face_model_id
+            model.head_id = m.head_model_id
+            model.body_id = m.body_model_id
+            model.hands_id = m.hands_model_id
+            model.legs_id = m.legs_model_id
+            model.feet_id = m.feet_model_id
+            model.main_id = m.main_model_id
+            model.sub_id = m.sub_model_id
+            model.range_id = m.range_model_id
         end
     end,
 
@@ -71,10 +71,9 @@ packets.incoming:register_init({
 
     [{0x01B}] = function(p)
         local data = player.data
+        data.race_id = p.race_id
         data.main_job_id = p.main_job_id
-        data.main_job_level = p.main_job_level
         data.sub_job_id = p.sub_job_id
-        data.sub_job_level = p.sub_job_level
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
         for i = 0, 0x17 do
