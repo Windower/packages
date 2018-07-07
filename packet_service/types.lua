@@ -1391,13 +1391,14 @@ types.incoming[0x051] = struct({
     -- 0x12: May varying meaningfully, but it's unclear
 })
 
--- Logout Time
--- This packet is likely used for an entire class of system messages,
--- but the only one commonly encountered is the logout counter.
+-- System message
+-- This packet is used for system messages.
+-- The most commonly encountered is the logout counter (id = 0x0007).
 types.incoming[0x053] = struct({
-    param               = {0x00, uint32},
-    -- 0x04~0x07: Possibly param2, 00 00 00 00 observed in a packet without param2
-    message_id          = {0x08, uint16}, -- #BYRTH# Should the msb be masked off? Which dialog table is this?
+    -- Packing in the first eight bytes of the packet might be somewhat variable
+    param_1             = {0x00, uint32},
+    param_2             = {0x04, uint32},
+    message_id          = {0x08, uint16}, -- POLUtils referred to this resource as "System Messages (2)"
 })
 
 -- Key Item Log
@@ -1813,7 +1814,7 @@ types.incoming[0x078] = struct({
     player_id           = {0x00, entity},
     -- 0x04~0x07: Proposal ID?
     proposer_index      = {0x08, entity_index},
-    propeser_name       = {0x0A, string(15)}, -- #BYRTH# Only 15 bytes?
+    proposer_name       = {0x0A, string(15)}, -- #BYRTH# Only 15 bytes?
     mode                = {0x19, uint8}, -- Not typical chat mode mapping. 1 = Party
     proposal            = {0x1A, string()}, -- Proposal text, complete with special characters
 })
@@ -1937,7 +1938,7 @@ types.incoming[0x0C9] = multiple({
     -- Equipment listing
     [0x03] = struct({
         count           = {0x07, uint8},
-        equipment       = {0x08, check_item[0x0B]}, -- #BYRTH# Why only 12?
+        equipment       = {0x08, check_item[8]}, -- #BYRTH# There are `count` copies of this struct, not necessarily 8
     })
 })
 
@@ -1997,7 +1998,7 @@ types.incoming[0x0D3] = struct({
 -- Party Invite: Provides information about the inviter
 types.incoming[0x0DC] = struct({
     player_id           = {0x00, entity},
-    flags               = {0x04, uint32}, -- This may also contain the type of invite (alliance vs. party) #BYRTH# Should be a bitfield
+    flags               = {0x04, uint32}, -- This may also contain the type of invite (alliance vs. party)
     player_name         = {0x08, pc_name},
 })
 
@@ -2007,7 +2008,7 @@ types.incoming[0x0DD] = struct({
     hp                  = {0x04, uint32},
     mp                  = {0x08, uint32},
     tp                  = {0x0C, uint32},
-    flags               = {0x10, uint16}, -- #BYRTH# Should be a bitfield
+    flags               = {0x10, uint16},
     player_index        = {0x14, entity_index},
     hp_percent          = {0x19, percent},
     mp_percent          = {0x1A, percent},
@@ -2192,7 +2193,7 @@ types.incoming[0x112] = struct({
     -- Bitpacked quest completion flags. The position of the bit is the quest ID.
     -- Data regarding available quests and repeatability is handled client side or
     -- somewhere else
-    roe_quest_bitfield  = {0x00, data(0x80)}, -- #BYRTH# Should be a bitfield
+    roe_quest_bitfield  = {0x00, data(0x80)},
     order               = {0x80, uint32}, -- 0,1,2,3
 })
 
@@ -2286,7 +2287,7 @@ types.incoming[0x116] = struct({
 -- Equipset
 types.incoming[0x117] = struct({
     count               = {0x00, uint8},
-    equipment           = {0x04, equipset_entry[0x10]}, -- #BYRTH# This is problematic. Should be indexed by count
+    equipment           = {0x04, equipset_entry[0x10]}, -- #BYRTH# This is problematic. Should be indexed by `count`
     old_equipment       = {0x44, equipset_entry[0x10]}, -- This is my memory
 })
 
