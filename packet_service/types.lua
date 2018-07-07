@@ -1208,10 +1208,12 @@ types.incoming[0x04C] = multiple({
 
     -- Open menu response
     [0x02] = struct({
+        -- Two identical packets were sent to me
         _known1         = {0x01, uint8, const=0xFF}, 
         success         = {0x02, bool},
         _known2         = {0x03, uint8, const=0x00},
         -- 0x04: 0x35 observed
+        -- 0x2C~0x33 take values.
     }),
 
     -- Unknown Logout
@@ -1231,6 +1233,7 @@ types.incoming[0x04C] = multiple({
         _known2         = {0x09, uint8, const=0x00},
         item_id         = {0x0A, item},
         stack           = {0x0C, bool},
+        -- 0x2E was 0x32 for me. The rest of the undefined bytes were 0x00.
     }),
 
     -- Open sales status menu
@@ -1239,6 +1242,10 @@ types.incoming[0x04C] = multiple({
         success         = {0x02, bool},
         _known2         = {0x03, uint8, const=0x00},
         -- 0x04: 0x72 observed
+        -- 0x06: 0x08 observed
+        -- 0x2E: 0x32 observed
+        -- 0x30~0x37 are likely junk. Came through as "AuctionC"
+        -- Rest of the bytes were 0x00 for me.
     }),
 
     --[[ sale_status = {
