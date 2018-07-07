@@ -1256,7 +1256,7 @@ types.incoming[0x04C] = multiple({
         [0x10] = Checking ? Just looks locked to me
         All unlisted combinations just grey out every slot.
     } ]]
-    
+
     -- Open menu confirmation
     [0x0A] = struct({
         sale_slot       = {0x01, uint8},
@@ -1314,7 +1314,6 @@ types.incoming[0x04C] = multiple({
         auction_state   = {0x2C, uint32}, -- 04 00 00 00 in the first packet and 00 00 00 00 when confirmed canceled.
         auction_id      = {0x30, uint32}, -- present in the first packet and blanked in the second.
         auction_start   = {0x34, time}, -- UTC time
-        
     }),
 
     -- Sales item status - Sent twice. On action completion, the second seems to contain updated information
