@@ -239,7 +239,7 @@ types.account_info = struct({'538B5C240856578BFB83C9FF33C053F2AEA1'}, {
     port                    = {0x26C, uint16},
     id                      = {0x314, entity_id},
     name                    = {0x318, pc_name},
-    server                  = {0x390, uint8},
+    server_id               = {0x390, uint8},
 })
 
 types.target = struct({'53568BF18B480433DB3BCB75065E33C05B59C38B0D&', static_offsets = {0x18, 0x00}}, {
