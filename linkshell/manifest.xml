@@ -1,0 +1,9 @@
+<package>
+  <name>linkshell</name>
+  <version>1.0.0.8</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>shared</dependency>
+    <dependency>linkshell_service</dependency>
+  </dependencies>
+</package>

@@ -1953,7 +1953,7 @@ types.incoming[0x0CA] = struct({
 -- LS Message
 types.incoming[0x0CC] = multiple({
     base = struct ({
-        ls_index            = {0x00, bit(uint32, 1), offset=14},
+        linkshell_index     = {0x00, bit(uint32, 1), offset=14},
         message             = {0x04, string(0x80)},
         timestamp           = {0x84, time},
         player_name         = {0x88, pc_name},
@@ -1961,7 +1961,7 @@ types.incoming[0x0CC] = multiple({
         linkshell_name      = {0x98, ls_name},
     }),
 
-    lookups = {'ls_index'},
+    lookups = {'linkshell_index'},
 })
 
 -- Found Item
@@ -2042,13 +2042,14 @@ types.incoming[0x0DF] = struct({
     sub_job_level       = {0x1F, uint8},
 })
 
--- Unknown packet 0x0E0: I still can't make heads or tails of the content. The packet is always 8 bytes long.
-
-
 -- Linkshell Equip
-types.incoming[0x0E0] = struct({
-    linkshell_number    = {0x00, uint8},
-    bag_index           = {0x01, slot},
+types.incoming[0x0E0] = multiple({
+    base = struct({
+        linkshell_number    = {0x00, uint8},
+        bag_index           = {0x01, slot},
+    }),
+
+    lookups = {'linkshell_number'},
 })
 
 -- Party Member List

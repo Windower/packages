@@ -1,50 +1,6 @@
-local packets = require('packets')
-local server = require('shared.server')
+local client = require('shared.client')
 
-linkshell_data, linkshell_events = server.new()
-
-local root_data = linkshell_data.data
-
-local handle_0CC = function(p)
-    local linkshell_number = p.linkshell_index + 1
-    local data = root_data[linkshell_number]
-
-    data.name = p.linkshell_name
-    data.permissions = p.permissions
-    data.lsmes = {
-        p.timestamp,
-        p.player_name,
-        p.message,
-    }
-end
-
-packets.incoming:register_init({
-    [{0x0CC, 0}] = handle_0CC,
-    [{0x0CC, 1}] = handle_0CC,
-    [{0x037}] = function(p)
-        local data = root_data[1]
-        if not data then
-            return
-        end
-
-        data.color = {
-            p.linkshell1_red,
-            p.linkshell1_green,
-            p.linkshell1_blue,
-        }
-    end,
-    [{0x0E0}] = function(p)
-        local new_index = p.bag_index
-        if new_index == 0 then
-            root_data[p.linkshell_number] = nil
-            return
-        end
-
-        root_data[p.linkshell_number] = {
-            bag_index = new_index,
-        }
-    end,
-})
+return client.new('linkshell_service')
 
 --[[
 Copyright © 2018, Windower Dev Team
