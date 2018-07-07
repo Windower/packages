@@ -73,16 +73,14 @@ local stats = struct({
 })
 
 local model = struct({
-    face                = {0x00, uint8},
-    race                = {0x01, uint8},
-    head                = {0x02, uint16},
-    body                = {0x04, uint16},
-    hands               = {0x06, uint16},
-    legs                = {0x08, uint16},
-    feet                = {0x0A, uint16},
-    main                = {0x0C, uint16},
-    sub                 = {0x0E, uint16},
-    range               = {0x10, uint16},
+    head_model_id       = {0x00, uint16},
+    body_model_id       = {0x02, uint16},
+    hands_model_id      = {0x04, uint16},
+    legs_model_id       = {0x06, uint16},
+    feet_model_id       = {0x08, uint16},
+    main_model_id       = {0x0A, uint16},
+    sub_model_id        = {0x0C, uint16},
+    range_model_id      = {0x0E, uint16},
 })
 
 local resistances = struct({
@@ -161,7 +159,7 @@ local unity = struct({
 local alliance_member = struct({
     player_id           = {0x00, entity},
     player_index        = {0x04, entity_index},
-    flags               = {0x06, uint16}, -- #BYRTH# Should be a bitfield somehow?
+    flags               = {0x06, uint16},
     zone_id             = {0x08, zone},
     -- 0x0A~0x0B: Always 0?
 })
@@ -253,7 +251,9 @@ types.incoming[0x00A] = struct({
     timestamp_1         = {0x34, time},
     timestamp_2         = {0x38, time},
     _dupe_zone          = {0x3E, zone},
-    model               = {0x40, model},
+    face_model_id       = {0x40, uint8},
+    race_id             = {0x41, race},
+    model               = {0x42, model},
     day_music           = {0x52, uint16},
     night_music         = {0x54, uint16},
     solo_combat_music   = {0x56, uint16},
@@ -353,7 +353,9 @@ types.incoming[0x00D] = struct({
     linkshell_green     = {0x21, uint8},
     linkshell_blue      = {0x22, uint8},
     face_flags          = {0x3F, uint8}, -- 0, 3, 4 or 8
-    model               = {0x44, model},
+    face_model_id       = {0x44, uint8},
+    race_id             = {0x45, race},
+    model               = {0x46, model},
     name                = {0x56, string()},
 })
 
@@ -396,7 +398,9 @@ types.incoming[0x00E] = struct({
     state               = {0x1B, state},
     flags               = {0x1C, flags},
     claimer_id          = {0x28, entity},
-    model               = {0x2D, model},
+    face_model_id       = {0x2D, uint8},
+    race_id             = {0x2E, race},
+    model               = {0x2F, model},
     name                = {0x30, string()},
 })
 
@@ -413,9 +417,9 @@ types.incoming[0x017] = struct({
 
 -- Job Info
 types.incoming[0x01B] = struct({
+    race_id             = {0x00, race},
     main_job_id         = {0x04, job},
-    main_job_level      = {0x05, uint8}, -- #BYRTH# for some reason there is ambiguity about this. Could be flags?
-    sub_job_level       = {0x06, uint8}, 
+    -- 0x05~0x06 were 0x0101 for me
     sub_job_id          = {0x07, job},
     sub_job_unlocked    = {0x08, boolbit(uint32)},
     sub_jobs_unlocked   = {0x08, bit(uint32, 0x16), offset=1}, -- flags field
@@ -627,7 +631,7 @@ types.incoming[0x02D] = struct({
 })
 
 -- Mog House Menu
--- types.incoming[0x02E] = struct({}) -- Seems to contain no fields. Just needs to be sent to client to open. -- #BYRTH# currently causes an error in structs
+types.incoming[0x02E] = struct({}) -- Seems to contain no fields. Just needs to be sent to client to open.
 
 -- Digging Animation
 types.incoming[0x02F] = struct({
@@ -942,7 +946,7 @@ types.incoming[0x044] = multiple({
     [0x12] = struct({
         automaton_head  = {0x04, uint8}, -- Harlequinn 1, Valoredge 2, Sharpshot 3, Stormwaker 4, Soulsoother 5, Spiritreaver 6
         automaton_frame = {0x05, uint8}, -- Harlequinn 20, Valoredge 21, Sharpshot 22, Stormwaker 23
-        attachments     = {0x06, item[0x0C]}, -- #BYRTH# Attachment assignments are based off their position in the equipment list. Offset is +2237, so Strobe is 01, etc.
+        attachments     = {0x06, item[0x0C]}, -- Attachment assignments are based off their position in the equipment list. Offset is +2237, so Strobe is 01, etc.
         available_heads = {0x14, data(4)}, -- Flags for the available heads (Position corresponds to Item ID shifted down by 8192)
         available_bodies= {0x18, data(4)}, -- #BYRTH# Flags for the available bodies (position corresponds to the item ID shifted down by ???)
         available_attach= {0x34, data(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments {position corresponds to the item ID shifted down by 2237)
@@ -976,7 +980,7 @@ types.incoming[0x044] = multiple({
     --MON
     [0x17] = struct({
         species         = {0x04, uint16},
-        instinct        = {0x08, item[12]}, -- Order is based off their position in the equipment list. #BYRTH# offset?
+        instinct        = {0x08, item[12]}, -- Order is based off their position in the equipment list.
         -- Zeroing everything after byte 0x22 has no notable effect.
     })
 })
@@ -1204,9 +1208,12 @@ types.incoming[0x04C] = multiple({
 
     -- Open menu response
     [0x02] = struct({
+        -- Two identical packets were sent to me
         _known1         = {0x01, uint8, const=0xFF}, 
         success         = {0x02, bool},
-        _known2         = {0x03, uint8, const=0x00},    
+        _known2         = {0x03, uint8, const=0x00},
+        -- 0x04: 0x35 observed
+        -- 0x2C~0x33 take values.
     }),
 
     -- Unknown Logout
@@ -1220,11 +1227,13 @@ types.incoming[0x04C] = multiple({
     [0x04] = struct({
         _known1         = {0x01, uint8, const=0xFF}, 
         success         = {0x02, bool},
-        _known2         = {0x03, uint8, const=0x00},
+        -- This was 0x04 for me.
         fee             = {0x04, uint32},
-        bag_index       = {0x08, uint16}, -- #BYRTH# Why is this a short?
+        bag_index       = {0x08, uint8},
+        _known2         = {0x09, uint8, const=0x00},
         item_id         = {0x0A, item},
         stack           = {0x0C, bool},
+        -- 0x2E was 0x32 for me. The rest of the undefined bytes were 0x00.
     }),
 
     -- Open sales status menu
@@ -1232,22 +1241,37 @@ types.incoming[0x04C] = multiple({
         _known1         = {0x01, uint8, const=0xFF}, 
         success         = {0x02, bool},
         _known2         = {0x03, uint8, const=0x00},
+        -- 0x04: 0x72 observed
+        -- 0x06: 0x08 observed
+        -- 0x2E: 0x32 observed
+        -- 0x30~0x37 are likely junk. Came through as "AuctionC"
+        -- Rest of the bytes were 0x00 for me.
     }),
 
-    --[[ enums['sale status'] = {
-        [0x00] = '-',
-        [0x02] = 'Placing',
-        [0x03] = 'On auction',
-        [0x0A] = 'Sold',
-        [0x0B] = 'Not sold',
-        [0x10] = 'Checking',
+    --[[ sale_status = {
+        [0x00] = Do not display the slot,
+        [0x02] = Placing,
+        [0x03] = On auction,
+        [0x06] = Do not display the slot,
+        [0x07] = Do not display the slot,
+        [0x0A] = Sold,
+        [0x0B] = Not sold,
+        [0x0C] = Flashes unsold before refreshing,
+        [0x0D] = Flashes sold before refreshing,
+        [0x0E] = Flashes locked (grey) before refreshing,
+        [0x0F] = Flashes locked (grey) before refreshing,
+        [0x10] = Checking ? Just looks locked to me
+        All unlisted combinations just grey out every slot.
     } ]]
+
     -- Open menu confirmation
     [0x0A] = struct({
         sale_slot       = {0x01, uint8},
         _known1         = {0x02, uint8, const=0x01},
         _known2         = {0x03, uint8, const=0x00},
-        sale_status     = {0x10, uint8}, -- see above
+        -- 12 junk bytes?
+        sale_status     = {0x10, uint8}, -- see breakoutabove
+        -- 0x11 is not a part of sale_status
         bag_index       = {0x12, uint8}, -- From when the item was put on auction
         _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
         player_name     = {0x14, pc_name},
@@ -1255,14 +1279,18 @@ types.incoming[0x04C] = multiple({
         count           = {0x26, uint8},
         ah_category     = {0x27, uint8},
         price           = {0x28, uint32},
-        timestamp       = {0x34, time},
+        auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
+        auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
+        auction_start   = {0x34, time}, -- UTC time
     }),
 
     -- Sell item confirmation - Sent twice. On action completion, the second seems to contain updated information
     [0x0B] = struct({
+        -- 0x2C~0x33: are only populated in the second packet (after the auction is confirmed accepted)
         sale_slot       = {0x01, uint8},
         -- 0x02: First packet has 0x02 here, the second one 0x01
         _known2         = {0x03, uint8, const=0x00},
+        -- 12 junk bytes?
         sale_status     = {0x10, uint8}, -- see above
         bag_index       = {0x12, uint8}, -- From when the item was put on auction
         _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
@@ -1271,8 +1299,28 @@ types.incoming[0x04C] = multiple({
         count           = {0x26, uint8},
         ah_category     = {0x27, uint8},
         price           = {0x28, uint32},
-        -- 0x2C~0x33: Only populated (with what?) on the second packet
-        timestamp       = {0x34, time},
+        auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
+        auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
+        auction_start   = {0x34, time}, -- UTC time
+    }),
+
+    -- Remove item confirmation?
+    [0x0C] = struct({
+        -- 0x03~0x37 are only populated in the first packet (before the auction is confirmed canceled)
+        _known1         = {0x01, uint8, const=0x05}, 
+        -- 0x02: First packet has 0x02 here, the second one 0x01
+        -- 13 junk bytes?
+        sale_status     = {0x10, uint8}, -- see above
+        bag_index       = {0x12, uint8}, -- From when the item was put on auction
+        _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
+        player_name     = {0x14, pc_name},
+        item_id         = {0x24, item},
+        count           = {0x26, uint8},
+        ah_category     = {0x27, uint8},
+        price           = {0x28, uint32}, 
+        auction_state   = {0x2C, uint32}, -- 04 00 00 00 in the first packet and 00 00 00 00 when confirmed canceled.
+        auction_id      = {0x30, uint32}, -- present in the first packet and blanked in the second.
+        auction_start   = {0x34, time}, -- UTC time
     }),
 
     -- Sales item status - Sent twice. On action completion, the second seems to contain updated information
@@ -1280,6 +1328,7 @@ types.incoming[0x04C] = multiple({
         sale_slot       = {0x01, uint8},
         -- 0x02: First packet has 0x02 here, the second one 0x01
         -- 0x03: First packet is 0x00, second is 0x01
+        -- 12 junk bytes?
         sale_status     = {0x10, uint8}, -- see above
         bag_index       = {0x12, uint8}, -- From when the item was put on auction
         _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
@@ -1288,7 +1337,9 @@ types.incoming[0x04C] = multiple({
         count           = {0x26, uint8},
         ah_category     = {0x27, uint8},
         price           = {0x28, uint32},
-        timestamp       = {0x34, time},
+        auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
+        auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
+        auction_start   = {0x34, time}, -- UTC time the auction started
     }),
 
     -- ???
@@ -1334,17 +1385,20 @@ types.incoming[0x050] = struct({
 
 -- Model Change
 types.incoming[0x051] = struct({
-    model               = {0x00, model},
+    face_model_id       = {0x00, uint8},
+    race_id             = {0x01, race},
+    model               = {0x02, model},
     -- 0x12: May varying meaningfully, but it's unclear
 })
 
--- Logout Time
--- This packet is likely used for an entire class of system messages,
--- but the only one commonly encountered is the logout counter.
+-- System message
+-- This packet is used for system messages.
+-- The most commonly encountered is the logout counter (id = 0x0007).
 types.incoming[0x053] = struct({
-    param               = {0x00, uint32},
-    -- 0x04~0x07: Possibly param2, 00 00 00 00 observed in a packet without param2
-    message_id          = {0x08, uint16}, -- #BYRTH# Should the msb be masked off? Which dialog table is this?
+    -- Packing in the first eight bytes of the packet might be somewhat variable
+    param_1             = {0x00, uint32},
+    param_2             = {0x04, uint32},
+    message_id          = {0x08, uint16}, -- POLUtils referred to this resource as "System Messages (2)"
 })
 
 -- Key Item Log
@@ -1760,7 +1814,7 @@ types.incoming[0x078] = struct({
     player_id           = {0x00, entity},
     -- 0x04~0x07: Proposal ID?
     proposer_index      = {0x08, entity_index},
-    propeser_name       = {0x0A, string(15)}, -- #BYRTH# Only 15 bytes?
+    proposer_name       = {0x0A, string(15)}, -- #BYRTH# Only 15 bytes?
     mode                = {0x19, uint8}, -- Not typical chat mode mapping. 1 = Party
     proposal            = {0x1A, string()}, -- Proposal text, complete with special characters
 })
@@ -1884,7 +1938,7 @@ types.incoming[0x0C9] = multiple({
     -- Equipment listing
     [0x03] = struct({
         count           = {0x07, uint8},
-        equipment       = {0x08, check_item[0x0B]}, -- #BYRTH# Why only 12?
+        equipment       = {0x08, check_item[8]}, -- #BYRTH# There are `count` copies of this struct, not necessarily 8
     })
 })
 
@@ -1944,7 +1998,7 @@ types.incoming[0x0D3] = struct({
 -- Party Invite: Provides information about the inviter
 types.incoming[0x0DC] = struct({
     player_id           = {0x00, entity},
-    flags               = {0x04, uint32}, -- This may also contain the type of invite (alliance vs. party) #BYRTH# Should be a bitfield
+    flags               = {0x04, uint32}, -- This may also contain the type of invite (alliance vs. party)
     player_name         = {0x08, pc_name},
 })
 
@@ -1954,7 +2008,7 @@ types.incoming[0x0DD] = struct({
     hp                  = {0x04, uint32},
     mp                  = {0x08, uint32},
     tp                  = {0x0C, uint32},
-    flags               = {0x10, uint16}, -- #BYRTH# Should be a bitfield
+    flags               = {0x10, uint16},
     player_index        = {0x14, entity_index},
     hp_percent          = {0x19, percent},
     mp_percent          = {0x1A, percent},
@@ -2139,7 +2193,7 @@ types.incoming[0x112] = struct({
     -- Bitpacked quest completion flags. The position of the bit is the quest ID.
     -- Data regarding available quests and repeatability is handled client side or
     -- somewhere else
-    roe_quest_bitfield  = {0x00, data(0x80)}, -- #BYRTH# Should be a bitfield
+    roe_quest_bitfield  = {0x00, data(0x80)},
     order               = {0x80, uint32}, -- 0,1,2,3
 })
 
@@ -2233,7 +2287,7 @@ types.incoming[0x116] = struct({
 -- Equipset
 types.incoming[0x117] = struct({
     count               = {0x00, uint8},
-    equipment           = {0x04, equipset_entry[0x10]}, -- #BYRTH# This is problematic. Should be indexed by count
+    equipment           = {0x04, equipset_entry[0x10]}, -- #BYRTH# This is problematic. Should be indexed by `count`
     old_equipment       = {0x44, equipset_entry[0x10]}, -- This is my memory
 })
 
