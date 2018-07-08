@@ -24,7 +24,7 @@ local constructors = setmetatable({}, {
             end
 
             -- TODO: proper language detection...
-            data.name = data.english
+            data.name = data.en
             return data
         end
 

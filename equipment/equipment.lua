@@ -13,7 +13,7 @@ local equip_meta = {
         if type(index) == 'string' then
             local lc_slot = index:lower()
             index = (res.slots:first(function(v, k, t)
-                return v.english:lower() == lc_slot
+                return v.en:lower() == lc_slot
             end) or {}).id or index
         end
         
