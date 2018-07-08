@@ -1,7 +1,7 @@
 local structs = require('structs')
 
-local struct = function(data, size)
-    return structs.struct(data, nil, size)
+local struct = function(info, data)
+    return structs.struct(data or info, data and info)
 end
 
 local multiple = function(info)
@@ -208,11 +208,11 @@ local equipset_build = struct({
     item_id             = {0x02, item},
 })
 
-local equipset_entry = struct({
+local equipset_entry = struct({size = 4}, {
     bag_index           = {0x00, uint8},
     slot_id             = {0x01, slot},
     bag_id              = {0x02, bag},
-}, 4)
+})
 
 local ability_recast = struct({
     duration            = {0x00, uint16},
@@ -220,13 +220,12 @@ local ability_recast = struct({
     recast              = {0x03, ability_recast},
 })
 
-local lockstyle_entry = struct({
+local lockstyle_entry = struct({size = 8}, {
     bag_index           = {0x00, uint8},
     slot_id             = {0x01, slot},
     bag_id              = {0x02, bag},
     item_id             = {0x04, item},
-}, 8)
-
+})
 
 local types = {
     incoming = {},
