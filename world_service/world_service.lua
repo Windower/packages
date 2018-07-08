@@ -13,7 +13,7 @@ packets.incoming:register_init({
             night = p.night_music,
             solo_combat = p.solo_combat_music,
             party_combat = p.party_combat_music,
-        },
+        }
         data.weather = p.weather
     end,
     [{0x057}] = function(p)
