@@ -1,52 +1,25 @@
-local event = require('event')
-local packets = require('packets')
-local server = require('shared.server')
-local res = require('resources')
+local client = require('shared.client')
 
-world_data, world_events = server.new()
-
-world_data.env.res = res
-world_data.env.print = print
-
-world_events.data.zone_changed = event.new()
-world_events.data.weather_changed = event.new()
-
-local data = world_data.data
-local zone_changed = world_events.data.zone_changed
-local weather_changed = world_events.data.weather_changed
-
-packets.incoming:register_init({
-    [{0x00A}] = function(p)
-        data.zone_id = p.zone
-        data.music = {
-            day = p.day_music,
-            night = p.night_music,
-            solo_combat = p.solo_combat_music,
-            party_combat = p.party_combat_music,
-        }
-        data.weather_id = p.weather
-
-        zone_changed:trigger()
-        weather_changed:trigger()
-    end,
-    [{0x057}] = function(p)
-        data.weather_id = p.weather
-
-        weather_changed:trigger()
-    end,
-    [{0x00B}] = function(p)
-        data = {}
-        world_data.data = data
-    end
+return client.new('world_service', {
+    add = {
+        weather = function(data)
+            return data.weather_id and res.weather[data.weather_id]
+        end,
+        zone = function(data)
+            return data.zone_id and res.zones[data.zone_id]
+        end,
+    },
+    disable = {
+        weather_id = true,
+        zone_id = true,
+    }
 })
 
 --[[
 Copyright © 2018, Windower Dev Team
 All rights reserved.
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-
     * Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
     * Redistributions in binary form must reproduce the above copyright
@@ -55,7 +28,6 @@ modification, are permitted provided that the following conditions are met:
     * Neither the name of the Windower Dev Team nor the
       names of its contributors may be used to endorse or promote products
       derived from this software without specific prior written permission.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
