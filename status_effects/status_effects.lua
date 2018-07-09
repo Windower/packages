@@ -37,7 +37,7 @@ local indexers = {
         return setmetatable({}, {
             __index = function(mts, k)
                 if type(k) == 'string' then
-                    status = res.buffs:first(function(v) return v.english == k end)
+                    status = res.buffs:first(function(v) return v.en == k end)
                     if status then
                         return party_indexer(result[index], status.id)
                     end
@@ -60,7 +60,7 @@ local indexers = {
     end,
     player = function(result, index)
         if type(index) == 'string' then
-            status = res.buffs:first(function(v) return v.english == index end)
+            status = res.buffs:first(function(v) return v.en == index end)
             if status then
                 return player_indexer(result, status.id)
             end

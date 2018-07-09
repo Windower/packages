@@ -7,6 +7,7 @@ local res = require('resources')
 account_data, account_events = server.new()
 
 account_data.data.logged_in = false
+account_data.env.res = res
 
 account_events.data.login = event.new()
 account_events.data.logout = event.new()
@@ -24,10 +25,14 @@ packets.incoming:register_init({
 
         coroutine.schedule(function()
             local info = memory.account_info
-            data.logged_in = true
-            data.server_id = info.server_id % 0x20
+            while info.server_id == -1 do
+                coroutine.sleep_frame()
+            end
+
             data.name = info.name
             data.id = info.id
+            data.server_id = info.server_id % 0x20
+            data.logged_in = true
 
             login_event:trigger()
         end)

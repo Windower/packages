@@ -52,7 +52,7 @@ return setmetatable({}, {
             end
 
             bag = (res.bags:first(function(v, k, t)
-                return v.command == lc_bag or v.english:lower() == lc_bag
+                return v.command == lc_bag or v.en:lower() == lc_bag
             end) or {}).id or bag
         end
         return constructors[bag]()
