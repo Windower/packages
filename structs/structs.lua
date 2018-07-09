@@ -180,14 +180,22 @@ local keywords = {
 
 do
     local build_type = function(cdef, info)
+        if not info then
+            return structs.make_type(cdef)
+        end
+
         local new
-        if info ~= nil then
+        if info.signature then
             new = structs.make_type(cdef .. '*')
-            new.signature = info[1]
+            new.signature = info.signature
             new.offsets = info.offsets or {}
             new.static_offsets = info.static_offsets or {}
         else
             new = structs.make_type(cdef)
+        end
+
+        if info.size then
+            new.size = info.size
         end
 
         return new
@@ -205,7 +213,7 @@ do
         return new
     end
 
-    structs.struct = function(fields, info, size)
+    structs.struct = function(fields, info)
         local arranged = {}
         for label, data in pairs(fields) do
             local full = {
@@ -228,12 +236,14 @@ do
         local new = build_type(make_cdef(arranged), info)
 
         new.fields = arranged
-        if size then
-            new.size = size
-        end
 
         return new
     end
+end
+
+structs.name = function(struct, name)
+    struct.name = name
+    ffi.cdef('typedef ' .. struct.cdef .. ' ' .. name .. ';')
 end
 
 structs.uint8 = structs.make_type('uint8_t')

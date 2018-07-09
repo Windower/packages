@@ -107,6 +107,9 @@ parse_single = function(packet, ptr, type)
     return unpack(indices)
 end
 
+local history_lookup = {}
+local events_lookup = {}
+
 packets.env = {
     get_last = function(...)
         local history = history
@@ -117,7 +120,7 @@ packets.env = {
             end
         end
 
-        return history
+        return history_lookup[history]
     end,
     make_event = function(...)
         local registry = registry
@@ -126,14 +129,19 @@ packets.env = {
         end
 
         local event = event.new()
-        local events = registry.events
+        local events = events_lookup[registry]
+        if not events then
+            events = {}
+            events_lookup[registry] = events
+        end
         events[#events + 1] = event
 
         return event
     end,
 }
 
-local trigger_events = function(events, packet)
+local trigger_events = function(registry, packet)
+    local events = events_lookup[registry]
     if not events then
         return
     end
@@ -178,18 +186,19 @@ local handle_packet = function(direction, raw)
 
     local registry = registry
     local history = history
-    trigger_events(registry.events, packet)
+
+    trigger_events(registry, packet)
+    history_lookup[history] = packet
+
     local indices_count = #indices
     for i = 1, indices_count do
         local index = indices[i]
-        registry = registry[index]
-        trigger_events(registry.events, packet)
 
-        if i ~= indices_count then
-            history = history[index]
-        else
-            history[index] = packet
-        end
+        registry = registry[index]
+        history = history[index]
+
+        trigger_events(registry, packet)
+        history_lookup[history] = packet
     end
 end
 
