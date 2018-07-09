@@ -3,7 +3,7 @@ local client = require('shared.client')
 return client.new('account_service', {
     add = {
         server = function(data)
-            return res[data.server_id]
+            return data.server_id and res.servers[data.server_id]
         end,
     },
     disable = {

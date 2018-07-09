@@ -1,9 +1,19 @@
+local event = require('event')
 local packets = require('packets')
 local server = require('shared.server')
+local res = require('resources')
 
 world_data, world_events = server.new()
 
+world_data.env.res = res
+world_data.env.print = print
+
+world_events.data.zone_changed = event.new()
+world_events.data.weather_changed = event.new()
+
 local data = world_data.data
+local zone_changed = world_events.data.zone_changed
+local weather_changed = world_events.data.weather_changed
 
 packets.incoming:register_init({
     [{0x00A}] = function(p)
@@ -14,11 +24,20 @@ packets.incoming:register_init({
             solo_combat = p.solo_combat_music,
             party_combat = p.party_combat_music,
         }
-        data.weather = p.weather
+        data.weather_id = p.weather
+
+        zone_changed:trigger()
+        weather_changed:trigger()
     end,
     [{0x057}] = function(p)
-        data.weather = p.weather
+        data.weather_id = p.weather
+
+        weather_changed:trigger()
     end,
+    [{0x00B}] = function(p)
+        data = {}
+        world_data.data = data
+    end
 })
 
 --[[

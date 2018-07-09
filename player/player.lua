@@ -8,7 +8,7 @@ local entity_value = {position = true, heading = true, target_index = true}
 local indexers = {
     job_levels = function(t, k)
         if type(k) == 'string' then
-            local job_id = res.jobs:first(function(v) return (v.english == k or v.english_short == k) end).id
+            local job_id = res.jobs:first(function(v) return (v.en == k or v.ens == k) end).id
             return rawget(t, job_id) or rawget(t, k)
         end
         return rawget(t, k)
@@ -29,7 +29,7 @@ local indexers = {
                 return setmetatable({}, {
                         __index = function(_, k2)
                             if type(k2) == 'string' then
-                                local skill_id = res.skills:first(function(v) return (v.english == k2 and v.category == k) end).id
+                                local skill_id = res.skills:first(function(v) return (v.en == k2 and v.category == k) end).id
                                 return rawget(t, skill_id) or rawget(t, k2)
                             end
                             return rawget(t, k2)
@@ -46,7 +46,7 @@ local indexers = {
                         __metatable = false,
                     })
             end
-            local skill_id = res.skills:first(function(v) return v.english == k end).id
+            local skill_id = res.skills:first(function(v) return v.en == k end).id
             if rawget(t, skill_id) ~= nil then
                 return rawget(t, skill_id)
             end

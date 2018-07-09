@@ -75,12 +75,41 @@ local iterate = function(data, key, ...)
     return next_key, next_value
 end
 
+local next_add = function(add, k, client)
+    local key = k
+    local fn
+    local value
+
+    repeat
+        key, fn = next(add, key)
+        value = client:call(fn)
+    until key == nil or value ~= nil
+
+    return key, value
+end
+
 shared_meta.__pairs = function(t)
     local info = cache[t]
     local client = info.client
-    local overrides = info.overrides
+    local add = info.add
+    local disable = info.disable
+    local search_add = false
     return function(base_path, k)
-        local key, value = client:call(iterate, k, unpack(base_path))
+        if search_add then
+            return next_add(add, k, client)
+        end
+
+        local key = k
+        local value
+        repeat
+            key, value = client:call(iterate, key, unpack(base_path))
+        until key == nil or not disable[key]
+
+        if key == nil then
+            search_add = true
+            return next_add(add, nil, client)
+        end
+
         if type(value) ~= 'table' then
             return key, value
         end
