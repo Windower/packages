@@ -1689,38 +1689,39 @@ types.incoming[0x062] = struct({
 types.incoming[0x063] = multiple({
     base = struct({
         type            = {0x00, uint16},
+        size            = {0x02, uint16},
     }),
 
     lookups = {'type'},
 
     [0x02] = struct({
-        flags           = {0x02, data(7)}, -- The 3rd bit of the last byte is the flag that indicates whether or not you are xp capped (blue levels)
+        flags           = {0x00, data(7)}, -- The 3rd bit of the last byte is the flag that indicates whether or not you are xp capped (blue levels)
     }),
 
     [0x03] = struct({
-        flags1          = {0x02, data(2)}, -- Consistently D8 for me
-        flags2          = {0x04, data(2)}, -- Vary when I change species
-        flags3          = {0x06, data(2)}, -- Consistent across species
-        monstrosity_rank= {0x08, uint8}, -- 00 = Mon, 01 = NM, 02 = HM
-        infamy          = {0x0E, uint16},
-        instinct_flags  = {0x18, data(0x40)}, -- Bitpacked 2-bit values. 0 = no instincts from that species, 1 == first instinct, 2 == first and second instinct, 3 == first, second, and third instinct.
-        monster_levels  = {0x58, data(0x80)}, -- Mapped onto the item ID for these creatures. (00 doesn't exist, 01 is rabbit, 02 is behemoth, etc.)
+        flags1          = {0x00, data(2)}, -- Consistently D8 for me
+        flags2          = {0x02, data(2)}, -- Vary when I change species
+        flags3          = {0x04, data(2)}, -- Consistent across species
+        monstrosity_rank= {0x06, uint8}, -- 00 = Mon, 01 = NM, 02 = HM
+        infamy          = {0x0C, uint16},
+        instinct_flags  = {0x16, data(0x40)}, -- Bitpacked 2-bit values. 0 = no instincts from that species, 1 == first instinct, 2 == first and second instinct, 3 == first, second, and third instinct.
+        monster_levels  = {0x56, data(0x80)}, -- Mapped onto the item ID for these creatures. (00 doesn't exist, 01 is rabbit, 02 is behemoth, etc.)
     }),
 
     [0x04] = struct({
-        slime_level     = {0x82, uint8},
-        spriggan_level  = {0x83, uint8},
-        instinct_flags  = {0x84, data(0x0C)}, -- Contains job/race instincts from the 0x03 set. Has 8 unused bytes. This is a 1:1 mapping.
-        variants_flags  = {0x90, data(0x20)}, -- Does not show normal monsters, only variants. Bit is 1 if the variant is owned. Length is an estimation including the possible padding.
+        slime_level     = {0x80, uint8},
+        spriggan_level  = {0x81, uint8},
+        instinct_flags  = {0x82, data(0x0C)}, -- Contains job/race instincts from the 0x03 set. Has 8 unused bytes. This is a 1:1 mapping.
+        variants_flags  = {0x8E, data(0x20)}, -- Does not show normal monsters, only variants. Bit is 1 if the variant is owned. Length is an estimation including the possible padding.
     }),
 
     [0x05] = struct({
-        job_points      = {0x08, job_point_info[0x18], lookup='jobs'}
+        job_points      = {0x06, job_point_info[0x18], lookup='jobs'}
     }),
 
     [0x09] = struct({
-        status_effects  = {0x04, uint16[0x20]},
-        durations       = {0x44, time[0x20]},
+        status_effects  = {0x00, uint16[0x20]},
+        durations       = {0x40, time[0x20]},
     }),
 })
 
