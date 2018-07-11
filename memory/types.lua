@@ -1,8 +1,6 @@
 local structs = require('structs')
 
-local struct = function(info, data)
-    return structs.struct(data or info, data and info)
-end
+local struct = structs.struct
 
 local array = function(info, type, count)
     return structs.array(type, count, info)

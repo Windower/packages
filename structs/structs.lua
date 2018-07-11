@@ -75,6 +75,7 @@ local make_cdef = function(arranged, size)
                 bit_type_size = type.size
             end
         else
+            local suffix = ''
             if type.count ~= nil then
                 local counts = ''
                 local base = type
@@ -82,10 +83,11 @@ local make_cdef = function(arranged, size)
                     counts = '[' .. tostring(base.count) .. ']' .. counts
                     base = base.base
                 end
-                cdefs[cdef_count] = type.cdef .. ' ' .. field.cname .. counts
-            else
-                cdefs[cdef_count] = type.cdef .. ' ' .. field.cname
+                suffix = counts
             end
+
+            cdefs[cdef_count] = (type.name or type.cdef) .. ' ' .. field.cname .. suffix
+
             index = index + type.size
         end
     end
@@ -195,6 +197,10 @@ do
             new.size = info.size
         end
 
+        if info.name then
+            structs.name(new, info.name)
+        end
+
         return new
     end
 
@@ -214,6 +220,8 @@ do
     local table_sort = table.sort
 
     structs.struct = function(fields, info)
+        fields, info = info or fields, info and fields
+
         local arranged = {}
         for label, data in pairs(fields) do
             local full = {
