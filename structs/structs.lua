@@ -26,27 +26,29 @@ local make_cdef = function(arranged, size)
 
         local is_bit = type.bits ~= nil
 
-        local diff = field.position - index
-        if diff > 0 then
-            if bit_type then
-                cdef_count = cdef_count + 1
-                cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset)
-                unknown_count = unknown_count + 1
-
-                diff = diff - bit_type_size
-                index = index + bit_type_size
-
-                offset = 0
-                bit_type = nil
-                bit_type_size = nil
-            end
+        if field.position then
+            local diff = field.position - index
             if diff > 0 then
-                cdef_count = cdef_count + 1
-                cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
-                unknown_count = unknown_count + 1
+                if bit_type then
+                    cdef_count = cdef_count + 1
+                    cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset)
+                    unknown_count = unknown_count + 1
+
+                    diff = diff - bit_type_size
+                    index = index + bit_type_size
+
+                    offset = 0
+                    bit_type = nil
+                    bit_type_size = nil
+                end
+                if diff > 0 then
+                    cdef_count = cdef_count + 1
+                    cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
+                    unknown_count = unknown_count + 1
+                end
             end
+            index = index + diff
         end
-        index = index + diff
 
         if is_bit then
             assert(bit_type == nil or type.cdef == bit_type, 'Bit field must have the same base types for every member.')
@@ -96,22 +98,17 @@ local make_cdef = function(arranged, size)
     return next(cdefs) and ('struct{' .. table.concat(cdefs, ';') .. ';}') or 'struct{}'
 end
 
-local key_map = {
-    [1] = 'position',
-    [2] = 'type',
-}
-
-local type_mt = {
-    __index = function(base, count)
-        if type(count) ~= 'number' then
-            return nil
-        end
-
-        return structs.array(base, count)
-    end,
-}
-
 do
+    local type_mt = {
+        __index = function(base, count)
+            if type(count) ~= 'number' then
+                return nil
+            end
+
+            return structs.array(base, count)
+        end,
+    }
+
     local cdef_cache = {}
 
     structs.make_type = function(cdef)
@@ -213,25 +210,34 @@ do
         return new
     end
 
+    local ffi_sizeof = ffi.sizeof
+    local table_sort = table.sort
+
     structs.struct = function(fields, info)
         local arranged = {}
         for label, data in pairs(fields) do
             local full = {
                 label = label,
-                cname = keywords[label] ~= nil and ('_' .. label) or label,
+                cname = keywords[label] and ('_' .. label) or label,
                 offset = 0,
             }
 
             for key, value in pairs(data) do
-                full[key_map[key] or key] = value
+                if type(key) == 'number' then
+                    full[type(value) == 'number' and 'position' or 'type'] = value
+                else
+                    full[key] = value
+                end
             end
 
             arranged[#arranged + 1] = full
         end
 
-        table.sort(arranged, function(field1, field2)
-            return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
-        end)
+        if arranged[1] and arranged[1].position then
+            table_sort(arranged, function(field1, field2)
+                return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
+            end)
+        end
 
         local new = build_type(make_cdef(arranged), info)
 
