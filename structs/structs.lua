@@ -86,7 +86,7 @@ local make_cdef = function(arranged, size)
                 suffix = counts
             end
 
-            cdefs[cdef_count] = (type.name or type.cdef) .. ' ' .. field.cname .. suffix
+            cdefs[cdef_count] = (type.name and type.name or type.cdef) .. ' ' .. field.cname .. suffix
 
             index = index + type.size
         end
@@ -101,33 +101,49 @@ local make_cdef = function(arranged, size)
 end
 
 do
-    local type_mt = {
-        __index = function(base, count)
-            if type(count) ~= 'number' then
-                return nil
-            end
+    local ffi_typeof = ffi.typeof
+    local ffi_sizeof = ffi.sizeof
 
-            return structs.array(base, count)
+    local meta_fns = {
+        ctype = function(cdef)
+            return ffi_typeof(cdef)
+        end,
+        size = function(cdef)
+            return ffi_sizeof(cdef)
         end,
     }
 
     local cdef_cache = {}
 
+    local type_mt = {
+        __index = function(base, key)
+            if type(key) == 'number' then
+                return structs.array(base, key)
+            end
+
+            local fn = meta_fns[key]
+            if not fn then
+                return nil
+            end
+
+            local cached = cdef_cache[base.cdef]
+            local value = cached[key]
+            if not value then
+                value = fn(base.cdef)
+                cached[key] = value
+            end
+
+            rawset(base, key, value)
+            return value
+        end,
+    }
+
     structs.make_type = function(cdef)
-        if cdef_cache[cdef] == nil then
-            cdef_cache[cdef] = {
-                cdef = cdef,
-                ctype = ffi.typeof(cdef),
-                size = ffi.sizeof(cdef),
-            }
+        if not cdef_cache[cdef] then
+            cdef_cache[cdef] = {}
         end
 
-        local info = cdef_cache[cdef]
-        return setmetatable({
-            cdef = info.cdef,
-            ctype = info.ctype,
-            size = info.size,
-        }, type_mt)
+        return setmetatable({ cdef = cdef }, type_mt)
     end
 end
 
@@ -255,9 +271,57 @@ do
     end
 end
 
-structs.name = function(struct, name)
-    struct.name = name
-    ffi.cdef('typedef ' .. struct.cdef .. ' ' .. name .. ';')
+do
+    local ffi_cdef = ffi.cdef
+
+    local declared_cache = {}
+
+    structs.name = function(struct, name)
+        struct.name = name
+
+        local declared = declared_cache[name]
+        if declared then
+            ffi_cdef('typedef struct ' .. declared.tag .. ' ' .. name .. ';')
+            ffi_cdef('struct ' .. declared.tag .. ' ' .. struct.cdef:sub(7) .. ';')
+
+            for i = 1, #declared.ptrs do
+                declared.ptrs[i].base = struct
+            end
+
+            declared_cache[name] = nil
+        else
+            ffi_cdef('typedef ' .. struct.cdef .. ' ' .. name .. ';')
+        end
+    end
+
+    structs.declare = function(name)
+        local tag = name .. '_tag'
+        ffi_cdef('struct ' .. tag .. ';')
+        ffi_cdef('typedef struct ' .. tag .. ' ' .. name .. ';')
+
+        declared_cache[name] = {
+            tag = tag,
+            ptrs = {},
+        }
+    end
+
+    structs.ptr = function(base)
+        local is_tag = type(base) == 'string'
+
+        local base_def = not base and 'void' or is_tag and base or base.cdef
+        local new = structs.make_type(base_def .. '*')
+
+        new.ptr = true
+
+        if is_tag then
+            local ptrs = declared_cache[base].ptrs
+            ptrs[#ptrs + 1] = new
+        else
+            new.base = base
+        end
+
+        return new
+    end
 end
 
 structs.uint8 = structs.make_type('uint8_t')
@@ -424,15 +488,6 @@ structs.boolbit = function(base)
     new.toc = function(instance, index, value, field)
         instance[index] = value and 1 or 0
     end
-
-    return new
-end
-
-structs.ptr = function(base)
-    local new = structs.make_type((base and base.cdef or 'void') .. '*')
-
-    new.base = base
-    new.ptr = true
 
     return new
 end
