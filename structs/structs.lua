@@ -26,27 +26,29 @@ local make_cdef = function(arranged, size)
 
         local is_bit = type.bits ~= nil
 
-        local diff = field.position - index
-        if diff > 0 then
-            if bit_type then
-                cdef_count = cdef_count + 1
-                cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset)
-                unknown_count = unknown_count + 1
-
-                diff = diff - bit_type_size
-                index = index + bit_type_size
-
-                offset = 0
-                bit_type = nil
-                bit_type_size = nil
-            end
+        if field.position then
+            local diff = field.position - index
             if diff > 0 then
-                cdef_count = cdef_count + 1
-                cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
-                unknown_count = unknown_count + 1
+                if bit_type then
+                    cdef_count = cdef_count + 1
+                    cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset)
+                    unknown_count = unknown_count + 1
+
+                    diff = diff - bit_type_size
+                    index = index + bit_type_size
+
+                    offset = 0
+                    bit_type = nil
+                    bit_type_size = nil
+                end
+                if diff > 0 then
+                    cdef_count = cdef_count + 1
+                    cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
+                    unknown_count = unknown_count + 1
+                end
             end
+            index = index + diff
         end
-        index = index + diff
 
         if is_bit then
             assert(bit_type == nil or type.cdef == bit_type, 'Bit field must have the same base types for every member.')
@@ -73,6 +75,7 @@ local make_cdef = function(arranged, size)
                 bit_type_size = type.size
             end
         else
+            local suffix = ''
             if type.count ~= nil then
                 local counts = ''
                 local base = type
@@ -80,10 +83,11 @@ local make_cdef = function(arranged, size)
                     counts = '[' .. tostring(base.count) .. ']' .. counts
                     base = base.base
                 end
-                cdefs[cdef_count] = type.cdef .. ' ' .. field.cname .. counts
-            else
-                cdefs[cdef_count] = type.cdef .. ' ' .. field.cname
+                suffix = counts
             end
+
+            cdefs[cdef_count] = (type.name and type.name or type.cdef) .. ' ' .. field.cname .. suffix
+
             index = index + type.size
         end
     end
@@ -96,39 +100,50 @@ local make_cdef = function(arranged, size)
     return next(cdefs) and ('struct{' .. table.concat(cdefs, ';') .. ';}') or 'struct{}'
 end
 
-local key_map = {
-    [1] = 'position',
-    [2] = 'type',
-}
-
-local type_mt = {
-    __index = function(base, count)
-        if type(count) ~= 'number' then
-            return nil
-        end
-
-        return structs.array(base, count)
-    end,
-}
-
 do
+    local ffi_typeof = ffi.typeof
+    local ffi_sizeof = ffi.sizeof
+
+    local meta_fns = {
+        ctype = function(cdef)
+            return ffi_typeof(cdef)
+        end,
+        size = function(cdef)
+            return ffi_sizeof(cdef)
+        end,
+    }
+
     local cdef_cache = {}
 
+    local type_mt = {
+        __index = function(base, key)
+            if type(key) == 'number' then
+                return structs.array(base, key)
+            end
+
+            local fn = meta_fns[key]
+            if not fn then
+                return nil
+            end
+
+            local cached = cdef_cache[base.cdef]
+            local value = cached[key]
+            if not value then
+                value = fn(base.cdef)
+                cached[key] = value
+            end
+
+            rawset(base, key, value)
+            return value
+        end,
+    }
+
     structs.make_type = function(cdef)
-        if cdef_cache[cdef] == nil then
-            cdef_cache[cdef] = {
-                cdef = cdef,
-                ctype = ffi.typeof(cdef),
-                size = ffi.sizeof(cdef),
-            }
+        if not cdef_cache[cdef] then
+            cdef_cache[cdef] = {}
         end
 
-        local info = cdef_cache[cdef]
-        return setmetatable({
-            cdef = info.cdef,
-            ctype = info.ctype,
-            size = info.size,
-        }, type_mt)
+        return setmetatable({ cdef = cdef }, type_mt)
     end
 end
 
@@ -198,6 +213,10 @@ do
             new.size = info.size
         end
 
+        if info.name then
+            structs.name(new, info.name)
+        end
+
         return new
     end
 
@@ -213,25 +232,36 @@ do
         return new
     end
 
+    local ffi_sizeof = ffi.sizeof
+    local table_sort = table.sort
+
     structs.struct = function(fields, info)
+        fields, info = info or fields, info and fields
+
         local arranged = {}
         for label, data in pairs(fields) do
             local full = {
                 label = label,
-                cname = keywords[label] ~= nil and ('_' .. label) or label,
+                cname = keywords[label] and ('_' .. label) or label,
                 offset = 0,
             }
 
             for key, value in pairs(data) do
-                full[key_map[key] or key] = value
+                if type(key) == 'number' then
+                    full[type(value) == 'number' and 'position' or 'type'] = value
+                else
+                    full[key] = value
+                end
             end
 
             arranged[#arranged + 1] = full
         end
 
-        table.sort(arranged, function(field1, field2)
-            return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
-        end)
+        if arranged[1] and arranged[1].position then
+            table_sort(arranged, function(field1, field2)
+                return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
+            end)
+        end
 
         local new = build_type(make_cdef(arranged), info)
 
@@ -241,9 +271,57 @@ do
     end
 end
 
-structs.name = function(struct, name)
-    struct.name = name
-    ffi.cdef('typedef ' .. struct.cdef .. ' ' .. name .. ';')
+do
+    local ffi_cdef = ffi.cdef
+
+    local declared_cache = {}
+
+    structs.name = function(struct, name)
+        struct.name = name
+
+        local declared = declared_cache[name]
+        if declared then
+            ffi_cdef('typedef struct ' .. declared.tag .. ' ' .. name .. ';')
+            ffi_cdef('struct ' .. declared.tag .. ' ' .. struct.cdef:sub(7) .. ';')
+
+            for i = 1, #declared.ptrs do
+                declared.ptrs[i].base = struct
+            end
+
+            declared_cache[name] = nil
+        else
+            ffi_cdef('typedef ' .. struct.cdef .. ' ' .. name .. ';')
+        end
+    end
+
+    structs.declare = function(name)
+        local tag = name .. '_tag'
+        ffi_cdef('struct ' .. tag .. ';')
+        ffi_cdef('typedef struct ' .. tag .. ' ' .. name .. ';')
+
+        declared_cache[name] = {
+            tag = tag,
+            ptrs = {},
+        }
+    end
+
+    structs.ptr = function(base)
+        local is_tag = type(base) == 'string'
+
+        local base_def = not base and 'void' or is_tag and base or base.cdef
+        local new = structs.make_type(base_def .. '*')
+
+        new.ptr = true
+
+        if is_tag then
+            local ptrs = declared_cache[base].ptrs
+            ptrs[#ptrs + 1] = new
+        else
+            new.base = base
+        end
+
+        return new
+    end
 end
 
 structs.uint8 = structs.make_type('uint8_t')
@@ -410,15 +488,6 @@ structs.boolbit = function(base)
     new.toc = function(instance, index, value, field)
         instance[index] = value and 1 or 0
     end
-
-    return new
-end
-
-structs.ptr = function(base)
-    local new = structs.make_type((base and base.cdef or 'void') .. '*')
-
-    new.base = base
-    new.ptr = true
 
     return new
 end
