@@ -1,6 +1,6 @@
-local enumerable = require('enumerable')
-local res = require('resources')
 local shared = require('shared')
+local resources = require('resources')
+local enumerable = require('enumerable')
 
 local fetch_status_effects = shared.get('status_effects_service', 'status_effects')
 
@@ -37,12 +37,12 @@ local indexers = {
         return setmetatable({}, {
             __index = function(mts, k)
                 if type(k) == 'string' then
-                    status = res.buffs:first(function(v) return v.en == k end)
+                    status = resources.buffs:first(function(v) return v.en == k end)
                     if status then
                         return party_indexer(result[index], status.id)
                     end
                 elseif type(k) == 'number' then
-                    status = res.buffs[k]
+                    status = resources.buffs[k]
                     if status then
                         return party_indexer(result[index], status.id)
                     end
@@ -60,12 +60,12 @@ local indexers = {
     end,
     player = function(result, index)
         if type(index) == 'string' then
-            status = res.buffs:first(function(v) return v.en == index end)
+            status = resources.buffs:first(function(v) return v.en == index end)
             if status then
                 return player_indexer(result, status.id)
             end
         elseif type(index) == 'number' then
-            status = res.buffs[index]
+            status = resources.buffs[index]
             if status then
                 return player_indexer(result, status.id)
             end
@@ -81,7 +81,7 @@ local constructors = setmetatable({}, {
 
         meta.__index = function(t, index)
             if indexers[resource_name] then
-                local indexed = indexers[resource_name](result, index)
+                local indexed = indexers[resource_name](fetch_status_effects:read(resource_name), index)
                 if indexed then
                     return indexed
                 end
