@@ -1,6 +1,7 @@
 local memory = require('memory')
 local settings = require('settings')
 local math = require('math')
+local windower = require('windower')
 
 local defaults = {
     gameplay = {
@@ -12,7 +13,7 @@ local defaults = {
     },
     graphics = {
         aspect_ratio = {
-            auto = false,
+            auto = true,
             value = 1.778,
         },
         gamma_adjustment = {
@@ -41,6 +42,8 @@ local defaults = {
 
 local options = settings.load(defaults)
 
+local window_aspect_ratio = (4 / 3) / (windower.settings.client_size.width / windower.settings.client_size.height)
+
 coroutine.schedule(function()
     while true do
         do -- misc2_graphics
@@ -49,7 +52,7 @@ coroutine.schedule(function()
 
             local aspect_ratio = options.aspect_ratio
 
-            struct.render.aspect_ratio = (4 / 3) / (aspect_ratio.auto and (x / y) or aspect_ratio.value)
+            struct.render.aspect_ratio = aspect_ratio.auto and window_aspect_ratio or ((4 / 3) / aspect_ratio.value)
             struct.render.framerate_divisor = options.framerate == 'unlimited' and 0 or math.ceil(60 / options.framerate)
             struct.clipping_plane_entity = options.clipping_plane
             struct.clipping_plane_map = options.clipping_plane
