@@ -97,6 +97,8 @@ settings.load = function(defaults, path)
         defaults = defaults,
     }
 
+    settings.settings_change:trigger(options)
+
     return options
 end
 
