@@ -19,26 +19,26 @@ assert((function()return reflect.typeof("char[16]").what == "array" end)())
 assert((function()return reflect.typeof("int[?]").what == "array" end)())
 assert((function()return reflect.typeof("struct{int x; int y;}").what == "struct" end)())
 assert((function()return reflect.typeof("union{int x; int y;}").what == "union" end)())
--- assert((function()
--- ffi.cdef "int strcmp(const char*, const char*);"
--- return reflect.typeof(ffi.C.strcmp).what == "func" end)())
+assert((function()
+ffi.cdef "int strcmp(const char*, const char*);"
+return reflect.typeof(ffi.C.strcmp).what == "func" end)())
 assert((function()return reflect.typeof("int(*)(void)").element_type.what == "func" end)())
 assert((function()return reflect.typeof("struct{int x;}"):member("x").what == "field" end)())
--- assert((function()
--- ffi.cdef "int strcmp(const char*, const char*);"
--- return reflect.typeof(ffi.C.strcmp):argument(2).what == "field" end)())
+assert((function()
+ffi.cdef "int strcmp(const char*, const char*);"
+return reflect.typeof(ffi.C.strcmp):argument(2).what == "field" end)())
 assert((function()return reflect.typeof("struct{int x:2;}"):member("x").what == "bitfield" end)())
 assert((function()return reflect.typeof("struct{int x; int y;}"):member(2).name == "y" end)())
 assert((function()return reflect.typeof("struct{int x; int y;}").name == nil end)())
--- assert((function()
--- ffi.cdef 'int sc(const char*, const char*) __asm__("strcmp");'
--- return reflect.typeof(ffi.C.sc).name == "sc" end)())
--- assert((function()
--- ffi.cdef 'int sc(const char*, const char*) __asm__("strcmp");'
--- return reflect.typeof(ffi.C.sc).sym_name == "strcmp" end)())
--- assert((function()
--- ffi.cdef "int strcmp(const char*, const char*);"
--- return reflect.typeof(ffi.C.strcmp).sym_name == nil end)())
+assert((function()
+ffi.cdef 'int sc(const char*, const char*) __asm__("strcmp");'
+return reflect.typeof(ffi.C.sc).name == "sc" end)())
+assert((function()
+ffi.cdef 'int sc(const char*, const char*) __asm__("strcmp");'
+return reflect.typeof(ffi.C.sc).sym_name == "strcmp" end)())
+assert((function()
+ffi.cdef "int strcmp(const char*, const char*);"
+return reflect.typeof(ffi.C.strcmp).sym_name == nil end)())
 assert((function()return reflect.typeof("__int32").size == 4 end)())
 assert((function()return reflect.typeof("__int32[2]").size == 8 end)())
 assert((function()return reflect.typeof("__int32[]").size == "none" end)())
@@ -64,9 +64,9 @@ assert((function()return reflect.typeof("char&").element_type.size == 1 end)())
 assert((function()return reflect.typeof("char[32]").element_type.size == 1 end)())
 assert((function()return reflect.typeof("struct{float x; unsigned y;}"):member("y").type.unsigned == true end)())
 assert((function()return reflect.typeof("int(*)(uint64_t)").element_type:argument(1).type.size == 8 end)())
--- assert((function()
--- ffi.cdef "int strcmp(const char*, const char*);"
--- return reflect.typeof(ffi.C.strcmp).return_type.what == "int" end)())
+assert((function()
+ffi.cdef "int strcmp(const char*, const char*);"
+return reflect.typeof(ffi.C.strcmp).return_type.what == "int" end)())
 assert((function()return reflect.typeof("void*(*)(void)").element_type.return_type.what == "ptr" end)())
 assert((function()return reflect.typeof("bool").bool == true end)())
 assert((function()return reflect.typeof("int").bool == nil end)())
@@ -90,15 +90,15 @@ for refct in reflect.typeof [[
   }
 ]]:members() do print(refct.transparent) end --> nil, true, true, nil
 return table.concat(pieces, ", ") == "nil, true, true, nil" end)())
--- assert((function()
--- ffi.cdef "int strcmp(const char*, const char*);"
--- return reflect.typeof(ffi.C.strcmp).nargs == 2 end)())
--- assert((function()
--- ffi.cdef "int printf(const char*, ...);"
--- return reflect.typeof(ffi.C.printf).nargs == 1 end)())
--- assert((function()
--- ffi.cdef "int strcmp(const char*, const char*);"
--- return reflect.typeof(ffi.C.strcmp).vararg == nil end)())
+assert((function()
+ffi.cdef "int strcmp(const char*, const char*);"
+return reflect.typeof(ffi.C.strcmp).nargs == 2 end)())
+assert((function()
+ffi.cdef "int printf(const char*, ...);"
+return reflect.typeof(ffi.C.printf).nargs == 1 end)())
+assert((function()
+ffi.cdef "int strcmp(const char*, const char*);"
+return reflect.typeof(ffi.C.strcmp).vararg == nil end)())
 assert((function()
 ffi.cdef "int printf(const char*, ...);"
 return reflect.typeof(ffi.C.printf).vararg == true end)())
@@ -128,10 +128,10 @@ for refct in reflect.typeof[[
   }
 ]]:members() do print(refct.what) end --> field, union, bitfield, struct
 return table.concat(pieces, ", ") == "field, union, bitfield, struct" end)())
--- assert((function()local pieces = {} local function print(s) pieces[#pieces + 1] = tostring(s) end 
--- ffi.cdef "int strcmp(const char*, const char*);"
--- for refct in reflect.typeof(ffi.C.strcmp):arguments() do print(refct.type.what) end --> ptr, ptr
--- return table.concat(pieces, ", ") == "ptr, ptr" end)())
+assert((function()local pieces = {} local function print(s) pieces[#pieces + 1] = tostring(s) end 
+ffi.cdef "int strcmp(const char*, const char*);"
+for refct in reflect.typeof(ffi.C.strcmp):arguments() do print(refct.type.what) end --> ptr, ptr
+return table.concat(pieces, ", ") == "ptr, ptr" end)())
 assert((function()local pieces = {} local function print(s) pieces[#pieces + 1] = tostring(s) end 
 for refct in reflect.typeof"int(*)(int x, int y)".element_type:arguments() do print(refct.name) end --> x, y
 return table.concat(pieces, ", ") == "x, y" end)())
