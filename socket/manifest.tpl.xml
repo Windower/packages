@@ -1,6 +1,6 @@
 <package>
   <name>socket</name>
-  <version>3.0rc1</version>
+  <version>3.0</version>
   <type>library</type>
   <dependencies>
     <dependency>ltn12</dependency>
