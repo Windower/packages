@@ -35,7 +35,7 @@ local invite_dialog_state = {
     closable = true,
 }
 local unhandled_requests = {}
-local unhandeled_invite = false
+local unhandled_invite = false
 
 -- Command Arg Types
 -- Create and Register types
@@ -87,14 +87,6 @@ command.arg.register_type('lookup_add_remove', {
 -- Seven main commands additoinal sub_commands within
 local pt = command.new('pt')
 
-local join = function(name)
-    command.input('/prcmd add ' .. name)
-end
-
-pt:register('j', join, '{name}')
-pt:register('join', join, '{name}')
-
-
 local invite = function(...)
     for _, name in pairs({...}) do
         command.input('/pcmd add ' .. name)
@@ -107,6 +99,14 @@ end
 
 pt:register('i', invite, '{name}*')
 pt:register('invite', invite, '{name}*')
+
+
+local request = function(name)
+    command.input('/prcmd add ' .. name)
+end
+
+pt:register('r', request, '{name}')
+pt:register('request', request, '{name}')
 
 
 local blacklist = function(sub_cmd, ...)
@@ -162,7 +162,7 @@ end
 pt:register('auto_accept', auto_accept_enable, '<enabled:lookup_boolean>')
 
 
-local auto_decline_enable function(bool)
+local auto_decline_enable = function(bool)
     options.auto.decline_invites = bool
     settings.save(options)
 end
@@ -191,7 +191,7 @@ packets.incoming[0x0DC]:register(function(p)
             add_to_whitelist = false,
             name = p.player_name,
         }
-        unhandeled_invite = true
+        unhandled_invite = true
     end
 end)
 
@@ -217,14 +217,14 @@ packets.incoming[0x11D]:register(function(p)
 end)
 
 packets.outgoing[0x074]:register(function(p)
-    unhandeled_invite = false
+    unhandled_invite = false
 end)
 
 -- User Interface for Accepting|Declining
 -- Pop-Up menus Invites & Requests.
 ui.display(function()
     if options.ui.enabled then
-        if unhandeled_invite then
+        if unhandled_invite then
             invite_dialog.state, invite_dialog.closed = ui.window('invite_dialog', invite_dialog.state, function()
 
                 ui.location(11, 5)
@@ -244,7 +244,7 @@ ui.display(function()
                 ui.location(11,72)
                 if ui.button('accept', 'Accept') then
                     command.input('/join')
-                    unhandeled_invite = false
+                    unhandled_invite = false
                     if invite_dialog.add_to_whitelist then
                         options.whitelist[invite_dialog.name] = true
                         settings.save(options)
@@ -253,13 +253,13 @@ ui.display(function()
                 ui.location(93,72)
                 if ui.button('decline', 'Decline') then
                     command.input('/decline')
-                    unhandeled_invite = false
+                    unhandled_invite = false
                 end
                     
             end)
             if invite_dialog.closed then
                 invite_dialog.closed = nil
-                unhandeled_invite = false
+                unhandled_invite = false
             end
             if invite_dialog.state.x ~= options.ui.x or invite_dialog.state.y ~= options.ui.y then
                 options.ui.x = invite_dialog.state.x
