@@ -5,7 +5,6 @@ local command = require("command")
 local packets = require("packets")
 local settings = require("settings")
 local treasure = require("treasure")
-local windower = require("windower")
 
 local pt_settings = {
     ui = {
