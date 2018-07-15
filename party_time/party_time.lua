@@ -37,46 +37,49 @@ local invite_dialog_state = {
 local unhandled_requests = {}
 local unhandeled_invite = false
 
-
-local alias = {
-    add = {
-        ['add'] = true,
-        ['a'] = true,
-        ['+'] = true,
-    },
-    remove = {
-        ['remove'] = true,
-        ['rm'] = true,
-        ['r'] = true,
-        ['-'] = true,
-    },
-    on = {
-        ['true'] = true,
-        ['yes'] = true,
-        ['on'] = true,
-        ['y'] = true,
-    },
-    off = {
-        ['false'] = true,
-        ['off'] = true,
-        ['no'] = true,
-        ['n'] = true,
-    }
-}
-
 -- Command Arg Types
 -- Create and Register types
-command.arg.register('names', '<names:string(%a+)>*')
+local arg_lookups = {
+    addremove = {
+        ['add'] = 'add',
+        ['a'] = 'add',
+        ['+'] = 'add',
+        ['remove'] = 'remove',
+        ['r'] = 'remove',
+        ['-'] = 'remove',
+    },
+    bool = {
+        ['yes'] = true,
+        ['y'] = true,
+        ['on'] = true,
+        ['no'] = false,
+        ['n'] = false,
+        ['off'] = false,
+    },
+}
 
-command.arg.register_type('boolean', {
+command.arg.register('name', '<name:string(%a+)>')
+
+command.arg.register_type('lookup_boolean', {
     check = function(str)
-        if alias.on[str] then
-            return true
-        elseif alias.off[str] then
-            return false
+        local bool = arg_lookups.bool[str]
+        if bool ~= nil then
+            return bool
         end
 
-        error('Expected a boolean value.')
+        error('Expected one of \'' .. table.concat(args_lookups.bool) .. '\', received \'' .. str .. '\'.')
+    end
+})
+
+command.arg.register_type('lookup_add_remove', {
+    check = function(str)
+        local op = arg_lookups.addremove[str]
+        print(op, str)
+        if op ~= nil then
+            return op
+        end
+
+        error('Expected one of \'' .. table.concat(args_lookups.addremove) .. '\', received \'' .. str .. '\'.')
     end
 })
 
@@ -88,8 +91,8 @@ function join(name)
     command.input('/prcmd add ' .. name)
 end
 
-pt:register('j', join, '<name:string>')
-pt:register('join', join, '<name:string>')
+pt:register('j', join, '{name}')
+pt:register('join', join, '{name}')
 
 
 function invite(...)
@@ -102,35 +105,36 @@ function invite(...)
     end
 end
 
-pt:register('i', invite, '{names}')
-pt:register('invite', invite, '{names}')
+pt:register('i', invite, '{name}*')
+pt:register('invite', invite, '{name}*')
 
 
-function blacklist(section, sub_cmd, ...)
+function blacklist(sub_cmd, ...)
     local names = {...}
-    if alias.add[sub_cmd] then
+    if sub_cmd == 'add' then
         for _, name in pairs(names) do
-            options.blacklist[section][name] = true
+            options.blacklist[name] = true
         end
-    elseif alias.remove[sub_cmd] then
+    elseif sub_cmd == 'remove' then
         for _, name in pairs(names) do
-            options.blacklist[section][name] = nil
+            options.blacklist[name] = nil
         end
     end
     settings.save(options)
 end
 
-pt:register('b', blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
-pt:register('blacklist', blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt:register('b', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
+pt:register('blacklist', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
 function whitelist(sub_cmd, ...)
     local names = {...}
-    if alias.add[sub_cmd] then
+    print(sub_cmd)
+    if sub_cmd == 'add' then
         for _, name in pairs(names) do
             options.whitelist[name] = true
         end
-    elseif alias.remove[sub_cmd] then
+    elseif sub_cmd == 'remove' then
         for _, name in pairs(names) do
             options.whitelist[name] = nil
         end
@@ -138,8 +142,8 @@ function whitelist(sub_cmd, ...)
     settings.save(options)
 end
 
-pt:register('w', whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
-pt:register('whitelist', whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt:register('w', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
+pt:register('whitelist', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
 function ui_enable(bool)
@@ -147,7 +151,7 @@ function ui_enable(bool)
     settings.save(options)
 end
 
-pt:register('ui_enable', ui_enable, '<enabled:boolean>')
+pt:register('ui_enable', ui_enable, '<enabled:lookup_boolean>')
 
 
 function auto_accept_enable(bool)
@@ -155,7 +159,7 @@ function auto_accept_enable(bool)
     settings.save(options)
 end
 
-pt:register('auto_accept', auto_accept_enable, '<enabled:boolean>')
+pt:register('auto_accept', auto_accept_enable, '<enabled:lookup_boolean>')
 
 
 function auto_decline_enable(bool)
@@ -163,7 +167,7 @@ function auto_decline_enable(bool)
     settings.save(options)
 end
 
-pt:register('auto_decline', auto_decline_enable, '<enabled:boolean>')
+pt:register('auto_decline', auto_decline_enable, '<enabled:lookup_boolean>')
 
 -- Packet Event Handlers
 -- Recieve Invite & Recieve Request
