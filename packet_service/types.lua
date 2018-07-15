@@ -1903,8 +1903,8 @@ types.incoming[0x0D3] = struct({
     highest_lotter_index= {0x08, entity_index},
     highest_lot         = {0x0A, uint16},
     lowest_lotter_index = {0x0C, bit(uint16, 15), offset=0}, -- Not a normal index somehow
-    _known1             = {0x0C, bit(uint16, 1 ), offset=15, const=1}, -- Always seems set
-    current_lot         = {0x0E, uint8}, -- 0xFFFF if passing
+    --_known1             = {0x0C, bit(uint16, 1 ), offset=15, const=1}, -- Always seems set
+    current_lot         = {0x0E, uint16}, -- 0xFFFF if passing
     pool_location       = {0x10, uint8},
     drop                = {0x11, uint8}, -- 0 if no drop, 1 if dropped to player, 3 if floored
     highest_lotter_name = {0x12, pc_name},
@@ -2282,6 +2282,10 @@ types.incoming[0x119] = struct({
     recasts             = {0x00, ability_recast[0x1F]},
 })
 
+-- Party Request
+types.incoming[0x11D] = struct({
+    player_name             = {0x08, pc_name},
+})
 
 -- Zone In 1
 -- Likely triggers specific incoming packets.
