@@ -87,7 +87,7 @@ command.arg.register_type('lookup_add_remove', {
 -- Seven main commands additoinal sub_commands within
 local pt = command.new('pt')
 
-function join(name)
+local join = function(name)
     command.input('/prcmd add ' .. name)
 end
 
@@ -95,7 +95,7 @@ pt:register('j', join, '{name}')
 pt:register('join', join, '{name}')
 
 
-function invite(...)
+local invite = function(...)
     for _, name in pairs({...}) do
         command.input('/pcmd add ' .. name)
         name = name:gsub('^%l', string.upper)
@@ -109,7 +109,7 @@ pt:register('i', invite, '{name}*')
 pt:register('invite', invite, '{name}*')
 
 
-function blacklist(sub_cmd, ...)
+local blacklist = function(sub_cmd, ...)
     local names = {...}
     if sub_cmd == 'add' then
         for _, name in pairs(names) do
@@ -127,7 +127,7 @@ pt:register('b', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 pt:register('blacklist', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
-function whitelist(sub_cmd, ...)
+local whitelist = function(sub_cmd, ...)
     local names = {...}
     print(sub_cmd)
     if sub_cmd == 'add' then
@@ -146,7 +146,7 @@ pt:register('w', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
 pt:register('whitelist', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
-function ui_enable(bool)
+local ui_enable = function(bool)
     options.ui.enabled = bool
     settings.save(options)
 end
@@ -154,7 +154,7 @@ end
 pt:register('ui_enable', ui_enable, '<enabled:lookup_boolean>')
 
 
-function auto_accept_enable(bool)
+local auto_accept_enable = function(bool)
     options.auto.accept_invites = bool
     settings.save(options)
 end
@@ -162,7 +162,7 @@ end
 pt:register('auto_accept', auto_accept_enable, '<enabled:lookup_boolean>')
 
 
-function auto_decline_enable(bool)
+local auto_decline_enable function(bool)
     options.auto.decline_invites = bool
     settings.save(options)
 end
