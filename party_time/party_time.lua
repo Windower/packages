@@ -6,7 +6,7 @@ local packets = require('packets')
 local settings = require('settings')
 local treasure = require('treasure')
 
-local pt_settings = {
+local defualts = {
     ui = {
         x = 145,
         y = 440,
@@ -20,14 +20,14 @@ local pt_settings = {
     whitelist = {},
 }
 
-pt_settings = settings.load(pt_settings, 'settings.lua')
+options = settings.load(defualts, 'settings.lua')
 
 local invite_dialog = {}
 local invite_dialog_state = {
     title = 'Party Invite',
     style = 'normal',
-    x = pt_settings.ui.x,
-    y = pt_settings.ui.y,
+    x = options.ui.x,
+    y = options.ui.y,
     width = 179,
     height = 96,
     resizable = false,
@@ -82,14 +82,14 @@ command.arg.register_type('boolean', {
 
 -- Addon Command Handlers
 -- Seven main commands additoinal sub_commands within
-local pt_command = command.new('pt')
+local pt = command.new('pt')
 
 function join(name)
     command.input('/prcmd add ' .. name)
 end
 
-pt_command:register('j', join, '<name:string>')
-pt_command:register('join', join, '<name:string>')
+pt:register('j', join, '<name:string>')
+pt:register('join', join, '<name:string>')
 
 
 function invite(...)
@@ -102,73 +102,73 @@ function invite(...)
     end
 end
 
-pt_command:register('i', invite, '{names}')
-pt_command:register('invite', invite, '{names}')
+pt:register('i', invite, '{names}')
+pt:register('invite', invite, '{names}')
 
 
 function blacklist(section, sub_cmd, ...)
     local names = {...}
     if alias.add[sub_cmd] then
         for _, name in pairs(names) do
-            pt_settings.blacklist[section][name] = true
+            options.blacklist[section][name] = true
         end
     elseif alias.remove[sub_cmd] then
         for _, name in pairs(names) do
-            pt_settings.blacklist[section][name] = nil
+            options.blacklist[section][name] = nil
         end
     end
-    settings.save(pt_settings)
+    settings.save(options)
 end
 
-pt_command:register('b', blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
-pt_command:register('blacklist', blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt:register('b', blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt:register('blacklist', blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
 
 
 function whitelist(sub_cmd, ...)
     local names = {...}
     if alias.add[sub_cmd] then
         for _, name in pairs(names) do
-            pt_settings.whitelist[name] = true
+            options.whitelist[name] = true
         end
     elseif alias.remove[sub_cmd] then
         for _, name in pairs(names) do
-            pt_settings.whitelist[name] = nil
+            options.whitelist[name] = nil
         end
     end
-    settings.save(pt_settings)
+    settings.save(options)
 end
 
-pt_command:register('w', whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
-pt_command:register('whitelist', whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt:register('w', whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt:register('whitelist', whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
 
 
 function ui_enable(bool)
-    pt_settings.ui.enabled = bool
-    settings.save(pt_settings)
+    options.ui.enabled = bool
+    settings.save(options)
 end
 
-pt_command:register('ui_enable', ui_enable, '<enabled:boolean>')
+pt:register('ui_enable', ui_enable, '<enabled:boolean>')
 
 
 function auto_accept_enable(bool)
-    pt_settings.auto.accept_invites = bool
-    settings.save(pt_settings)
+    options.auto.accept_invites = bool
+    settings.save(options)
 end
 
-pt_command:register('auto_accept', auto_accept_enable, '<enabled:boolean>')
+pt:register('auto_accept', auto_accept_enable, '<enabled:boolean>')
 
 
 function auto_decline_enable(bool)
-    pt_settings.auto.decline_invites = bool
-    settings.save(pt_settings)
+    options.auto.decline_invites = bool
+    settings.save(options)
 end
 
-pt_command:register('auto_decline', auto_decline_enable, '<enabled:boolean>')
+pt:register('auto_decline', auto_decline_enable, '<enabled:boolean>')
 
 -- Packet Event Handlers
 -- Recieve Invite & Recieve Request
 packets.incoming[0x0DC]:register(function(p)
-    if pt_settings.auto.accept_invites and pt_settings.whitelist[p.player_name] then
+    if options.auto.accept_invites and options.whitelist[p.player_name] then
         coroutine.schedule(function()
             local clock = os.clock()
             repeat
@@ -179,7 +179,7 @@ packets.incoming[0x0DC]:register(function(p)
             until(#treasure == 0)
             command.input('/join')
         end)
-    elseif pt_settings.auto.decline_invites and pt_settings.blacklist[p.player_name] then
+    elseif options.auto.decline_invites and options.blacklist[p.player_name] then
         command.input('/decline')
     else
         invite_dialog = {
@@ -192,15 +192,15 @@ packets.incoming[0x0DC]:register(function(p)
 end)
 
 packets.incoming[0x11D]:register(function(p)
-    if pt_settings.auto.accept_invites and pt_settings.whitelist[p.player_name] then
+    if options.auto.accept_invites and options.whitelist[p.player_name] then
         command.input('/pcmd add '..p.player_name)
-    elseif pt_settings.blacklist[p.player_name] ~= true then
+    elseif options.blacklist[p.player_name] ~= true then
         unhandled_requests[p.player_name] = {
             state = {
                 title = 'Party Request',
                 style = 'normal',
-                x = pt_settings.ui.x,
-                y = pt_settings.ui.y,
+                x = options.ui.x,
+                y = options.ui.y,
                 width = 179,
                 height = 96,
                 resizable = false,
@@ -219,7 +219,7 @@ end)
 -- User Interface for Accepting|Declining
 -- Pop-Up menus Invites & Requests.
 ui.display(function()
-    if pt_settings.ui.enabled then
+    if options.ui.enabled then
         if unhandeled_invite then
             invite_dialog.state, invite_dialog.closed = ui.window('invite_dialog', invite_dialog.state, function()
 
@@ -227,13 +227,13 @@ ui.display(function()
                 ui.text(invite_dialog.name .. ' has invited\nyou to join their party')
                 
                 ui.location(11, 50)
-                if pt_settings.auto.accept then
+                if options.auto.accept then
                     if ui.check('add_to_whitelist', 'Remember ' .. invite_dialog.name, invite_dialog.add_to_whitelist) then
                         invite_dialog.add_to_whitelist = not invite_dialog.add_to_whitelist
                     end
                 else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on ', pt_settings.auto.accept) then
-                        pt_settings.auto.accept = true
+                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept) then
+                        options.auto.accept = true
                     end
                 end
 
@@ -242,8 +242,8 @@ ui.display(function()
                     command.input('/join')
                     unhandeled_invite = false
                     if invite_dialog.add_to_whitelist then
-                        pt_settings.whitelist[invite_dialog.name] = true
-                        settings.save(pt_settings)
+                        options.whitelist[invite_dialog.name] = true
+                        settings.save(options)
                     end
                 end
                 ui.location(93,72)
@@ -257,12 +257,12 @@ ui.display(function()
                 invite_dialog.closed = nil
                 unhandeled_invite = false
             end
-            if invite_dialog.state.x ~= pt_settings.ui.x or invite_dialog.state.y ~= pt_settings.ui.y then
-                pt_settings.ui.x = invite_dialog.state.x
-                pt_settings.ui.y = invite_dialog.state.y
+            if invite_dialog.state.x ~= options.ui.x or invite_dialog.state.y ~= options.ui.y then
+                options.ui.x = invite_dialog.state.x
+                options.ui.y = invite_dialog.state.y
                 invite_dialog_state.x = invite_dialog.state.x
                 invite_dialog_state.y = invite_dialog.state.y
-                settings.save(pt_settings)
+                settings.save(options)
             end
         end
 
@@ -273,13 +273,13 @@ ui.display(function()
                 ui.text(id .. ' has requested\nto join your party')
                 
                 ui.location(11, 50)
-                if pt_settings.auto.accept then
+                if options.auto.accept then
                     if ui.check('add_to_whitelist', 'Remember ' .. id, request_dialog.add_to_whitelist) then
                         request_dialog.add_to_whitelist = not request_dialog.add_to_whitelist
                     end
                 else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on ', pt_settings.auto.accept) then
-                        pt_settings.auto.accept = true
+                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept) then
+                        options.auto.accept = true
                     end
                 end
 
@@ -289,8 +289,8 @@ ui.display(function()
                     closed_dialogs[#closed_dialogs + 1] = id
                     if request_dialog.add_to_whitelist then
                         print(id)
-                        pt_settings.whitelist[id] = true
-                        settings.save(pt_settings)
+                        options.whitelist[id] = true
+                        settings.save(options)
                     end
                 end
                 ui.location(93,72)
@@ -301,12 +301,12 @@ ui.display(function()
             if request_dialog.close then
                 closed_dialogs[#closed_dialogs + 1] = id
             end
-            if request_dialog.state.x ~= pt_settings.ui.x or request_dialog.state.y ~= pt_settings.ui.y then
-                pt_settings.ui.x = request_dialog.state.x
-                pt_settings.ui.y = request_dialog.state.y
+            if request_dialog.state.x ~= options.ui.x or request_dialog.state.y ~= options.ui.y then
+                options.ui.x = request_dialog.state.x
+                options.ui.y = request_dialog.state.y
                 invite_dialog_state.x = request_dialog.state.x
                 invite_dialog_state.y = request_dialog.state.y
-                settings.save(pt_settings)
+                settings.save(options)
             end
         end
 
