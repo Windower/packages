@@ -1,10 +1,10 @@
-local os = require("os")
-local ui = require("ui")
-local string = require("string")
-local command = require("command")
-local packets = require("packets")
-local settings = require("settings")
-local treasure = require("treasure")
+local os = require('os')
+local ui = require('ui')
+local string = require('string')
+local command = require('command')
+local packets = require('packets')
+local settings = require('settings')
+local treasure = require('treasure')
 
 local pt_settings = {
     ui = {
@@ -82,28 +82,28 @@ command.arg.register_type('boolean', {
 
 -- Addon Command Handlers
 -- Seven main commands additoinal sub_commands within
-local pt_command = command.new("pt")
+local pt_command = command.new('pt')
 
 function join(name)
-    command.input("/prcmd add " .. name)
+    command.input('/prcmd add ' .. name)
 end
 
-pt_command:register("j", join, '<name:string>')
-pt_command:register("join", join, '<name:string>')
+pt_command:register('j', join, '<name:string>')
+pt_command:register('join', join, '<name:string>')
 
 
 function invite(...)
     for _, name in pairs({...}) do
-        command.input("/pcmd add " .. name)
-        name = name:gsub("^%l", string.upper)
+        command.input('/pcmd add ' .. name)
+        name = name:gsub('^%l', string.upper)
         if unhandled_requests[name] then
             unhandled_requests[name] = nil
         end
     end
 end
 
-pt_command:register("i", invite, '{names}')
-pt_command:register("invite", invite, '{names}')
+pt_command:register('i', invite, '{names}')
+pt_command:register('invite', invite, '{names}')
 
 
 function blacklist(section, sub_cmd, ...)
@@ -120,8 +120,8 @@ function blacklist(section, sub_cmd, ...)
     settings.save(pt_settings)
 end
 
-pt_command:register("b", blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
-pt_command:register("blacklist", blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt_command:register('b', blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt_command:register('blacklist', blacklist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
 
 
 function whitelist(sub_cmd, ...)
@@ -138,8 +138,8 @@ function whitelist(sub_cmd, ...)
     settings.save(pt_settings)
 end
 
-pt_command:register("w", whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
-pt_command:register("whitelist", whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt_command:register('w', whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
+pt_command:register('whitelist', whitelist, '<sub_cmd:one_of(add,a,+,remove,rm,r,-)> {names}')
 
 
 function ui_enable(bool)
@@ -147,7 +147,7 @@ function ui_enable(bool)
     settings.save(pt_settings)
 end
 
-pt_command:register("ui_enable", ui_enable, '<enabled:boolean>')
+pt_command:register('ui_enable', ui_enable, '<enabled:boolean>')
 
 
 function auto_accept_enable(bool)
@@ -155,7 +155,7 @@ function auto_accept_enable(bool)
     settings.save(pt_settings)
 end
 
-pt_command:register("auto_accept", auto_accept_enable, '<enabled:boolean>')
+pt_command:register('auto_accept', auto_accept_enable, '<enabled:boolean>')
 
 
 function auto_decline_enable(bool)
@@ -163,7 +163,7 @@ function auto_decline_enable(bool)
     settings.save(pt_settings)
 end
 
-pt_command:register("auto_decline", auto_decline_enable, '<enabled:boolean>')
+pt_command:register('auto_decline', auto_decline_enable, '<enabled:boolean>')
 
 -- Packet Event Handlers
 -- Recieve Invite & Recieve Request
@@ -177,10 +177,10 @@ packets.incoming[0x0DC]:register(function(p)
                 end
                 coroutine.sleep_frame()
             until(#treasure == 0)
-            command.input("/join")
+            command.input('/join')
         end)
     elseif pt_settings.auto.decline_invites and pt_settings.blacklist[p.player_name] then
-        command.input("/decline")
+        command.input('/decline')
     else
         invite_dialog = {
             state = invite_dialog_state,
@@ -193,7 +193,7 @@ end)
 
 packets.incoming[0x11D]:register(function(p)
     if pt_settings.auto.accept_invites and pt_settings.whitelist[p.player_name] then
-        command.input("/pcmd add "..p.player_name)
+        command.input('/pcmd add '..p.player_name)
     elseif pt_settings.blacklist[p.player_name] ~= true then
         unhandled_requests[p.player_name] = {
             state = {
@@ -239,7 +239,7 @@ ui.display(function()
 
                 ui.location(11,72)
                 if ui.button('accept', 'Accept') then
-                    command.input("/join")
+                    command.input('/join')
                     unhandeled_invite = false
                     if invite_dialog.add_to_whitelist then
                         pt_settings.whitelist[invite_dialog.name] = true
@@ -248,7 +248,7 @@ ui.display(function()
                 end
                 ui.location(93,72)
                 if ui.button('decline', 'Decline') then
-                    command.input("/decline")
+                    command.input('/decline')
                     unhandeled_invite = false
                 end
                     
@@ -285,7 +285,7 @@ ui.display(function()
 
                 ui.location(11,72)
                 if ui.button('invite', 'Invite') then
-                    command.input("/pcmd add " .. id)
+                    command.input('/pcmd add ' .. id)
                     closed_dialogs[#closed_dialogs + 1] = id
                     if request_dialog.add_to_whitelist then
                         print(id)
