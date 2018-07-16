@@ -14,8 +14,8 @@ local defaults = {
         enabled = true,
     },
     auto = {
-        accept_invites = true,   -- also for auto sending invites upon party requests
-        decline_invites = false, -- also ignores party requests from players on blacklists
+        accept = true,   -- also for auto sending invites upon party requests
+        decline = false, -- also ignores party requests from players on blacklists
     },
     blacklist = {}, 
     whitelist = {},
@@ -47,17 +47,24 @@ local unhandled_invite = false
 -- Create and Register types
 local arg_lookups = {
     addremove = {
-        ['add'] = 'add',
-        ['a'] = 'add',
-        ['+'] = 'add',
-        ['remove'] = 'remove',
-        ['r'] = 'remove',
-        ['-'] = 'remove',
+        ['add'] = 'union',
+        ['a'] = 'union',
+        ['+'] = 'union',
+        ['remove'] = 'difference',
+        ['rm'] = 'difference',
+        ['r'] = 'difference',
+        ['-'] = 'difference',
     },
     bool = {
+        ['1'] = true,
+        ['true'] = true,
+        ['t'] = true,
         ['yes'] = true,
         ['y'] = true,
         ['on'] = true,
+        ['0'] = false,
+        ['false'] = false,
+        ['f'] = false,
         ['no'] = false,
         ['n'] = false,
         ['off'] = false,
@@ -116,11 +123,7 @@ pt:register('request', request, '{name}')
 
 local blacklist = function(sub_cmd, ...)
     local names = sets({...})
-    if sub_cmd == 'add' then
-        options.blacklist = options.blacklist + names
-    elseif sub_cmd == 'remove' then
-        options.blacklist = options.blacklist + names
-    end
+    options.blacklist[sub_cmd](options.blacklist, names)
     settings.save(options)
 end
 
@@ -130,11 +133,7 @@ pt:register('blacklist', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 
 local whitelist = function(sub_cmd, ...)
     local names = sets({...})
-    if sub_cmd == 'add' then
-        options.whitelist = options.whitelist + names
-    elseif sub_cmd == 'remove' then
-        options.whitelist = options.whitelist - names
-    end
+    options.whitelist[sub_cmd](options.whitelist, names)
     settings.save(options)
 end
 
@@ -151,7 +150,7 @@ pt:register('ui_enable', ui_enable, '<enabled:lookup_boolean>')
 
 
 local auto_accept_enable = function(bool)
-    options.auto.accept_invites = bool
+    options.auto.accept = bool
     settings.save(options)
 end
 
@@ -159,7 +158,7 @@ pt:register('auto_accept', auto_accept_enable, '<enabled:lookup_boolean>')
 
 
 local auto_decline_enable = function(bool)
-    options.auto.decline_invites = bool
+    options.auto.decline = bool
     settings.save(options)
 end
 
@@ -168,7 +167,7 @@ pt:register('auto_decline', auto_decline_enable, '<enabled:lookup_boolean>')
 -- Packet Event Handlers
 -- Recieve Invite & Recieve Request
 packets.incoming[0x0DC]:register(function(p)
-    if options.auto.accept_invites and options.whitelist[p.player_name] then
+    if options.auto.accept and options.whitelist[p.player_name] then
         coroutine.schedule(function()
             local clock = os.clock()
             repeat
@@ -179,7 +178,7 @@ packets.incoming[0x0DC]:register(function(p)
             until(#treasure == 0)
             command.input('/join')
         end)
-    elseif options.auto.decline_invites and options.blacklist[p.player_name] then
+    elseif options.auto.decline and options.blacklist[p.player_name] then
         command.input('/decline')
     else
         invite_dialog = {
@@ -192,7 +191,7 @@ packets.incoming[0x0DC]:register(function(p)
 end)
 
 packets.incoming[0x11D]:register(function(p)
-    if options.auto.accept_invites and options.whitelist[p.player_name] then
+    if options.auto.accept and options.whitelist[p.player_name] then
         command.input('/pcmd add '..p.player_name)
     elseif options.blacklist[p.player_name] ~= true then
         unhandled_requests[p.player_name] = {
@@ -227,13 +226,13 @@ ui.display(function()
                 ui.text(invite_dialog.name .. ' has invited\nyou to join their party')
                 
                 ui.location(11, 50)
-                if options.auto.accept_invites then
+                if options.auto.accept then
                     if ui.check('add_to_whitelist', 'Remember ' .. invite_dialog.name, invite_dialog.add_to_whitelist) then
                         invite_dialog.add_to_whitelist = not invite_dialog.add_to_whitelist
                     end
                 else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept_invites) then
-                        options.auto.accept_invites = true
+                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept) then
+                        options.auto.accept = true
                     end
                 end
 
@@ -273,13 +272,13 @@ ui.display(function()
                 ui.text(id .. ' has requested\nto join your party')
                 
                 ui.location(11, 50)
-                if options.auto.accept_invites then
+                if options.auto.accept then
                     if ui.check('add_to_whitelist', 'Remember ' .. id, request_dialog.add_to_whitelist) then
                         request_dialog.add_to_whitelist = not request_dialog.add_to_whitelist
                     end
                 else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept_invites) then
-                        options.auto.accept_invites = true
+                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept) then
+                        options.auto.accept = true
                     end
                 end
 
