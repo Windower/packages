@@ -214,7 +214,7 @@ packets.outgoing[0x074]:register(function(p)
 end)
 
 -- User Interface for Accepting|Declining
--- Pop-Up menus Invites & Requests.
+-- Pop-Up menus Invites & Requests
 ui.display(function()
     if options.ui.enabled then
         if unhandled_invite then
@@ -248,7 +248,7 @@ ui.display(function()
                     command.input('/decline')
                     unhandled_invite = false
                 end
-                    
+
             end)
             if invite_dialog.closed then
                 invite_dialog.closed = nil
