@@ -1,6 +1,6 @@
 local os = require('os')
 local ui = require('ui')
-local sets = require("sets")
+local sets = require('sets')
 local string = require('string')
 local command = require('command')
 local packets = require('packets')
@@ -73,19 +73,18 @@ command.arg.register_type('lookup_boolean', {
             return bool
         end
 
-        error('Expected one of \'' .. table.concat(args_lookups.bool) .. '\', received \'' .. str .. '\'.')
+        error('Expected one of \'' .. table.concat(args_lookups.bool, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
 
 command.arg.register_type('lookup_add_remove', {
     check = function(str)
         local op = arg_lookups.addremove[str]
-        print(op, str)
         if op ~= nil then
             return op
         end
 
-        error('Expected one of \'' .. table.concat(args_lookups.addremove) .. '\', received \'' .. str .. '\'.')
+        error('Expected one of \'' .. table.concat(args_lookups.addremove, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
 
@@ -131,7 +130,6 @@ pt:register('blacklist', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 
 local whitelist = function(sub_cmd, ...)
     local names = sets({...})
-    print(sub_cmd)
     if sub_cmd == 'add' then
         options.whitelist = options.whitelist + names
     elseif sub_cmd == 'remove' then
