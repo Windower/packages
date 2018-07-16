@@ -17,16 +17,14 @@ local defaults = {
         accept = true,   -- also for auto sending invites upon party requests
         decline = false, -- also ignores party requests from players on blacklists
     },
-    blacklist = {}, 
-    whitelist = {},
+    blacklist = sets({}),
+    whitelist = sets({}),
 }
 settings.settings_change:register(function(options)
     options.blacklist = sets(options.blacklist)
     options.whitelist = sets(options.whitelist)
 end)
 options = settings.load(defaults)
-options.blacklist = sets(options.blacklist)
-options.whitelist = sets(options.whitelist)
 
 local invite_dialog = {}
 local invite_dialog_state = {
