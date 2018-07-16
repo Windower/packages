@@ -49,19 +49,12 @@ local format_table
 format_table = function(t, nested)
     nested = nested or 1
 
+    local indent = ('    '):rep(nested)
+
     local res = {}
     res[1] = '{'
 
-    local keys = {}
-    for key in pairs(t) do
-        keys[#keys + 1] = key
-    end
-    table.sort(keys)
-
-    local indent = ('    '):rep(nested)
-
-    for _, key in ipairs(keys) do
-        local child = t[key]
+    for key, child in pairs(t) do
         local formatted_key = type(key) == 'string' and key:match('^%a[%w_]+$') or '[' .. format_value(key) .. ']'
         res[#res + 1] = indent .. formatted_key .. ' = ' .. (type(child) == 'table' and format_table(child, nested + 1) or format_value(child)) .. ','
     end
