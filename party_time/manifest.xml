@@ -3,6 +3,7 @@
   <version>0.7.0.0</version>
   <type>addon</type>
   <dependencies>
+    <dependency>sets</dependency>
     <dependency>packets</dependency>
     <dependency>settings</dependency>
     <dependency>treasure</dependency>

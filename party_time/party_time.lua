@@ -1,5 +1,6 @@
 local os = require('os')
 local ui = require('ui')
+local sets = require("sets")
 local string = require('string')
 local command = require('command')
 local packets = require('packets')
@@ -19,8 +20,13 @@ local defualts = {
     blacklist = {}, 
     whitelist = {},
 }
-
+settings.settings_change:register(function(options)
+    options.blacklist = sets(options.blacklist)
+    options.whitelist = sets(options.whitelist)
+end)
 options = settings.load(defualts, 'settings.lua')
+options.blacklist = sets(options.blacklist)
+options.whitelist = sets(options.whitelist)
 
 local invite_dialog = {}
 local invite_dialog_state = {
@@ -110,15 +116,11 @@ pt:register('request', request, '{name}')
 
 
 local blacklist = function(sub_cmd, ...)
-    local names = {...}
+    local names = sets({...})
     if sub_cmd == 'add' then
-        for _, name in pairs(names) do
-            options.blacklist[name] = true
-        end
+        options.blacklist = options.blacklist + names
     elseif sub_cmd == 'remove' then
-        for _, name in pairs(names) do
-            options.blacklist[name] = nil
-        end
+        options.blacklist = options.blacklist + names
     end
     settings.save(options)
 end
@@ -128,16 +130,12 @@ pt:register('blacklist', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
 local whitelist = function(sub_cmd, ...)
-    local names = {...}
+    local names = sets({...})
     print(sub_cmd)
     if sub_cmd == 'add' then
-        for _, name in pairs(names) do
-            options.whitelist[name] = true
-        end
+        options.whitelist = options.whitelist + names
     elseif sub_cmd == 'remove' then
-        for _, name in pairs(names) do
-            options.whitelist[name] = nil
-        end
+        options.whitelist = options.whitelist - names
     end
     settings.save(options)
 end
@@ -231,13 +229,13 @@ ui.display(function()
                 ui.text(invite_dialog.name .. ' has invited\nyou to join their party')
                 
                 ui.location(11, 50)
-                if options.auto.accept then
+                if options.auto.accept_invites then
                     if ui.check('add_to_whitelist', 'Remember ' .. invite_dialog.name, invite_dialog.add_to_whitelist) then
                         invite_dialog.add_to_whitelist = not invite_dialog.add_to_whitelist
                     end
                 else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept) then
-                        options.auto.accept = true
+                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept_invites) then
+                        options.auto.accept_invites = true
                     end
                 end
 
@@ -246,7 +244,7 @@ ui.display(function()
                     command.input('/join')
                     unhandled_invite = false
                     if invite_dialog.add_to_whitelist then
-                        options.whitelist[invite_dialog.name] = true
+                        options.whitelist:add(invite_dialog.name)
                         settings.save(options)
                     end
                 end
@@ -277,13 +275,13 @@ ui.display(function()
                 ui.text(id .. ' has requested\nto join your party')
                 
                 ui.location(11, 50)
-                if options.auto.accept then
+                if options.auto.accept_invites then
                     if ui.check('add_to_whitelist', 'Remember ' .. id, request_dialog.add_to_whitelist) then
                         request_dialog.add_to_whitelist = not request_dialog.add_to_whitelist
                     end
                 else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept) then
-                        options.auto.accept = true
+                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept_invites) then
+                        options.auto.accept_invites = true
                     end
                 end
 
@@ -293,7 +291,7 @@ ui.display(function()
                     closed_dialogs[#closed_dialogs + 1] = id
                     if request_dialog.add_to_whitelist then
                         print(id)
-                        options.whitelist[id] = true
+                        options.whitelist:add(id)
                         settings.save(options)
                     end
                 end
