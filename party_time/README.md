@@ -13,8 +13,8 @@
 **Main Command:** No full name command line. only /pt
 
 #### Commands: ####
-* 1: (j)oin [name] - Send invite request to a player.
-* 2: (i)nvite [names] - invite player or players to join your party
+* 1: (i)nvite [names] - invite a player or players to join your party
+* 2: (r)equest [name] - Send an invite request to a player.
 * 3: (w)hitelist invite|request (a)dd|(r)emove [names] - add ore remove player from you auto accept whitelist.
 * 4: (b)lacklist invite|request (a)dd|(r)emove [names] - add ore remove player from you auto decline blacklist.
 
@@ -25,5 +25,6 @@
 ----
 
 #### To do: ####
-* Implement party invite response packet injection
+* Implement party invite response packet injection.
+* Expand to include more `/pcmd` functions.
 * Add config gui.
