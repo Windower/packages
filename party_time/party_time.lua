@@ -7,7 +7,7 @@ local packets = require('packets')
 local settings = require('settings')
 local treasure = require('treasure')
 
-local defualts = {
+local defaults = {
     ui = {
         x = 145,
         y = 440,
@@ -24,7 +24,7 @@ settings.settings_change:register(function(options)
     options.blacklist = sets(options.blacklist)
     options.whitelist = sets(options.whitelist)
 end)
-options = settings.load(defualts, 'settings.lua')
+options = settings.load(defaults, 'settings.lua')
 options.blacklist = sets(options.blacklist)
 options.whitelist = sets(options.whitelist)
 
@@ -290,7 +290,6 @@ ui.display(function()
                     command.input('/pcmd add ' .. id)
                     closed_dialogs[#closed_dialogs + 1] = id
                     if request_dialog.add_to_whitelist then
-                        print(id)
                         options.whitelist:add(id)
                         settings.save(options)
                     end
