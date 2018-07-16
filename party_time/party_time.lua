@@ -24,7 +24,7 @@ settings.settings_change:register(function(options)
     options.blacklist = sets(options.blacklist)
     options.whitelist = sets(options.whitelist)
 end)
-options = settings.load(defaults, 'settings.lua')
+options = settings.load(defaults)
 options.blacklist = sets(options.blacklist)
 options.whitelist = sets(options.whitelist)
 
