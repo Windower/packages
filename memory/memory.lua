@@ -94,7 +94,7 @@ local setup_name = function(name)
         assert(ptr ~= nil, 'Signature ' .. type.signature .. ' not found.')
 
         for _, offset in ipairs(type.static_offsets) do
-            ptr = ffi.cast(void_ptr_ptr, (ffi.cast(byte_ptr, ptr) + offset))[0]
+            ptr = ffi.cast(void_ptr_ptr, ffi.cast(byte_ptr, ptr) + offset)[0]
         end
 
         scan_results[name] = ptr

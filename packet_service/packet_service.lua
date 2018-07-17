@@ -190,8 +190,7 @@ local handle_packet = function(direction, raw)
     trigger_events(registry, packet)
     history_lookup[history] = packet
 
-    local indices_count = #indices
-    for i = 1, indices_count do
+    for i = 1, #indices do
         local index = indices[i]
 
         registry = registry[index]
