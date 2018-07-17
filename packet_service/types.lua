@@ -372,7 +372,6 @@ types.incoming[0x00D] = struct({
 -- 0x40: "Bit 6"
 -- 0x80: "Bit 7"
 
-
 -- Status flags (from antiquity):
 -- 0b00100000 = CFH Bit
 -- 0b10000101 = "Normal_Status?"
@@ -401,7 +400,6 @@ types.incoming[0x00E] = struct({
     name                = {0x30, string()},
 })
 
-
 -- Incoming Chat
 types.incoming[0x017] = struct({
     chat                = {0x00, chat},
@@ -410,7 +408,6 @@ types.incoming[0x017] = struct({
     name                = {0x04, pc_name},
     message             = {0x14, string()}, -- Max of 150 characters
 })
-
 
 -- Job Info
 types.incoming[0x01B] = struct({
@@ -1869,7 +1866,7 @@ types.incoming[0x0CA] = struct({
 
 -- LS Message
 types.incoming[0x0CC] = multiple({
-    base = struct ({
+    base = struct({
         linkshell_index     = {0x00, bit(uint32, 1), offset=14},
         message             = {0x04, string(0x80)},
         timestamp           = {0x84, time},
