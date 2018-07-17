@@ -1,10 +1,56 @@
-<html>
-  <head>
-    <title>Windower Packages</title>
-    <meta http-equiv="refresh" content="0; URL='https://github.com/Windower/packages/wiki'" />
-  </head>
-</html>
-<!--
+local packets = require("packets")
+
+local treasure = {}
+
+packets.incoming[0x0D2]:register(function(p)
+    if p.item_id ~= 0 then
+        treasure[p.pool_location] = {
+            dropper_id      = p.dropper_id,
+            count           = p.count,
+            item_id         = p.item_id,
+            dropper_index   = p.dropper_index,
+            pool_location   = p.pool_location,
+            is_old          = p.is_old,
+            timestamp       = p.timestamp,
+        }
+    end
+
+    if p.dropper_id == 0 then
+        treasure[p.pool_location] = nil
+    end
+end)
+
+packets.incoming[0x0D3]:register(function(p)
+    if p.drop ~= 0 then
+        treasure[p.pool_location] = nil
+    end
+end)
+
+return setmetatable({}, {
+    __index = function(_, k)
+        return treasure[k]
+    end,
+
+    __newindex = function()
+        return error('This value is read-only.')
+    end,
+
+    __pairs = function(_)
+        return function(_, k)
+            return next(treasure, k)
+        end
+    end,
+
+    __len = function()
+        local count = 0
+        for _ in pairs(treasure) do
+            count = count + 1
+        end
+        return count
+    end,
+})
+
+--[[
 Copyright © 2018, Windower Dev Team
 All rights reserved.
 
@@ -30,4 +76,4 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+]]
