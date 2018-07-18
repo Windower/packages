@@ -165,7 +165,7 @@ pt:register('auto_decline', auto_decline_enable, '<enabled:lookup_boolean>')
 -- Packet Event Handlers
 -- Recieve Invite & Recieve Request
 packets.incoming[0x0DC]:register(function(p)
-    if options.auto.accept and options.whitelist[p.player_name] then
+    if options.auto.accept and options.whitelist:contains(p.player_name) then
         coroutine.schedule(function()
             local clock = os.clock()
             repeat
@@ -176,7 +176,7 @@ packets.incoming[0x0DC]:register(function(p)
             until(#treasure == 0)
             command.input('/join')
         end)
-    elseif options.auto.decline and options.blacklist[p.player_name] then
+    elseif options.auto.decline and options.blacklist:contains(p.player_name) then
         command.input('/decline')
     else
         invite_dialog = {
@@ -189,7 +189,7 @@ packets.incoming[0x0DC]:register(function(p)
 end)
 
 packets.incoming[0x11D]:register(function(p)
-    if options.auto.accept and options.whitelist[p.player_name] then
+    if options.auto.accept and options.whitelist:contains(p.player_name) then
         command.input('/pcmd add '..p.player_name)
     elseif options.blacklist[p.player_name] ~= true then
         unhandled_requests[p.player_name] = {
@@ -229,7 +229,7 @@ ui.display(function()
                         invite_dialog.add_to_whitelist = not invite_dialog.add_to_whitelist
                     end
                 else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept) then
+                    if ui.check('add_to_whitelist', 'Turn auto accept on', options.auto.accept) then
                         options.auto.accept = true
                     end
                 end
