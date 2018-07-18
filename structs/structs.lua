@@ -70,6 +70,7 @@ local make_cdef = function(arranged, size)
                 offset = 0
                 bit_type = nil
                 bit_type_size = nil
+                index = index + type.size
             else
                 bit_type = type.cdef
                 bit_type_size = type.size
