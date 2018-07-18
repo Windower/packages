@@ -338,7 +338,7 @@ ui.display(function()
                         request_dialog.add_to_whitelist = not request_dialog.add_to_whitelist
                     end
                 else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on ', options.auto.accept) then
+                    if ui.check('add_to_whitelist', 'Turn auto accept on', options.auto.accept) then
                         options.auto.accept = true
                     end
                 end
