@@ -17,7 +17,7 @@ local defaults = {
         accept = true,   -- also for auto sending invites upon party requests
         decline = false, -- also ignores party requests from players on blacklists
     },
-    default = 'ask'      -- sets defualt behavior for unhandled invites. ask user, treat as whitelist, treat as blacklist,
+    default = 'ask',     -- sets defualt behavior for unhandled invites. ask user, treat as whitelist, treat as blacklist,
     blacklist = sets({}),
     whitelist = sets({}),
 }
