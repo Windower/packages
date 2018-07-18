@@ -199,7 +199,7 @@ local default_handlers = {
                 add_to_whitelist = false,
                 name = name,
             }
-            unhandled_invite = true,
+            unhandled_invite = true
         end,
         whitelist = function()
             coroutine.schedule(function()
