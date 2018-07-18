@@ -57,7 +57,6 @@ local arg_lookups = {
     option = {
         ['ask'] = 'ask',
         ['a'] = 'ask',
-        ['?'] = 'ask',
         ['whitelist'] = 'whitelist',
         ['w'] = 'whitelist',
         ['blacklist'] = 'blacklist',
