@@ -342,7 +342,7 @@ ui.display(function()
                     settings.save(options)
                 end
             end
-                ui.location(93,72)
+            ui.location(93,72)
             if ui.button('ignore', 'Ignore') then
                 closed_dialogs[#closed_dialogs + 1] = id
             end
