@@ -11,13 +11,12 @@ local defaults = {
     ui = {
         x = 145,
         y = 440,
-        enabled = true,
     },
     auto = {
         accept = true,   -- also for auto sending invites upon party requests
         decline = false, -- also ignores party requests from players on blacklists
     },
-    default = 'ask',     -- sets defualt behavior for unhandled invites. ask user, treat as whitelist, treat as blacklist,
+    default = 'ask',     -- sets default behavior for unhandled invites. ask user, treat as whitelist, treat as blacklist,
     blacklist = sets({}),
     whitelist = sets({}),
 }
@@ -158,14 +157,6 @@ pt:register('w', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
 pt:register('whitelist', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
-local ui_enable = function(bool)
-    options.ui.enabled = bool
-    settings.save(options)
-end
-
-pt:register('ui_enable', ui_enable, '<enabled:lookup_boolean>')
-
-
 local auto_accept_enable = function(bool)
     options.auto.accept = bool
     settings.save(options)
@@ -187,7 +178,7 @@ local default_handler = function(option)
     settings.save(options)
 end
 
-pt:register('defualt', default_handler, '<option:lookup_option>')
+pt:register('default', default_handler, '<option:lookup_option>')
 
 -- Packet Event Handlers
 -- Recieve Invites & Recieve Requests
@@ -279,99 +270,97 @@ end)
 -- User Interface for Accepting|Declining
 -- Pop-Up menus Invites & Requests
 ui.display(function()
-    if options.ui.enabled then
-        if unhandled_invite then
-            invite_dialog.state, invite_dialog.closed = ui.window('invite_dialog', invite_dialog.state, function()
+    if unhandled_invite then
+        invite_dialog.state, invite_dialog.closed = ui.window('invite_dialog', invite_dialog.state, function()
+            ui.location(11, 5)
+            ui.text(invite_dialog.name .. ' has invited\nyou to join their party')
 
-                ui.location(11, 5)
-                ui.text(invite_dialog.name .. ' has invited\nyou to join their party')
-                
-                ui.location(11, 50)
-                if options.auto.accept then
-                    if ui.check('add_to_whitelist', 'Remember ' .. invite_dialog.name, invite_dialog.add_to_whitelist) then
-                        invite_dialog.add_to_whitelist = not invite_dialog.add_to_whitelist
-                    end
-                else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on', options.auto.accept) then
-                        options.auto.accept = true
-                    end
+            ui.location(11, 50)
+            if options.auto.accept then
+                if ui.check('add_to_whitelist', 'Remember ' .. invite_dialog.name, invite_dialog.add_to_whitelist) then
+                    invite_dialog.add_to_whitelist = not invite_dialog.add_to_whitelist
                 end
+            else
+                if ui.check('add_to_whitelist', 'Turn auto accept on', options.auto.accept) then
+                    options.auto.accept = true
+                end
+            end
 
-                ui.location(11,72)
-                if ui.button('accept', 'Accept') then
-                    command.input('/join')
-                    unhandled_invite = false
-                    if invite_dialog.add_to_whitelist then
-                        options.whitelist:add(invite_dialog.name)
-                        settings.save(options)
-                    end
+            ui.location(11,72)
+            if ui.button('accept', 'Accept') then
+                command.input('/join')
+                unhandled_invite = false
+                if invite_dialog.add_to_whitelist then
+                    options.whitelist:add(invite_dialog.name)
+                    settings.save(options)
                 end
-                ui.location(93,72)
-                if ui.button('decline', 'Decline') then
-                    command.input('/decline')
-                    unhandled_invite = false
-                end
+            end
 
-            end)
-            if invite_dialog.closed then
-                invite_dialog.closed = nil
+            ui.location(93,72)
+            if ui.button('decline', 'Decline') then
+                command.input('/decline')
                 unhandled_invite = false
             end
-            if invite_dialog.state.x ~= options.ui.x or invite_dialog.state.y ~= options.ui.y then
-                options.ui.x = invite_dialog.state.x
-                options.ui.y = invite_dialog.state.y
-                invite_dialog_state.x = invite_dialog.state.x
-                invite_dialog_state.y = invite_dialog.state.y
-                settings.save(options)
-            end
+
+        end)
+        if invite_dialog.closed then
+            invite_dialog.closed = nil
+            unhandled_invite = false
         end
+        if invite_dialog.state.x ~= options.ui.x or invite_dialog.state.y ~= options.ui.y then
+            options.ui.x = invite_dialog.state.x
+            options.ui.y = invite_dialog.state.y
+            invite_dialog_state.x = invite_dialog.state.x
+            invite_dialog_state.y = invite_dialog.state.y
+            settings.save(options)
+        end
+    end
 
-        local closed_dialogs = {}
-        for id, request_dialog in pairs(unhandled_requests) do 
-            request_dialog.state, request_dialog.close = ui.window(id, request_dialog.state, function()
-                ui.location(11, 5)
-                ui.text(id .. ' has requested\nto join your party')
-                
-                ui.location(11, 50)
-                if options.auto.accept then
-                    if ui.check('add_to_whitelist', 'Remember ' .. id, request_dialog.add_to_whitelist) then
-                        request_dialog.add_to_whitelist = not request_dialog.add_to_whitelist
-                    end
-                else
-                    if ui.check('add_to_whitelist', 'Turn auto accept on', options.auto.accept) then
-                        options.auto.accept = true
-                    end
-                end
+    local closed_dialogs = {}
+    for id, request_dialog in pairs(unhandled_requests) do 
+        request_dialog.state, request_dialog.close = ui.window(id, request_dialog.state, function()
+            ui.location(11, 5)
+            ui.text(id .. ' has requested\nto join your party')
 
-                ui.location(11,72)
-                if ui.button('invite', 'Invite') then
-                    command.input('/pcmd add ' .. id)
-                    closed_dialogs[#closed_dialogs + 1] = id
-                    if request_dialog.add_to_whitelist then
-                        options.whitelist:add(id)
-                        settings.save(options)
-                    end
+            ui.location(11, 50)
+            if options.auto.accept then
+                if ui.check('add_to_whitelist', 'Remember ' .. id, request_dialog.add_to_whitelist) then
+                    request_dialog.add_to_whitelist = not request_dialog.add_to_whitelist
                 end
+            else
+                if ui.check('add_to_whitelist', 'Turn auto accept on', options.auto.accept) then
+                    options.auto.accept = true
+                end
+            end
+
+            ui.location(11,72)
+            if ui.button('invite', 'Invite') then
+                command.input('/pcmd add ' .. id)
+                closed_dialogs[#closed_dialogs + 1] = id
+                if request_dialog.add_to_whitelist then
+                    options.whitelist:add(id)
+                    settings.save(options)
+                end
+            end
                 ui.location(93,72)
-                if ui.button('ignore', 'Ignore') then
-                    closed_dialogs[#closed_dialogs + 1] = id
-                end
-            end)
-            if request_dialog.close then
+            if ui.button('ignore', 'Ignore') then
                 closed_dialogs[#closed_dialogs + 1] = id
             end
-            if request_dialog.state.x ~= options.ui.x or request_dialog.state.y ~= options.ui.y then
-                options.ui.x = request_dialog.state.x
-                options.ui.y = request_dialog.state.y
-                invite_dialog_state.x = request_dialog.state.x
-                invite_dialog_state.y = request_dialog.state.y
-                settings.save(options)
-            end
+        end)
+        if request_dialog.close then
+            closed_dialogs[#closed_dialogs + 1] = id
         end
+        if request_dialog.state.x ~= options.ui.x or request_dialog.state.y ~= options.ui.y then
+            options.ui.x = request_dialog.state.x
+            options.ui.y = request_dialog.state.y
+            invite_dialog_state.x = request_dialog.state.x
+            invite_dialog_state.y = request_dialog.state.y
+            settings.save(options)
+        end
+    end
 
-        for _, id in pairs(closed_dialogs) do
-            unhandled_requests[id] = nil
-        end
+    for _, id in pairs(closed_dialogs) do
+        unhandled_requests[id] = nil
     end
 end)
 
