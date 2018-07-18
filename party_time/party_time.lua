@@ -17,6 +17,7 @@ local defaults = {
         accept = true,   -- also for auto sending invites upon party requests
         decline = false, -- also ignores party requests from players on blacklists
     },
+    default = 'ask'      -- sets defualt behavior for unhandled invites. ask user, treat as whitelist, treat as blacklist,
     blacklist = sets({}),
     whitelist = sets({}),
 }
@@ -52,6 +53,15 @@ local arg_lookups = {
         ['rm'] = 'difference',
         ['r'] = 'difference',
         ['-'] = 'difference',
+    },
+    option = {
+        ['ask'] = 'ask',
+        ['a'] = 'ask',
+        ['?'] = 'ask',
+        ['whitelist'] = 'whitelist',
+        ['w'] = 'whitelist',
+        ['blacklist'] = 'blacklist',
+        ['b'] = 'blacklist',
     },
     bool = {
         ['1'] = true,
@@ -90,6 +100,16 @@ command.arg.register_type('lookup_add_remove', {
         end
 
         error('Expected one of \'' .. table.concat(args_lookups.addremove, ',') .. '\', received \'' .. str .. '\'.')
+    end
+})
+command.arg.register_type('lookup_option', {
+    check = function(str)
+        local option = arg_lookups.option[str]
+        if option ~= nil then
+            return option
+        end
+
+        error('Expected one of \'' .. table.concat(args_lookups.option, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
 
@@ -162,8 +182,68 @@ end
 
 pt:register('auto_decline', auto_decline_enable, '<enabled:lookup_boolean>')
 
+
+local default_handler = function(option)
+    options.default = option
+    settings.save(options)
+end
+
+pt:register('defualt', default_handler, '<option:lookup_option>')
+
 -- Packet Event Handlers
--- Recieve Invite & Recieve Request
+-- Recieve Invites & Recieve Requests
+local default_handlers = {
+    invite = {
+        ask = function(name)
+            invite_dialog = {
+                state = invite_dialog_state,
+                add_to_whitelist = false,
+                name = name,
+            }
+            unhandled_invite = true,
+        end,
+        whitelist = function()
+            coroutine.schedule(function()
+                local clock = os.clock()
+                repeat
+                    if (os.clock() - clock) > 90 then
+                        return
+                    end
+                    coroutine.sleep_frame()
+                until(#treasure == 0)
+                command.input('/join')
+            end)
+        end,
+        blacklist = function()
+            command.input('/decline')
+        end
+    },
+    request = { 
+        ask = function(name)
+            unhandled_requests[name] = {
+                state = {
+                    title = 'Party Request',
+                    style = 'normal',
+                    x = options.ui.x,
+                    y = options.ui.y,
+                    width = 179,
+                    height = 96,
+                    resizable = false,
+                    moveable = true,
+                    closable = true,
+                },
+                add_to_whitelist = false,
+            }
+        end,
+        whitelist = function(name)
+            command.input('/pcmd add '.. name)
+        end,
+        blacklist = function()
+            return
+        end,
+    }
+}
+
 packets.incoming[0x0DC]:register(function(p)
     if options.auto.accept and options.whitelist:contains(p.player_name) then
         coroutine.schedule(function()
@@ -179,33 +259,17 @@ packets.incoming[0x0DC]:register(function(p)
     elseif options.auto.decline and options.blacklist:contains(p.player_name) then
         command.input('/decline')
     else
-        invite_dialog = {
-            state = invite_dialog_state,
-            add_to_whitelist = false,
-            name = p.player_name,
-        }
-        unhandled_invite = true
+        default.invite[options.default](p.player_name)
     end
 end)
 
 packets.incoming[0x11D]:register(function(p)
     if options.auto.accept and options.whitelist:contains(p.player_name) then
         command.input('/pcmd add '..p.player_name)
-    elseif options.blacklist[p.player_name] ~= true then
-        unhandled_requests[p.player_name] = {
-            state = {
-                title = 'Party Request',
-                style = 'normal',
-                x = options.ui.x,
-                y = options.ui.y,
-                width = 179,
-                height = 96,
-                resizable = false,
-                moveable = true,
-                closable = true,
-            },
-            add_to_whitelist = false,
-        }
+    elseif options.auto.decline and options.blacklist:contains(p.player_name) then
+        return --ignore request by providing a dialog to user
+    else
+        default.request[options.default](p.player_name)
     end
 end)
 
