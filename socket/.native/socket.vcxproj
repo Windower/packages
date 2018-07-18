@@ -19,7 +19,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{1A93DE27-DA10-4D15-9099-E16B1943D92B}</ProjectGuid>
     <RootNamespace>socket</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|Win32'" Label="Configuration">
