@@ -1,0 +1,15 @@
+
+<package>
+  <name>party_menu</name>
+  <version>1.0.0.0</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>status_effects</dependency>
+    <dependency>player</dependency>
+    <dependency>resources</dependency>
+    <dependency>packets</dependency>
+    <dependency>settings</dependency>
+    <dependency>target</dependency>
+    <dependency>party</dependency>
+  </dependencies>
+</package>
