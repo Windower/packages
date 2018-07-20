@@ -162,7 +162,7 @@ end
 
 local get_debuff_string = function(pos)
     if options.debuffs_visible then
-        debuffs = 'DB:'
+        debuffs = ''
         local debuff_count = 0
         if pos == 1 then
             for _, debuff_id in ipairs(debuff_ids) do
