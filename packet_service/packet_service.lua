@@ -3,6 +3,7 @@ local ffi = require('ffi')
 local packet = require('packet')
 local shared = require('shared')
 local string = require('string')
+local math = require('math')
 local table = require('table')
 local types = require('types')
 local os = require('os')
@@ -23,88 +24,92 @@ local history = setmetatable({}, nesting_meta)
 
 local char_ptr = ffi.typeof('char const*')
 
-local copy_fields
-copy_fields = function(packet, raw, instance, fields)
-    for _, field in pairs(fields) do
-        local data
-        local type = field.type
-        local tolua = type.tolua
-        if type.count ~= nil and type.cdef ~= 'char' then
-            data = {}
-            local array = instance[field.cname]
-            if type.base.fields ~= nil then
-                for i = 0, type.count - 1 do
-                    data[i] = copy_fields({}, nil, array[i], type.base.fields)
-                end
-            else
-                if tolua == nil then
-                    for i = 0, type.count - 1 do
-                        data[i] = array[i]
-                    end
+local parse_single
+do
+    local math_floor = math.floor
+    local ffi_copy = ffi.copy
+    local ffi_new = ffi.new
+
+    local amend_cdata
+    amend_cdata = function(packet, cdata, ftype)
+        local count = ftype.count
+        if count then
+            for i = 0, count - 1 do
+                local inner_value = cdata[i]
+                if type(inner_value) == 'cdata' then
+                    local inner = {}
+                    packet[i] = inner
+                    amend_cdata(inner, inner_value, ftype.base)
                 else
-                    for i = 0, type.count - 1 do
-                        data[i] = tolua(array[i], field)
-                    end
+                    packet[i] = inner_value
                 end
             end
-        elseif type.fields ~= nil then
-            data = copy_fields({}, nil, instance[field.cname], type.fields)
-        elseif type.cdef ~= nil then
-            data = tolua ~= nil and tolua(instance[field.cname], field) or instance[field.cname]
-        else
-            data = tolua ~= nil and tolua(raw, field) or raw
+            return
         end
 
-        packet[field.label] = data
-    end
-
-    return packet
-end
-
-local parse_single
-parse_single = function(packet, ptr, type)
-    if type == nil then
-        return
-    end
-
-    if type.multiple == nil then
-        local instance = type.ctype()
-        ffi.copy(instance, ptr, type.size)
-
-        copy_fields(packet, packet.data, instance, type.fields)
-        return
-    end
-
-    local indices = {parse_single(packet, ptr, type.base)}
-    ptr = ptr + type.base.size
-
-    do
-        local lookups = type.lookups
-        local base_index = #indices
-        for i = 1, #lookups do
-            indices[base_index + i] = packet[lookups[i]]
+        for key, value in pairs(cdata) do
+            if type(value) == 'cdata' then
+                local inner = {}
+                packet[key] = inner
+                amend_cdata(inner, value, ftype.fields[key].type)
+            else
+                packet[key] = value
+            end
         end
     end
 
-    local new_type = type
-    for i = 1, #indices do
-        local index = indices[i]
-        new_type = new_type[index]
-
-        if new_type == nil then
-            return unpack(indices)
+    parse_single = function(packet, ptr, ftype, size)
+        if ftype == nil then
+            return
         end
-    end
 
-    do
-        local new_indices = {parse_single(packet, ptr, new_type)}
-        local base_index = #indices
-        for i = 1, #new_indices do
-            indices[base_index + i] = new_indices[i]
+        if ftype.multiple == nil then
+            local instance
+            if ftype.var_size then
+                instance = ffi_new(ftype.name, math_floor((size - ftype.size) / ftype.var_size))
+            else
+                instance = ffi_new(ftype.name)
+            end
+            ffi_copy(instance, ptr, ftype.size)
+
+            amend_cdata(packet, instance, ftype)
+            return
         end
-    end
 
-    return unpack(indices)
+        local base = ftype.base
+        local indices = {parse_single(packet, ptr, base, size)}
+        local size_diff = base.size
+        ptr = ptr + size_diff
+        size = size - size_diff
+
+        do
+            local lookups = ftype.lookups
+            local base_index = #indices
+            for i = 1, #lookups do
+                indices[base_index + i] = packet[lookups[i]]
+            end
+        end
+
+        local new_type = ftype
+        for i = 1, #indices do
+            local index = indices[i]
+            new_type = new_type[index]
+
+            if new_type == nil then
+                return unpack(indices)
+            end
+        end
+
+        do
+            local new_indices = {parse_single(packet, ptr, new_type, size)}
+            local base_index = #indices
+            for i = 1, #new_indices do
+                indices[base_index + i] = new_indices[i]
+            end
+        end
+
+        return unpack(indices)
+    end
 end
 
 local history_lookup = {}
@@ -153,11 +158,13 @@ end
 
 local make_timestamp
 do
-    local last_time = os.time()
+    local os_time = os.time
+
+    local last_time = os_time()
     local now_count = 0
 
     make_timestamp = function()
-        local now = os.time()
+        local now = os_time()
         if last_time == now then
             now_count = now_count + 1
             return now + now_count / 10000
@@ -171,18 +178,21 @@ end
 
 local handle_packet = function(direction, raw)
     local id = raw.id
+    local data = raw.data
 
     local packet = {
         id = id,
         direction = direction,
-        data = raw.data,
+        data = data,
         blocked = raw.blocked,
         modified = raw.modified,
         injected = raw.injected,
         timestamp = make_timestamp(),
     }
 
-    local indices = {direction, id, parse_single(packet, char_ptr(packet.data), types[direction][id])}
+    if id == 0x037 then x = true end
+    local indices = {direction, id, parse_single(packet, char_ptr(data), types[direction][id], #data)}
+    x = false
 
     local registry = registry
     local history = history

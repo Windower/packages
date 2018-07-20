@@ -1,6 +1,6 @@
 <package>
   <name>packet_service</name>
-  <version>1.0.4.1</version>
+  <version>1.1.0.0</version>
   <type>service</type>
   <dependencies>
     <dependency>structs</dependency>
