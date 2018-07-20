@@ -337,25 +337,6 @@ end)
 
 local pm = command.new('pm')
 
-local help = function()
-    command.input('/echo Party Menu commands')
-    command.input('/echo /pm h | help')
-    command.input('/echo /pm t | tog | toggle')
-    command.input('/echo /pm name | names')
-    command.input('/echo /pm hp')
-    command.input('/echo /pm mp')
-    command.input('/echo /pm tp')
-    command.input('/echo /pm db | debuff | debuffs')
-    command.input('/echo /pm color')
-    command.input('/echo /pm size [new_size]')
-    command.input('/echo /pm pos | position [x] [y]')
-    command.input('/echo /pm wid | width [new_width]')
-    command.input('/echo /pm s | save')
-end
-
-pm:register('h', help)
-pm:register('help', help)
-
 local toggle_ui = function()
     global_window_closed = not global_window_closed
 end
