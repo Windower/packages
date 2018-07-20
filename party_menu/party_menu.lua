@@ -269,23 +269,6 @@ local update_ui_dimensions = function()
     end
 end
 
-local get_row_string = function()
-    local name_job_hp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_color()
-    local name_job_hp = get_name() .. get_hp()
-    local name_job_hp_format = string.format('[' .. name_job_hp .. ']{' .. name_job_hp_format_string .. '}')
-
-    local mp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_mp_color()
-    local mp_format = string.format('[' .. get_mp() .. ']{' .. mp_format_string .. '}')
-
-    local tp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_tp_color()
-    local tp_format = string.format('[' .. get_tp() .. ']{' .. tp_format_string .. '}')
-
-    local debuffs_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. 'white'
-    local debuffs_format = string.format('[' .. party_data[1].debuffs .. ']{' .. debuffs_format_string .. '}')
-
-    return name_job_hp_format .. mp_format .. tp_format .. debuffs_format
-end
-
 local check_target_for_row_highlighting = function()
     local entity = target.t or target.st
     for i = 1, 6 do
