@@ -22,6 +22,7 @@ local target = require('target')
 local party = require('party')
 local math = require('math')
 local os = require('os')
+local enumerable = require('enumerable')
 
 local debuff_ids = require('debuff_ids')
 
@@ -94,44 +95,23 @@ local get_hp = function(pos)
     end
 end
 
-local get_hp_color = function(pos)
-    local color
-    if not options.dynamic_coloring then
-        color = 'white'
-    elseif party[pos].hp_percent >= 95 then
-        color = 'darkgreen'
-    elseif party[pos].hp_percent >= 75 then
-        color = 'limegreen'
-    elseif party[pos].hp_percent >= 50 then
-        color = 'yellow'
-    elseif party[pos].hp_percent >= 25 then
-        color = 'darkorange'
-    elseif party[pos].hp_percent >= 11 then
-        color = 'red'
-    elseif party[pos].hp_percent < 11 then
-        color = 'darkred'
-    end
-    return color
-end
+local color_ranges = enumerable.wrap({
+    {percent = 10, color = 'darkred'},
+    {percent = 24, color = 'red'},
+    {percent = 49, color = 'darkorange'},
+    {percent = 74, color = 'yellow'},
+    {percent = 94, color = 'limegreen'},
+    {percent = 100, color = 'darkgreen'},
+})
 
-local get_mp_color = function(pos)
-    local color
+local get_hp_mp_color = function(pos, hp_or_mp_percent)
     if not options.dynamic_coloring then
-        color = 'white'
-    elseif party[pos].mp_percent >= 95 then
-        color = 'darkgreen'
-    elseif party[pos].mp_percent >= 75 then
-        color = 'limegreen'
-    elseif party[pos].mp_percent >= 50 then
-        color = 'yellow'
-    elseif party[pos].mp_percent >= 25 then
-        color = 'darkorange'
-    elseif party[pos].mp_percent >= 11 then
-        color = 'red'
-    elseif party[pos].mp_percent < 11 then
-        color = 'darkred'
+        return 'white'
     end
-    return color
+
+    return color_ranges:first(function(t)
+        return hp_or_mp_percent <= t.percent
+    end).color
 end
 
 local get_mp = function(pos)
@@ -210,11 +190,11 @@ local update_party_name_hp_mp_tp_strings = function(update_type)
 
     for i = start, end_point do
         if party[i] and party[i].zone_id == party[1].zone_id then
-            local name_job_hp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_color(i)
+            local name_job_hp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_mp_color(i, party[i].hp_percent)
             local name_job_hp = get_name(i) .. get_hp(i)
             local name_job_hp_format = string.format('[' .. name_job_hp .. ']{' .. name_job_hp_format_string .. '}')
 
-            local mp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_mp_color(i)
+            local mp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_mp_color(i, party[i].mp_percent)
             local mp_format = string.format('[' .. get_mp(i) .. ']{' .. mp_format_string .. '}')
 
             local tp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_tp_color(i)
