@@ -190,9 +190,7 @@ local handle_packet = function(direction, raw)
         timestamp = make_timestamp(),
     }
 
-    if id == 0x037 then x = true end
     local indices = {direction, id, parse_single(packet, char_ptr(data), types[direction][id], #data)}
-    x = false
 
     local registry = registry
     local history = history
