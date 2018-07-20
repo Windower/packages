@@ -249,7 +249,7 @@ do
         info.size = size
         local ftype = build_type(cdef, info)
 
-        local last = arranged[#arranged]
+        local last = arranged[arranged_index]
         local last_ftype = last and last.type
         if last_ftype and last_ftype.size == '*' then
             ftype.var_size = ffi_sizeof(last_ftype.cdef)
