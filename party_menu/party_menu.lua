@@ -52,17 +52,8 @@ local defaults = {
 }
 local options = settings.load(defaults)
 
-local function get_party_size()
-    for i = 1, 6 do
-        if not party[i] then
-            return (i - 1)
-        end
-    end
-    return 6
-end
-
 local global_window_state = {}
-local function quick_shallow_copy()
+local quick_shallow_copy = function()
     for key, value in pairs(options.global_window_state) do
         global_window_state[key] = value
     end
@@ -75,9 +66,9 @@ local left_inner_padding = 2
 local upper_inner_padding = 2
 local lower_inner_padding = 5
 local row_window_height = options.text_size + upper_inner_padding + lower_inner_padding
-global_window_state.height = get_party_size() * (row_window_height + outer_padding) + outer_padding
+global_window_state.height = party.alliance.party_1_count * (row_window_height + outer_padding) + outer_padding
 
-local function get_name(pos)
+local get_name = function(pos)
     if options.names_visible then
         return string.format('%5.5s ', party[pos].name)
     else
@@ -85,7 +76,7 @@ local function get_name(pos)
     end
 end
 
-local function get_hp(pos)
+local get_hp = function(pos)
     if hp_modes[options.hp_mode_index] == 'hide' then
         return ''
     elseif party[pos].hp == 0 and hp_modes[options.hp_mode_index] == 'missinghp' then
@@ -103,7 +94,7 @@ local function get_hp(pos)
     end
 end
 
-local function get_hp_color(pos)
+local get_hp_color = function(pos)
     local color
     if not options.dynamic_coloring then
         color = 'white'
@@ -123,7 +114,7 @@ local function get_hp_color(pos)
     return color
 end
 
-local function get_mp_color(pos)
+local get_mp_color = function(pos)
     local color
     if not options.dynamic_coloring then
         color = 'white'
@@ -143,7 +134,7 @@ local function get_mp_color(pos)
     return color
 end
 
-local function get_mp(pos)
+local get_mp = function(pos)
     if mp_modes[options.mp_mode_index] == 'mp' then
         return string.format('MP:%4.4s ', party[pos].mp)
     elseif mp_modes[options.mp_mode_index] == 'mp/mp_max' then
@@ -153,7 +144,7 @@ local function get_mp(pos)
     end
 end
 
-local function get_tp(pos)
+local get_tp = function(pos)
     if options.tp_visible then
         return string.format('TP:%4.4s ', party[pos].tp)
     else
@@ -161,7 +152,7 @@ local function get_tp(pos)
     end
 end
 
-local function get_tp_color(pos)
+local get_tp_color = function(pos)
     if party[pos].tp < 1000 or not options.dynamic_coloring then
         return 'white'
     else
@@ -169,7 +160,7 @@ local function get_tp_color(pos)
     end
 end
 
-local function get_debuff_string(pos)
+local get_debuff_string = function(pos)
     if options.debuffs_visible then
         debuffs = 'DB:'
         local debuff_count = 0
@@ -206,7 +197,7 @@ end
 
 local party_display_strings = {{}, {}, {}, {}, {}, {}}
 
-local function update_party_name_hp_mp_tp_strings(update_type)
+local update_party_name_hp_mp_tp_strings = function(update_type)
     local start = 1
     local end_point = 1
     if update_type == 'player_only' then
@@ -246,7 +237,7 @@ local function update_party_name_hp_mp_tp_strings(update_type)
 end
 update_party_name_hp_mp_tp_strings('both')
 
-local function update_party_debuff_strings(update_type)
+local update_party_debuff_strings = function(update_type)
     local start = 1
     local end_point = 1
     if update_type == 'player_only' then
@@ -271,7 +262,7 @@ update_party_debuff_strings('both')
 
 local party_window_states = {}
 
-local function create_party_window_states()
+local create_party_window_states = function()
     for i = 1, 6 do
         party_window_states[i] = {
             style = 'chromeless',
@@ -284,12 +275,12 @@ local function create_party_window_states()
 end
 create_party_window_states()
 
-local function update_ui_dimensions()
+local update_ui_dimensions = function()
     row_window_height = options.text_size + upper_inner_padding + lower_inner_padding
-    global_window_state.y = options.global_window_state.y - (get_party_size() - 1) * (row_window_height + outer_padding)
+    global_window_state.y = options.global_window_state.y - (party.alliance.party_1_count - 1) * (row_window_height + outer_padding)
     global_window_state.x = options.global_window_state.x
     global_window_state.width = options.global_window_state.width
-    global_window_state.height = get_party_size() * (row_window_height + outer_padding) + outer_padding
+    global_window_state.height = party.alliance.party_1_count * (row_window_height + outer_padding) + outer_padding
     for i, row_window in ipairs(party_window_states) do
         row_window.x = options.global_window_state.x + outer_padding
         row_window.width = options.global_window_state.width - 2 * outer_padding
@@ -298,7 +289,7 @@ local function update_ui_dimensions()
     end
 end
 
-local function get_row_string()
+local get_row_string = function()
     local name_job_hp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_color()
     local name_job_hp = get_name() .. get_hp()
     local name_job_hp_format = string.format('[' .. name_job_hp .. ']{' .. name_job_hp_format_string .. '}')
@@ -315,7 +306,7 @@ local function get_row_string()
     return name_job_hp_format .. mp_format .. tp_format .. debuffs_format
 end
 
-local function check_target_for_row_highlighting()
+local check_target_for_row_highlighting = function()
     local entity = target.t or target.st
     for i = 1, 6 do
         if entity and party[i] then
@@ -383,7 +374,7 @@ end)
 
 local pm = command.new('pm')
 
-local function help()
+local help = function()
     command.input('/echo Party Menu commands')
     command.input('/echo /pm h | help')
     command.input('/echo /pm t | tog | toggle')
@@ -402,7 +393,7 @@ end
 pm:register('h', help)
 pm:register('help', help)
 
-local function toggle_ui()
+local toggle_ui = function()
     global_window_closed = not global_window_closed
 end
 
@@ -410,7 +401,7 @@ pm:register('t', toggle_ui)
 pm:register('tog', toggle_ui)
 pm:register('toggle', toggle_ui)
 
-local function toggle_name_display()
+local toggle_name_display = function()
     options.names_visible = not options.names_visible
     update_party_name_hp_mp_tp_strings('both')
 end
@@ -418,28 +409,28 @@ end
 pm:register('name', toggle_name_display)
 pm:register('names', toggle_name_display)
 
-local function toggle_hp_display()
+local toggle_hp_display = function()
     options.hp_mode_index = (options.hp_mode_index % #hp_modes) + 1
     update_party_name_hp_mp_tp_strings('both')
 end
 
 pm:register('hp', toggle_hp_display)
 
-local function toggle_mp_display()
+local toggle_mp_display = function()
     options.mp_mode_index = (options.mp_mode_index % #mp_modes) + 1
     update_party_name_hp_mp_tp_strings('both')
 end
 
 pm:register('mp', toggle_mp_display)
 
-local function toggle_tp_display()
+local toggle_tp_display = function()
     options.tp_visible = not options.tp_visible
     update_party_name_hp_mp_tp_strings('both')
 end
 
 pm:register('tp', toggle_tp_display)
 
-local function toggle_debuff_display()
+local toggle_debuff_display = function()
     options.debuffs_visible = not options.debuffs_visible
     update_party_debuff_strings('both')
 end
@@ -448,7 +439,7 @@ pm:register('db', toggle_debuff_display)
 pm:register('debuff', toggle_debuff_display)
 pm:register('debuffs', toggle_debuff_display)
 
-local function toggle_dynamic_coloring()
+local toggle_dynamic_coloring = function()
     options.dynamic_coloring = not options.dynamic_coloring
     update_party_name_hp_mp_tp_strings('both')
     if options.dynamic_coloring then
@@ -460,7 +451,7 @@ end
 
 pm:register('color', toggle_dynamic_coloring)
 
-local function change_text_size(size)
+local change_text_size = function(size)
     options.text_size = size
     update_party_name_hp_mp_tp_strings('both')
     update_party_debuff_strings('both')
@@ -470,7 +461,7 @@ end
 -- Not sure what to put for maximum allowable values here
 pm:register('size', change_text_size, '[size:integer(0,50)=20]')
 
-local function change_position(x, y)
+local change_position = function(x, y)
     options.global_window_state.x = x
     options.global_window_state.y = y
     update_ui_dimensions()
@@ -479,7 +470,7 @@ end
 pm:register('pos', change_position, '[x:integer(0,50000)=20]', '[y:integer(0,50000)=100]')
 pm:register('position', change_position, '[x:integer(0,50000)=20]', '[y:integer(0,50000)=100]')
 
-local function change_width(width)
+local change_width = function(width)
     options.global_window_state.width = width
     update_ui_dimensions()
 end
@@ -487,7 +478,7 @@ end
 pm:register('wid', change_width, '[width:integer(0,50000)=500]')
 pm:register('width', change_width, '[width:integer(0,50000)=500]')
 
-local function save_settings()
+local save_settings = function()
     command.input('/echo Your party menu settings have been saved.')
     settings.save(options)
 end
