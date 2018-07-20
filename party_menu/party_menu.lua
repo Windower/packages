@@ -51,15 +51,16 @@ local defaults = {
         width = 500,
     }
 }
-local options = settings.load(defaults)
 
 local global_window_state = {}
-local quick_shallow_copy = function()
-    for key, value in pairs(options.global_window_state) do
+
+settings.settings_change:register(function()
+    for key, value in pairs(defaults.global_window_state) do
         global_window_state[key] = value
     end
-end
-quick_shallow_copy()
+end)
+
+local options = settings.load(defaults)
 
 local global_window_closed = false
 local outer_padding = 2
