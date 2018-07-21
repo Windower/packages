@@ -1,6 +1,6 @@
 <package>
   <name>target</name>
-  <version>1.1.0.1</version>
+  <version>1.1.1.0</version>
   <type>library</type>
   <dependencies>
     <dependency>memory</dependency>
