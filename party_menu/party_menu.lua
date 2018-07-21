@@ -145,7 +145,7 @@ end
 
 local get_status_string = function(pos)
     if status_modes[options.status_mode_index] ~= 'no statuses' then
-        statuses = ''
+        local statuses = ''
         local status_count = 0
         if pos == 1 then
             for _, status in ipairs(status_list[options.status_mode_index]) do
