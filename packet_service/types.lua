@@ -2584,7 +2584,7 @@ types.outgoing[0x052] = struct({
 })
 
 -- lockstyleset
-types.outgoing[0x53] = struct({
+types.outgoing[0x053] = struct({
     -- First 4 bytes are a header for the set
     count               = {0x00, uint8},
     type                = {0x01, uint8}, -- 0 = "Stop locking style", 1 = "Continue locking style", 3 = "Lock style in this way". Might be flags?
