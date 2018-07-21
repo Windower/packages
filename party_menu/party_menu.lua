@@ -1,13 +1,10 @@
--- TODO: Replace command.input('/echo') with chat.add_text() when possible
 -- TODO: Consider adding a title row that describes each column to reduce clutter.
 -- TODO: Consider adding distance to player as a column
 -- TODO: Consider adding debuff image functionality.
 -- TODO: Consider adding settings to show different data on player vs partymembers
--- TODO: Optimize/revisit incoming packet code, in particular look into getting party zone ids to update correctly when party members zone, for now just display 'Not in zone'
 
 -- Known Issues:
--- TODO: Party member will briefly show as 'DEAD' when zoning into the same zone as the player.
--- TODO: HP updates can be a bit slow, particularly after a cure.
+-- TODO: Party members will briefly show as 'DEAD' when zoning into the same zone as the player.
 
 local player = require('player')
 local ui = require('ui')
@@ -24,10 +21,15 @@ local math = require('math')
 local os = require('os')
 local enumerable = require('enumerable')
 
-local debuff_ids = require('debuff_ids')
+
+local debuffs = require('debuff_priority_list')
+local buffs = require('buff_list')
+local all_statuses = require('all_status_list')
+local status_list = {debuffs, buffs, all_statuses}
 
 local hp_modes = {'missinghp', 'hp', 'hp/hp_max', 'hide'}
 local mp_modes = {'mp', 'mp/mp_max', 'hide'}
+local status_modes = {'debuffs', 'buffs', 'all statuses', 'no statuses'}
 
 local zoning = false
 local zone_out_time = os.clock()
@@ -37,8 +39,8 @@ local defaults = {
     names_visible = true,
     hp_mode_index = 1,
     mp_mode_index = 3,
+    status_mode_index = 1,
     tp_visible = false,
-    debuffs_visible = true,
     dynamic_coloring = true,
     text_size = 20,
     text_typeface = 'Consolas',
@@ -141,36 +143,36 @@ local get_tp_color = function(pos)
     end
 end
 
-local get_debuff_string = function(pos)
-    if options.debuffs_visible then
-        debuffs = ''
-        local debuff_count = 0
+local get_status_string = function(pos)
+    if status_modes[options.status_mode_index] ~= 'no statuses' then
+        statuses = ''
+        local status_count = 0
         if pos == 1 then
-            for _, debuff_id in ipairs(debuff_ids) do
-                if status_effects.player[debuff_id][1] then
-                    debuff_count = debuff_count + 1
-                    if debuff_count ~= 1 then
-                        debuffs = debuffs .. ' ' .. res.buffs[debuff_id].en
+            for _, status in ipairs(status_list[options.status_mode_index]) do
+                if status_effects.player[status.id][1] then
+                    status_count = status_count + 1
+                    if status_count ~= 1 then
+                        statuses = statuses .. ' ' .. status.en
                     else
-                        debuffs = debuffs .. res.buffs[debuff_id].en
+                        statuses = statuses .. status.en
                     end
                 end
             end
         else
-            debuff_count = 0
-            for _, debuff_id in ipairs(debuff_ids) do
-                if status_effects.party[pos - 1][debuff_id][1] then
-                    debuff_count = debuff_count + 1
-                    if debuff_count ~= 1 then
-                        debuffs = debuffs .. ' ' .. res.buffs[debuff_id].en
+            status_count = 0
+            for _, status in ipairs(status_list[options.status_mode_index]) do
+                if status_effects.party[pos - 1][status.id][1] then
+                    status_count = status_count + 1
+                    if status_count ~= 1 then
+                        statuses = statuses .. ' ' .. status.en
                     else
-                        debuffs = debuffs .. res.buffs[debuff_id].en
+                        statuses = statuses .. status.en
                     end
                 end
             end
         end
-        debuffs = debuffs:gsub('STRDown DEXDown VITDown AGIDown INTDown MNDDown CHRDown', 'Impact')
-        return debuffs
+        statuses = statuses:gsub('STRDown DEXDown VITDown AGIDown INTDown MNDDown CHRDown', 'Impact')
+        return statuses
     else
         return ''
     end
@@ -178,7 +180,7 @@ end
 
 local party_display_strings = {{}, {}, {}, {}, {}, {}}
 
-local update_party_name_hp_mp_tp_strings = function(update_type)
+local update_party_name_hp_mp_tp_strings = function(update_type, zone_check)
     local start = 1
     local end_point = 1
     if update_type == 'player_only' then
@@ -190,7 +192,7 @@ local update_party_name_hp_mp_tp_strings = function(update_type)
     end
 
     for i = start, end_point do
-        if party[i] and party[i].zone_id == party[1].zone_id then
+        if party[i] and party[i].zone_id == party[1].zone_id and not zone_check then
             local name_job_hp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_mp_color(i, party[i].hp_percent)
             local name_job_hp = get_name(i) .. get_hp(i)
             local name_job_hp_format = string.format('[' .. name_job_hp .. ']{' .. name_job_hp_format_string .. '}')
@@ -201,16 +203,15 @@ local update_party_name_hp_mp_tp_strings = function(update_type)
             local tp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_tp_color(i)
             local tp_format = string.format('[' .. get_tp(i) .. ']{' .. tp_format_string .. '}')
 
-            local debuffs_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. 'white'
-            local debuffs_format = string.format('[' .. get_debuff_string(i) .. ']{' .. debuffs_format_string .. '}')
-
             party_display_strings[i].name_hp_mp_tp = name_job_hp_format .. mp_format .. tp_format
         elseif party[i] and party[i].zone_id ~= party[1].zone_id then
             local name_zone_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold white'
-            local name_zone = get_name(i) .. 'Not in zone'
+            local name_zone = get_name(i) .. res.zones[party[i].zone_id].en
             local name_zone_format = string.format('[' .. name_zone .. ']{' .. name_zone_format_string .. '}')
 
             party_display_strings[i].name_hp_mp_tp = name_zone_format
+        elseif party[i] and party[i].zone_id == party[1].zone_id and zone_check then
+            -- Do not change strings
         else
             party_display_strings[i].name_hp_mp_tp = ''
         end
@@ -218,7 +219,7 @@ local update_party_name_hp_mp_tp_strings = function(update_type)
 end
 update_party_name_hp_mp_tp_strings('both')
 
-local update_party_debuff_strings = function(update_type)
+local update_party_status_strings = function(update_type, zone_check)
     local start = 1
     local end_point = 1
     if update_type == 'player_only' then
@@ -230,16 +231,18 @@ local update_party_debuff_strings = function(update_type)
     end
 
     for i = start, end_point do
-        if party[i] and party[i].zone_id == party[1].zone_id then
+        if party[i] and party[i].zone_id == party[1].zone_id and not zone_check then
             local debuffs_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold white'
-            local debuffs_format = string.format('[' .. get_debuff_string(i) .. ']{' .. debuffs_format_string .. '}')
+            local debuffs_format = string.format('[' .. get_status_string(i) .. ']{' .. debuffs_format_string .. '}')
             party_display_strings[i].debuffs = debuffs_format
+        elseif party[i] and zone_check and party[i].zone_id == party[1].zone_id then
+            -- Don't want to change debuffs here
         else
             party_display_strings[i].debuffs = ''
         end
     end
 end
-update_party_debuff_strings('both')
+update_party_status_strings('both')
 
 local party_window_states = {}
 
@@ -293,26 +296,34 @@ end)
 
 -- 0x0DF appears to change when player hp/mp/tp changes
 packets.incoming[0x0DF]:register(function()
-    update_party_name_hp_mp_tp_strings('both')
-    update_party_debuff_strings('both')
+    update_party_name_hp_mp_tp_strings('party_only')
 end)
 
 -- This seems to change when buffs on self change, also when party members zone
 packets.incoming[0x037]:register(function()
-    update_party_name_hp_mp_tp_strings('both')
-    update_party_debuff_strings('both')
+    update_party_status_strings('player_only')
 end)
 
 -- Party member updates, joining/leaving party etc
 packets.incoming[0x0DD]:register(function()
     update_party_name_hp_mp_tp_strings('both')
-    update_party_debuff_strings('both')
+    update_party_status_strings('both')
 end)
 
 -- Party buffs update packet
 packets.incoming[0x076]:register(function()
-    update_party_debuff_strings('party_only')
+    update_party_status_strings('party_only')
 end)
+
+-- This seems to be the most reliable way (I have found so far) to track party member zoning
+-- Also updates when player hp/mp/tp changes
+packets.incoming[0x067]:register(function(p)
+    if p.type == 2 then
+        update_party_name_hp_mp_tp_strings('party_only', true)
+        update_party_status_strings('party_only', true)
+    end
+end)
+
 
 ui.display(function()
     if zoning and os.clock() > zone_out_time + zone_in_delay then
@@ -375,14 +386,14 @@ end
 
 pm:register('tp', toggle_tp_display)
 
-local toggle_debuff_display = function()
-    options.debuffs_visible = not options.debuffs_visible
-    update_party_debuff_strings('both')
+local toggle_status_display = function()
+    options.status_mode_index = (options.status_mode_index % #status_modes) + 1
+    command.input('/echo Now displaying ' .. status_modes[options.status_mode_index])
+    update_party_status_strings('both')
 end
 
-pm:register('db', toggle_debuff_display)
-pm:register('debuff', toggle_debuff_display)
-pm:register('debuffs', toggle_debuff_display)
+pm:register('st', toggle_status_display)
+pm:register('status', toggle_status_display)
 
 local toggle_dynamic_coloring = function()
     options.dynamic_coloring = not options.dynamic_coloring
@@ -399,7 +410,7 @@ pm:register('color', toggle_dynamic_coloring)
 local change_text_size = function(size)
     options.text_size = size
     update_party_name_hp_mp_tp_strings('both')
-    update_party_debuff_strings('both')
+    update_party_status_strings('both')
     update_ui_dimensions()
 end
 
