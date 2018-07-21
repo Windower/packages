@@ -43,7 +43,7 @@ return setmetatable({}, {
         return res ~= nil and res or nil
     end,
     __newindex = function()
-        error('Cannot assign to the \'target\' table.')
+        error('Cannot assign to the \'target\' library.')
     end,
     __pairs = function(_)
         return function(t, k)

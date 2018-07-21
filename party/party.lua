@@ -16,6 +16,9 @@ return setmetatable({}, {
         local member = memory.party.members[key - 1]
         return member.active and member or nil
     end,
+    __newindex = function()
+        error('Cannot assign to the \'party\' library.')
+    end,
     __pairs = function(_)
         return function(t, k)
             if type(k) ~= 'number' then
