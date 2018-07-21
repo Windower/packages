@@ -40,6 +40,3 @@ addon looks like in action:
 10. To change the overall width of the overlay you can use the following equivalent commands. Note that the input width must be an integer between 0 and 50000 inclusive and has a default value of 500 if it is not provided.
     * /pm wid [new_width]
     * /pm width [new_width]
-11. Should you use commands 3 to 11 and find settings you are happy with, you can save your settings with one of the following equivalent commands.
-    * /pm s
-    * /pm save

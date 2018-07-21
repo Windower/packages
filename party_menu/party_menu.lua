@@ -359,6 +359,7 @@ pm:register('toggle', toggle_ui)
 
 local toggle_name_display = function()
     options.names_visible = not options.names_visible
+    settings.save(options)
     update_party_name_hp_mp_tp_strings('both')
 end
 
@@ -367,6 +368,7 @@ pm:register('names', toggle_name_display)
 
 local toggle_hp_display = function()
     options.hp_mode_index = (options.hp_mode_index % #hp_modes) + 1
+    settings.save(options)
     update_party_name_hp_mp_tp_strings('both')
 end
 
@@ -374,6 +376,7 @@ pm:register('hp', toggle_hp_display)
 
 local toggle_mp_display = function()
     options.mp_mode_index = (options.mp_mode_index % #mp_modes) + 1
+    settings.save(options)
     update_party_name_hp_mp_tp_strings('both')
 end
 
@@ -381,6 +384,7 @@ pm:register('mp', toggle_mp_display)
 
 local toggle_tp_display = function()
     options.tp_visible = not options.tp_visible
+    settings.save(options)
     update_party_name_hp_mp_tp_strings('both')
 end
 
@@ -388,6 +392,7 @@ pm:register('tp', toggle_tp_display)
 
 local toggle_status_display = function()
     options.status_mode_index = (options.status_mode_index % #status_modes) + 1
+    settings.save(options)
     command.input('/echo Now displaying ' .. status_modes[options.status_mode_index])
     update_party_status_strings('both')
 end
@@ -397,6 +402,7 @@ pm:register('status', toggle_status_display)
 
 local toggle_dynamic_coloring = function()
     options.dynamic_coloring = not options.dynamic_coloring
+    settings.save(options)
     update_party_name_hp_mp_tp_strings('both')
     if options.dynamic_coloring then
         command.input('/echo Coloring ON')
@@ -409,6 +415,7 @@ pm:register('color', toggle_dynamic_coloring)
 
 local change_text_size = function(size)
     options.text_size = size
+    settings.save(options)
     update_party_name_hp_mp_tp_strings('both')
     update_party_status_strings('both')
     update_ui_dimensions()
@@ -420,6 +427,7 @@ pm:register('size', change_text_size, '[size:integer(0,50)=20]')
 local change_position = function(x, y)
     options.global_window_state.x = x
     options.global_window_state.y = y
+    settings.save(options)
     update_ui_dimensions()
 end
 -- Not sure what to put for maximum allowable values here
@@ -428,19 +436,12 @@ pm:register('position', change_position, '[x:integer(0,50000)=20]', '[y:integer(
 
 local change_width = function(width)
     options.global_window_state.width = width
+    settings.save(options)
     update_ui_dimensions()
 end
 
 pm:register('wid', change_width, '[width:integer(0,50000)=500]')
 pm:register('width', change_width, '[width:integer(0,50000)=500]')
-
-local save_settings = function()
-    command.input('/echo Your party menu settings have been saved.')
-    settings.save(options)
-end
-
-pm:register('s', save_settings)
-pm:register('save', save_settings)
 
 --[[
 Copyright © 2018, BurntWaffle
