@@ -341,7 +341,7 @@ do
     structs.ptr = function(base)
         local is_tag = type(base) == 'string'
 
-        local base_def = not base and 'void' or is_tag and base or base.cdef
+        local base_def = not base and 'void' or is_tag and base or base.name or base.cdef
         local ftype = structs.make_type(base_def .. '*')
 
         ftype.ptr = true
