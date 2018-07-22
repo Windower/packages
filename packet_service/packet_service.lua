@@ -13,8 +13,6 @@ packets = shared.new('packets')
 local registry = {}
 local history = {}
 
-local char_ptr = ffi.typeof('char const*')
-
 local amend_packet
 amend_packet = function(packet, cdata, ftype)
     local count = ftype.count
@@ -117,17 +115,21 @@ packets.env.get_last = function(path)
     return history[path]
 end
 
-packets.env.make_event = function(path)
-    local events = registry[path]
-    if not events then
-        events = {}
-        registry[path] = events
+do
+    local event_new = event.new
+
+    packets.env.make_event = function(path)
+        local events = registry[path]
+        if not events then
+            events = {}
+            registry[path] = events
+        end
+
+        local event = event_new()
+        events[#events + 1] = event
+
+        return event
     end
-
-    local event = event.new()
-    events[#events + 1] = event
-
-    return event
 end
 
 local process_packet = function(packet, path)
@@ -161,28 +163,33 @@ do
     end
 end
 
-local handle_packet = function(direction, raw)
-    local id = raw.id
-    local data = raw.data
+local handle_packet
+do
+    local char_ptr = ffi.typeof('char const*')
 
-    local packet = {
-        direction = direction,
-        id = id,
-        data = data,
-        blocked = raw.blocked,
-        modified = raw.modified,
-        injected = raw.injected,
-        timestamp = make_timestamp(),
-    }
+    handle_packet = function(direction, raw)
+        local id = raw.id
+        local data = raw.data
 
-    local indices = {direction, id, parse_single(packet, char_ptr(data), types[direction][id], #data)}
+        local packet = {
+            direction = direction,
+            id = id,
+            data = data,
+            blocked = raw.blocked,
+            modified = raw.modified,
+            injected = raw.injected,
+            timestamp = make_timestamp(),
+        }
 
-    local path = ''
-    process_packet(packet, path)
+        local indices = {direction, id, parse_single(packet, char_ptr(data), types[direction][id], #data)}
 
-    for i = 1, #indices do
-        path = path .. '/' .. tostring(indices[i])
+        local path = ''
         process_packet(packet, path)
+
+        for i = 1, #indices do
+            path = path .. '/' .. tostring(indices[i])
+            process_packet(packet, path)
+        end
     end
 end
 
