@@ -10,24 +10,10 @@ local os = require('os')
 
 packets = shared.new('packets')
 
-local math_floor = math.floor
-local ffi_copy = ffi.copy
-local ffi_new = ffi.new
-local ffi_typeof = ffi.typeof
+local registry = {}
+local history = {}
 
-local nesting_meta
-nesting_meta = {
-    __index = function(t, k)
-        local v = setmetatable({}, nesting_meta)
-        t[k] = v
-        return v
-    end,
-}
-
-local registry = setmetatable({}, nesting_meta)
-local history = setmetatable({}, nesting_meta)
-
-local char_ptr = ffi_typeof('char const*')
+local char_ptr = ffi.typeof('char const*')
 
 local amend_packet
 amend_packet = function(packet, cdata, ftype)
@@ -64,103 +50,95 @@ amend_packet = function(packet, cdata, ftype)
 end
 
 local parse_single
-parse_single = function(packet, ptr, ftype, size)
-    if ftype == nil then
-        return
-    end
+do
+    local math_floor = math.floor
+    local ffi_copy = ffi.copy
+    local ffi_new = ffi.new
 
-    if ftype.multiple == nil then
-        local instance
-        local size = ftype.size
-        local var_size = ftype.var_size
-        if var_size then
-            instance = ffi_new(ftype.name, math_floor((size - size) / var_size))
-        else
-            instance = ffi_new(ftype.name)
+    parse_single = function(packet, ptr, ftype, size)
+        if ftype == nil then
+            return
         end
-        ffi_copy(instance, ptr, size)
 
-        amend_packet(packet, instance, ftype)
-        return
-    end
+        if ftype.multiple == nil then
+            local instance
+            local size = ftype.size
+            local var_size = ftype.var_size
+            if var_size then
+                instance = ffi_new(ftype.name, math_floor((size - size) / var_size))
+            else
+                instance = ffi_new(ftype.name)
+            end
+            ffi_copy(instance, ptr, size)
 
-    local base = ftype.base
-    local indices = {parse_single(packet, ptr, base, size)}
-    local size_diff = base.size
-    ptr = ptr + size_diff
-    size = size - size_diff
-
-    do
-        local lookups = ftype.lookups
-        local base_index = #indices
-        for i = 1, #lookups do
-            indices[base_index + i] = packet[lookups[i]]
+            amend_packet(packet, instance, ftype)
+            return
         end
-    end
 
-    local new_type = ftype
-    for i = 1, #indices do
-        local index = indices[i]
-        new_type = new_type[index]
+        local base = ftype.base
+        local indices = {parse_single(packet, ptr, base, size)}
+        local size_diff = base.size
+        ptr = ptr + size_diff
+        size = size - size_diff
 
-        if new_type == nil then
-            return unpack(indices)
-        end
-    end
-
-    do
-        local new_indices = {parse_single(packet, ptr, new_type, size)}
-        local base_index = #indices
-        for i = 1, #new_indices do
-            indices[base_index + i] = new_indices[i]
-        end
-    end
-
-    return unpack(indices)
-end
-
-local history_lookup = {}
-local events_lookup = {}
-
-packets.env = {
-    get_last = function(...)
-        local history = history
-        for i = 1, select('#', ...) do
-            history = rawget(history, select(i, ...))
-            if not history then
-                return nil
+        do
+            local lookups = ftype.lookups
+            local base_index = #indices
+            for i = 1, #lookups do
+                indices[base_index + i] = packet[lookups[i]]
             end
         end
 
-        return history_lookup[history]
-    end,
-    make_event = function(...)
-        local registry = registry
-        for i = 1, select('#', ...) do
-            registry = registry[select(i, ...)]
+        local new_type = ftype
+        for i = 1, #indices do
+            local index = indices[i]
+            new_type = new_type[index]
+
+            if new_type == nil then
+                return unpack(indices)
+            end
         end
 
-        local event = event.new()
-        local events = events_lookup[registry]
-        if not events then
-            events = {}
-            events_lookup[registry] = events
+        do
+            local new_indices = {parse_single(packet, ptr, new_type, size)}
+            local base_index = #indices
+            for i = 1, #new_indices do
+                indices[base_index + i] = new_indices[i]
+            end
         end
-        events[#events + 1] = event
 
-        return event
-    end,
-}
+        return unpack(indices)
+    end
+end
 
-local trigger_events = function(registry, packet)
-    local events = events_lookup[registry]
+packets.env = {}
+
+packets.env.get_last = function(path)
+    return history[path]
+end
+
+packets.env.make_event = function(path)
+    local events = registry[path]
     if not events then
-        return
+        events = {}
+        registry[path] = events
     end
 
-    for i = 1, #events do
-        events[i]:trigger(packet)
+    local event = event.new()
+    events[#events + 1] = event
+
+    return event
+end
+
+local process_packet = function(packet, path)
+    local events = registry[path]
+    if events then
+        for i = 1, #events do
+            events[i]:trigger(packet)
+        end
     end
+
+    history[path] = packet
 end
 
 local make_timestamp
@@ -199,20 +177,12 @@ local handle_packet = function(direction, raw)
 
     local indices = {direction, id, parse_single(packet, char_ptr(data), types[direction][id], #data)}
 
-    local registry = registry
-    local history = history
-
-    trigger_events(registry, packet)
-    history_lookup[history] = packet
+    local path = ''
+    process_packet(packet, path)
 
     for i = 1, #indices do
-        local index = indices[i]
-
-        registry = registry[index]
-        history = history[index]
-
-        trigger_events(registry, packet)
-        history_lookup[history] = packet
+        path = path .. '/' .. tostring(indices[i])
+        process_packet(packet, path)
     end
 end
 
