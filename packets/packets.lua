@@ -12,6 +12,14 @@ local make_event = function(_, ...)
     return make_event(...)
 end
 
+local make_new = function(_, values, ...)
+    return make_new(values, ...)
+end
+
+local inject = function(_, p)
+    inject(p)
+end
+
 local nesting_meta
 nesting_meta = {
     __index = function(t, k)
@@ -68,7 +76,13 @@ fns.unregister = function(t, fn)
 end
 
 fns.new = function(t, values)
-    error('Not yet implemented.')
+    return setmetatable(fetch:call(make_new, values, unpack(t.path)), {
+        __index = function(p, k)
+            if k == 'inject' then
+                fetch:call(inject, p)
+            end
+        end,
+    })
 end
 
 fns.register_init = function(t, init_table)

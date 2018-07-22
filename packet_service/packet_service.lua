@@ -10,6 +10,11 @@ local os = require('os')
 
 packets = shared.new('packets')
 
+local math_floor = math.floor
+local ffi_copy = ffi.copy
+local ffi_new = ffi.new
+local ffi_typeof = ffi.typeof
+
 local nesting_meta
 nesting_meta = {
     __index = function(t, k)
@@ -22,94 +27,96 @@ nesting_meta = {
 local registry = setmetatable({}, nesting_meta)
 local history = setmetatable({}, nesting_meta)
 
-local char_ptr = ffi.typeof('char const*')
+local char_ptr = ffi_typeof('char const*')
+
+local amend_packet
+amend_packet = function(packet, cdata, ftype)
+    local count = ftype.count
+    if count then
+        for i = 0, count - 1 do
+            local inner_value = cdata[i]
+            if type(inner_value) == 'cdata' then
+                local inner = packet[i]
+                if not inner then
+                    inner = {}
+                    packet[i] = inner
+                end
+                amend_packet(inner, inner_value, ftype.base)
+            else
+                packet[i] = inner_value
+            end
+        end
+        return
+    end
+
+    for key, value in pairs(cdata) do
+        if type(value) == 'cdata' then
+            local inner = packet[key]
+            if not inner then
+                inner = {}
+                packet[key] = inner
+            end
+            amend_packet(inner, value, ftype.fields[key].type)
+        else
+            packet[key] = value
+        end
+    end
+end
 
 local parse_single
-do
-    local math_floor = math.floor
-    local ffi_copy = ffi.copy
-    local ffi_new = ffi.new
+parse_single = function(packet, ptr, ftype, size)
+    if ftype == nil then
+        return
+    end
 
-    local amend_cdata
-    amend_cdata = function(packet, cdata, ftype)
-        local count = ftype.count
-        if count then
-            for i = 0, count - 1 do
-                local inner_value = cdata[i]
-                if type(inner_value) == 'cdata' then
-                    local inner = {}
-                    packet[i] = inner
-                    amend_cdata(inner, inner_value, ftype.base)
-                else
-                    packet[i] = inner_value
-                end
-            end
-            return
+    if ftype.multiple == nil then
+        local instance
+        local size = ftype.size
+        local var_size = ftype.var_size
+        if var_size then
+            instance = ffi_new(ftype.name, math_floor((size - size) / var_size))
+        else
+            instance = ffi_new(ftype.name)
         end
+        ffi_copy(instance, ptr, size)
 
-        for key, value in pairs(cdata) do
-            if type(value) == 'cdata' then
-                local inner = {}
-                packet[key] = inner
-                amend_cdata(inner, value, ftype.fields[key].type)
-            else
-                packet[key] = value
-            end
+        amend_packet(packet, instance, ftype)
+        return
+    end
+
+    local base = ftype.base
+    local indices = {parse_single(packet, ptr, base, size)}
+    local size_diff = base.size
+    ptr = ptr + size_diff
+    size = size - size_diff
+
+    do
+        local lookups = ftype.lookups
+        local base_index = #indices
+        for i = 1, #lookups do
+            indices[base_index + i] = packet[lookups[i]]
         end
     end
 
-    parse_single = function(packet, ptr, ftype, size)
-        if ftype == nil then
-            return
+    local new_type = ftype
+    for i = 1, #indices do
+        local index = indices[i]
+        new_type = new_type[index]
+
+        if new_type == nil then
+            return unpack(indices)
         end
-
-        if ftype.multiple == nil then
-            local instance
-            if ftype.var_size then
-                instance = ffi_new(ftype.name, math_floor((size - ftype.size) / ftype.var_size))
-            else
-                instance = ffi_new(ftype.name)
-            end
-            ffi_copy(instance, ptr, ftype.size)
-
-            amend_cdata(packet, instance, ftype)
-            return
-        end
-
-        local base = ftype.base
-        local indices = {parse_single(packet, ptr, base, size)}
-        local size_diff = base.size
-        ptr = ptr + size_diff
-        size = size - size_diff
-
-        do
-            local lookups = ftype.lookups
-            local base_index = #indices
-            for i = 1, #lookups do
-                indices[base_index + i] = packet[lookups[i]]
-            end
-        end
-
-        local new_type = ftype
-        for i = 1, #indices do
-            local index = indices[i]
-            new_type = new_type[index]
-
-            if new_type == nil then
-                return unpack(indices)
-            end
-        end
-
-        do
-            local new_indices = {parse_single(packet, ptr, new_type, size)}
-            local base_index = #indices
-            for i = 1, #new_indices do
-                indices[base_index + i] = new_indices[i]
-            end
-        end
-
-        return unpack(indices)
     end
+
+    do
+        local new_indices = {parse_single(packet, ptr, new_type, size)}
+        local base_index = #indices
+        for i = 1, #new_indices do
+            indices[base_index + i] = new_indices[i]
+        end
+    end
+
+    return unpack(indices)
 end
 
 local history_lookup = {}
@@ -181,8 +188,8 @@ local handle_packet = function(direction, raw)
     local data = raw.data
 
     local packet = {
-        id = id,
         direction = direction,
+        id = id,
         data = data,
         blocked = raw.blocked,
         modified = raw.modified,
