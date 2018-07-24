@@ -2,9 +2,14 @@
 -- TODO: Consider adding distance to player as a column
 -- TODO: Consider adding debuff image functionality.
 -- TODO: Consider adding settings to show different data on player vs partymembers
+-- TODO: Targetting needs more work, try and figure out how it will work with <stal>
+-- TODO: Consider not displaying mp of jobs/subjob combinations that do not have mp, incorrectly shows as red
 
 -- Known Issues:
 -- TODO: Party members will briefly show as 'DEAD' when zoning into the same zone as the player.
+-- TODO: When party members are invited or kicked, addon will temporarily freeze, probably because of how many 0x0DD packets go off at once.
+-- TODO: Sometimes party members zone will be one zone behind, taking any action will fix it however.
+-- TODO: Currently very slow to correctly update buff lists for the party, even just for the player.
 
 local player = require('player')
 local ui = require('ui')
@@ -21,25 +26,18 @@ local math = require('math')
 local os = require('os')
 local enumerable = require('enumerable')
 
-
 local debuffs = require('debuff_priority_list')
-local buffs = require('buff_list')
-local all_statuses = require('all_status_list')
-local status_list = {debuffs, buffs, all_statuses}
+local status_list = {debuffs, res.buffs}
 
 local hp_modes = {'missinghp', 'hp', 'hp/hp_max', 'hide'}
 local mp_modes = {'mp', 'mp/mp_max', 'hide'}
-local status_modes = {'debuffs', 'buffs', 'all statuses', 'no statuses'}
-
-local zoning = false
-local zone_out_time = os.clock()
-local zone_in_delay = 10
+local status_modes = {'debuffs', 'all statuses', 'no statuses'}
 
 local defaults = {
     names_visible = true,
     hp_mode_index = 1,
     mp_mode_index = 3,
-    status_mode_index = 1,
+    status_mode_index = 3,
     tp_visible = false,
     dynamic_coloring = true,
     text_size = 20,
@@ -148,7 +146,7 @@ local get_status_string = function(pos)
         local statuses = ''
         local status_count = 0
         if pos == 1 then
-            for _, status in ipairs(status_list[options.status_mode_index]) do
+            for _, status in pairs(status_list[options.status_mode_index]) do
                 if status_effects.player[status.id][1] then
                     status_count = status_count + 1
                     if status_count ~= 1 then
@@ -160,7 +158,7 @@ local get_status_string = function(pos)
             end
         else
             status_count = 0
-            for _, status in ipairs(status_list[options.status_mode_index]) do
+            for _, status in pairs(status_list[options.status_mode_index]) do
                 if status_effects.party[pos - 1][status.id][1] then
                     status_count = status_count + 1
                     if status_count ~= 1 then
@@ -180,10 +178,14 @@ end
 
 local party_display_strings = {{}, {}, {}, {}, {}, {}}
 
-local update_party_name_hp_mp_tp_strings = function(update_type, zone_check)
-    local start = 1
-    local end_point = 1
-    if update_type == 'player_only' then
+local update_party_name_hp_mp_tp_strings = function(update_type, zone_check, party_pos)
+    local start = nil
+    local end_point = nil
+    if party_pos and party_pos ~= 0 then
+        start, end_point = party_pos, party_pos
+    elseif party_pos and party_pos == 0 then
+        -- Do nothing
+    elseif update_type == 'player_only' then
         start, end_point = 1, 1
     elseif update_type == 'party_only' then
         start, end_point = 2, 6
@@ -191,29 +193,31 @@ local update_party_name_hp_mp_tp_strings = function(update_type, zone_check)
         start, end_point = 1, 6
     end
 
-    for i = start, end_point do
-        if party[i] and party[i].zone_id == party[1].zone_id and not zone_check then
-            local name_job_hp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_mp_color(i, party[i].hp_percent)
-            local name_job_hp = get_name(i) .. get_hp(i)
-            local name_job_hp_format = string.format('[' .. name_job_hp .. ']{' .. name_job_hp_format_string .. '}')
+    if start and end_point then
+        for i = start, end_point do
+            if party[i] and party[i].zone_id == party[1].zone_id and not zone_check then
+                local name_job_hp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_mp_color(i, party[i].hp_percent)
+                local name_job_hp = get_name(i) .. get_hp(i)
+                local name_job_hp_format = string.format('[' .. name_job_hp .. ']{' .. name_job_hp_format_string .. '}')
 
-            local mp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_mp_color(i, party[i].mp_percent)
-            local mp_format = string.format('[' .. get_mp(i) .. ']{' .. mp_format_string .. '}')
+                local mp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_hp_mp_color(i, party[i].mp_percent)
+                local mp_format = string.format('[' .. get_mp(i) .. ']{' .. mp_format_string .. '}')
 
-            local tp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_tp_color(i)
-            local tp_format = string.format('[' .. get_tp(i) .. ']{' .. tp_format_string .. '}')
+                local tp_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold ' .. get_tp_color(i)
+                local tp_format = string.format('[' .. get_tp(i) .. ']{' .. tp_format_string .. '}')
 
-            party_display_strings[i].name_hp_mp_tp = name_job_hp_format .. mp_format .. tp_format
-        elseif party[i] and party[i].zone_id ~= party[1].zone_id then
-            local name_zone_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold white'
-            local name_zone = get_name(i) .. res.zones[party[i].zone_id].en
-            local name_zone_format = string.format('[' .. name_zone .. ']{' .. name_zone_format_string .. '}')
+                party_display_strings[i].name_hp_mp_tp = name_job_hp_format .. mp_format .. tp_format
+            elseif party[i] and party[i].zone_id ~= party[1].zone_id then
+                local name_zone_format_string = options.text_typeface .. ' ' .. tostring(options.text_size) .. 'px bold white'
+                local name_zone = get_name(i) .. res.zones[party[i].zone_id].en
+                local name_zone_format = string.format('[' .. name_zone .. ']{' .. name_zone_format_string .. '}')
 
-            party_display_strings[i].name_hp_mp_tp = name_zone_format
-        elseif party[i] and party[i].zone_id == party[1].zone_id and zone_check then
-            -- Do not change strings
-        else
-            party_display_strings[i].name_hp_mp_tp = ''
+                party_display_strings[i].name_hp_mp_tp = name_zone_format
+            elseif party[i] and party[i].zone_id == party[1].zone_id and zone_check then
+                -- Do not change strings
+            else
+                party_display_strings[i].name_hp_mp_tp = ''
+            end
         end
     end
 end
@@ -288,47 +292,45 @@ local check_target_for_row_highlighting = function()
     end
 end
 
+local get_party_member_position = function(member_id)
+    for pos = 1, 6 do
+        if party[pos].id == member_id then
+            return pos
+        end
+    end
+    return 0
+end
+
+local zoning = false
+
 -- Player zone out packet
 packets.incoming[0x00B]:register(function()
-    zone_out_time = os.clock()
     zoning = true
 end)
 
--- 0x0DF appears to change when player hp/mp/tp changes
-packets.incoming[0x0DF]:register(function()
-    update_party_name_hp_mp_tp_strings('party_only')
+-- 0x0DF appears to change when party members (including the player) hp/mp/tp changes
+packets.incoming[0x0DF]:register(function(p)
+    update_party_name_hp_mp_tp_strings('both', false, get_party_member_position(p.id))
 end)
 
--- This seems to change when buffs on self change, also when party members zone
-packets.incoming[0x037]:register(function()
-    update_party_status_strings('player_only')
+-- This seems to change when buffs on self change
+packets.incoming[0x063][0x09]:register(function()
+    -- update_party_status_strings('player_only')
 end)
 
 -- Party member updates, joining/leaving party etc
-packets.incoming[0x0DD]:register(function()
+packets.incoming[0x0C8]:register(function()
+    zoning = false
     update_party_name_hp_mp_tp_strings('both')
     update_party_status_strings('both')
 end)
 
 -- Party buffs update packet
 packets.incoming[0x076]:register(function()
-    update_party_status_strings('party_only')
+    -- update_party_status_strings('party_only')
 end)
-
--- This seems to be the most reliable way (I have found so far) to track party member zoning
--- Also updates when player hp/mp/tp changes
-packets.incoming[0x067]:register(function(p)
-    if p.type == 2 then
-        update_party_name_hp_mp_tp_strings('party_only', true)
-        update_party_status_strings('party_only', true)
-    end
-end)
-
 
 ui.display(function()
-    if zoning and os.clock() > zone_out_time + zone_in_delay then
-        zoning = false
-    end
     if not global_window_closed and not zoning then
         update_ui_dimensions()
         check_target_for_row_highlighting()
