@@ -7,8 +7,6 @@
 
 -- Known Issues:
 -- TODO: Party members will briefly show as 'DEAD' when zoning into the same zone as the player.
--- TODO: When party members are invited or kicked, addon will temporarily freeze, probably because of how many 0x0DD packets go off at once.
--- TODO: Sometimes party members zone will be one zone behind, taking any action will fix it however.
 -- TODO: Currently very slow to correctly update buff lists for the party, even just for the player.
 
 local player = require('player')
@@ -302,6 +300,7 @@ local get_party_member_position = function(member_id)
 end
 
 local zoning = false
+local memory_update_delay = 0.003
 
 -- Player zone out packet
 packets.incoming[0x00B]:register(function()
@@ -310,7 +309,7 @@ end)
 
 -- 0x0DF appears to change when party members (including the player) hp/mp/tp changes
 packets.incoming[0x0DF]:register(function(p)
-    update_party_name_hp_mp_tp_strings('both', false, get_party_member_position(p.id))
+    coroutine.schedule(update_party_name_hp_mp_tp_strings, memory_update_delay, 'both', false, get_party_member_position(p.id))
 end)
 
 -- This seems to change when buffs on self change
@@ -321,8 +320,8 @@ end)
 -- Party member updates, joining/leaving party etc
 packets.incoming[0x0C8]:register(function()
     zoning = false
-    update_party_name_hp_mp_tp_strings('both')
-    update_party_status_strings('both')
+    coroutine.schedule(update_party_name_hp_mp_tp_strings, memory_update_delay, 'both')
+    coroutine.schedule(update_party_status_strings, memory_update_delay, 'both')
 end)
 
 -- Party buffs update packet
