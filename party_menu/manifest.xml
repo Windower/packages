@@ -1,6 +1,6 @@
 <package>
   <name>party_menu</name>
-  <version>1.0.1.5</version>
+  <version>1.0.1.6</version>
   <type>addon</type>
   <dependencies>
     <dependency>status_effects</dependency>

@@ -2,11 +2,12 @@
 -- TODO: Consider adding distance to player as a column
 -- TODO: Consider adding debuff image functionality.
 -- TODO: Consider adding settings to show different data on player vs partymembers
--- TODO: Consider not displaying mp of jobs/subjob combinations that do not have mp, incorrectly shows as red
+-- TODO: Consider not displaying mp of jobs/subjob combinations that do not have mp
 
 -- Known Issues:
--- TODO: Party members will briefly show as 'DEAD' when zoning into the same zone as the player.
 -- TODO: Currently very slow to correctly update buff lists for the party, even just for the player.
+-- TODO: Party members will briefly show as 'DEAD' when zoning into the same zone as the player.
+-- TODO: When rearranging party members they will not immediately display in the correct order. Can be fixed by player or party member zoning, or adding/removing party members.
 
 local player = require('player')
 local ui = require('ui')
@@ -114,9 +115,17 @@ end
 
 local get_mp = function(pos)
     if mp_modes[options.mp_mode_index] == 'mp' then
-        return string.format('MP:%4.4s ', party[pos].mp)
+        if party[pos].mp ~= 0 then
+            return string.format('MP:%4.4s ', party[pos].mp)
+        else
+            return string.format('%7.7s ', '')
+        end
     elseif mp_modes[options.mp_mode_index] == 'mp/mp_max' then
-        return string.format('MP:%4.4s', party[pos].mp) .. '/' .. string.format('%-4.4s ', math.floor(party[pos].mp * 100 / party[pos].mp_percent))
+        if party[pos].mp ~= 0 then
+            return string.format('MP:%4.4s', party[pos].mp) .. '/' .. string.format('%-4.4s ', math.floor(party[pos].mp * 100 / party[pos].mp_percent))
+        else
+            return string.format('%12.12s ', '')
+        end
     else
         return ''
     end
