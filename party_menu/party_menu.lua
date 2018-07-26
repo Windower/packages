@@ -2,7 +2,6 @@
 -- TODO: Consider adding distance to player as a column
 -- TODO: Consider adding debuff image functionality.
 -- TODO: Consider adding settings to show different data on player vs partymembers
--- TODO: Targetting needs more work, try and figure out how it will work with <stal>
 -- TODO: Consider not displaying mp of jobs/subjob combinations that do not have mp, incorrectly shows as red
 
 -- Known Issues:
@@ -276,23 +275,37 @@ local update_ui_dimensions = function()
 end
 
 local check_target_for_row_highlighting = function()
-    local entity = target.t or target.st
-    for i = 1, 6 do
-        if entity and party[i] then
-            if entity.name == party[i].name then
-                party_window_states[i].color = ui.color.rgb(30, 30, 30)
+    if party.alliance._unknown_5F == 0 then -- <stpt> <stal> NOT active
+        local entity = target.t or target.st
+        for i = 1, 6 do
+            if entity and party[i] then
+                if entity.name == party[i].name then
+                    party_window_states[i].color = ui.color.rgb(30, 30, 30)
+                else
+                    party_window_states[i].color = ui.color.black
+                end
             else
                 party_window_states[i].color = ui.color.black
             end
-        else
-            party_window_states[i].color = ui.color.black
+        end
+    else
+        for i = 1, 6 do
+            if party[i] then
+                if party.alliance.st_selection == i - 1 then
+                    party_window_states[i].color = ui.color.rgb(30, 30, 30)
+                else
+                    party_window_states[i].color = ui.color.black
+                end
+            else
+                party_window_states[i].color = ui.color.black
+            end
         end
     end
 end
 
 local get_party_member_position = function(member_id)
     for pos = 1, 6 do
-        if party[pos].id == member_id then
+        if party[pos] and party[pos].id == member_id then
             return pos
         end
     end
