@@ -232,7 +232,7 @@ do
             field.type = field[2] or field[1]
             field.position = field[2] and field[1]
             field.cname = (field.type.converter or keywords[label]) and ('_' .. label) or label
-            field.offset = 0
+            field.offset = field.offset or 0
 
             arranged_index = arranged_index + 1
             arranged[arranged_index] = field
