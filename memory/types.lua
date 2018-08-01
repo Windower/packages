@@ -300,7 +300,7 @@ types.tell_history = struct({signature = '8B0D????????85C9740F8B15'}, {
     _dupe_recipient_count   = {0x088, uint16},
     _dupe_recipients        = {0x08C, pc_name[8]},
     chatlog_open            = {0x10D, bool},
-    chatmode_tell_target    = {0x10E, pc_name[8]}, -- Only set when /chatmode tell
+    chatmode_tell_target    = {0x10E, pc_name}, -- Only set when /chatmode tell
     senders                 = {0x11E, pc_name[8]},
 })
 
