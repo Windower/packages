@@ -84,7 +84,7 @@ do
                     local counts = ''
                     local base = ftype
                     while base.count ~= nil do
-                        counts = '[' .. (base.count == '*' and '?' or tostring(base.count)) .. ']' .. counts
+                        counts =  counts .. '[' .. (base.count == '*' and '?' or tostring(base.count)) .. ']'
                         base = base.base
                     end
                     suffix = counts
