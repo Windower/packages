@@ -39,7 +39,7 @@ local zone = tag(uint16, 'zone')
 local pc_name = string(0x10)
 local npc_name = string(0x18)
 local fourcc = string(0x04)
-local chat_input_size = string(0x96)
+local chat_input_buffer = string(0x97)
 
 local ffi_cdef = ffi.cdef
 
@@ -294,7 +294,7 @@ types.party = struct({signature = '6A0E8BCE89442414E8????????8B0D'}, {
     members                 = {0x2C, party_member[18]},
 })
 
-types.tell_history = struct({signature = '8B0D????????85C9740F8B15'},{
+types.tell_history = struct({signature = '8B0D????????85C9740F8B15'}, {
     recipient_count         = {0x04, uint16},
     recipients              = {0x8, pc_name[8]}, -- last 8 /tell recipients
     _dupe_recipient_count   = {0x88, uint16},
@@ -304,17 +304,17 @@ types.tell_history = struct({signature = '8B0D????????85C9740F8B15'},{
     senders                 = {0x11E, pc_name[8]},
 })
 
-types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D',  static_offsets = {0x00}},{
-    auto_translate_this_pos = {0x04, ptr()},
-    temporary_buffer        = {0x7EDC, chat_input_size},
-    history                 = {0x7F73, chat_input_size[9]},
+types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D', static_offsets = {0x00}}, {
+    auto_translate_this_pos = {0x0004, ptr()},
+    temporary_buffer        = {0x7EDC, chat_input_buffer},
+    history                 = {0x7F73, chat_input_buffer[9]},
     temporary_length        = {0x84C4, uint8},
     history_lengths         = {0x84C8, uint8[9]},
     history_length          = {0x84EC, uint8},
     history_index           = {0x84F0, uint8},
-    internal                = {0x84F4, chat_input_size},
+    internal                = {0x84F4, chat_input_buffer},
     length_internal         = {0x86B8, uint8},
-    stripped                = {0x86BC, chat_input_size}, 
+    stripped                = {0x86BC, chat_input_buffer}, 
     length_stripped         = {0x8880, uint8},
     length_internal_max     = {0x8884, uint8},
     position_internal       = {0x8888, uint8},
@@ -324,11 +324,11 @@ types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D',  static
     menu_entries            = {0x8C88, chat_menu_entry[0x3FC]},
     menu_length             = {0xEC28, uint8},
     move_counter            = {0xEC30, uint8},
-    display                 = {0xEC34, chat_input_size},
+    display                 = {0xEC34, chat_input_buffer},
     open                    = {0xEF22, bool},
 })
 
-types.follow = struct({signature = '8BCFE8????FFFF8B0D????????E8????????8BE885ED750CB9'},{
+types.follow = struct({signature = '8BCFE8????FFFF8B0D????????E8????????8BE885ED750CB9'}, {
     target_index            = {0x04, entity_index},
     target_id               = {0x08, entity_id},
     pos                     = {0x0C, world_coord},
