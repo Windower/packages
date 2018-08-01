@@ -10,53 +10,48 @@ local os = require('os')
 
 packets = shared.new('packets')
 
-local nesting_meta
-nesting_meta = {
-    __index = function(t, k)
-        local v = setmetatable({}, nesting_meta)
-        t[k] = v
-        return v
-    end,
-}
+local registry = {}
+local history = {}
 
-local registry = setmetatable({}, nesting_meta)
-local history = setmetatable({}, nesting_meta)
+local amend_packet
+amend_packet = function(packet, cdata, ftype)
+    local count = ftype.count
+    if count then
+        for i = 0, count - 1 do
+            local inner_value = cdata[i]
+            if type(inner_value) == 'cdata' then
+                local inner = packet[i]
+                if not inner then
+                    inner = {}
+                    packet[i] = inner
+                end
+                amend_packet(inner, inner_value, ftype.base)
+            else
+                packet[i] = inner_value
+            end
+        end
+        return
+    end
 
-local char_ptr = ffi.typeof('char const*')
+    for key, value in pairs(cdata) do
+        if type(value) == 'cdata' then
+            local inner = packet[key]
+            if not inner then
+                inner = {}
+                packet[key] = inner
+            end
+            amend_packet(inner, value, ftype.fields[key].type)
+        else
+            packet[key] = value
+        end
+    end
+end
 
 local parse_single
 do
     local math_floor = math.floor
     local ffi_copy = ffi.copy
     local ffi_new = ffi.new
-
-    local amend_cdata
-    amend_cdata = function(packet, cdata, ftype)
-        local count = ftype.count
-        if count then
-            for i = 0, count - 1 do
-                local inner_value = cdata[i]
-                if type(inner_value) == 'cdata' then
-                    local inner = {}
-                    packet[i] = inner
-                    amend_cdata(inner, inner_value, ftype.base)
-                else
-                    packet[i] = inner_value
-                end
-            end
-            return
-        end
-
-        for key, value in pairs(cdata) do
-            if type(value) == 'cdata' then
-                local inner = {}
-                packet[key] = inner
-                amend_cdata(inner, value, ftype.fields[key].type)
-            else
-                packet[key] = value
-            end
-        end
-    end
 
     parse_single = function(packet, ptr, ftype, size)
         if ftype == nil then
@@ -65,14 +60,16 @@ do
 
         if ftype.multiple == nil then
             local instance
-            if ftype.var_size then
-                instance = ffi_new(ftype.name, math_floor((size - ftype.size) / ftype.var_size))
+            local size = ftype.size
+            local var_size = ftype.var_size
+            if var_size then
+                instance = ffi_new(ftype.name, math_floor((size - size) / var_size))
             else
                 instance = ffi_new(ftype.name)
             end
-            ffi_copy(instance, ptr, ftype.size)
+            ffi_copy(instance, ptr, size)
 
-            amend_cdata(packet, instance, ftype)
+            amend_packet(packet, instance, ftype)
             return
         end
 
@@ -112,48 +109,38 @@ do
     end
 end
 
-local history_lookup = {}
-local events_lookup = {}
+packets.env = {}
 
-packets.env = {
-    get_last = function(...)
-        local history = history
-        for i = 1, select('#', ...) do
-            history = rawget(history, select(i, ...))
-            if not history then
-                return nil
-            end
-        end
+packets.env.get_last = function(path)
+    return history[path]
+end
 
-        return history_lookup[history]
-    end,
-    make_event = function(...)
-        local registry = registry
-        for i = 1, select('#', ...) do
-            registry = registry[select(i, ...)]
-        end
+do
+    local event_new = event.new
 
-        local event = event.new()
-        local events = events_lookup[registry]
+    packets.env.make_event = function(path)
+        local events = registry[path]
         if not events then
             events = {}
-            events_lookup[registry] = events
+            registry[path] = events
         end
+
+        local event = event_new()
         events[#events + 1] = event
 
         return event
-    end,
-}
+    end
+end
 
-local trigger_events = function(registry, packet)
-    local events = events_lookup[registry]
-    if not events then
-        return
+local process_packet = function(packet, path)
+    local events = registry[path]
+    if events then
+        for i = 1, #events do
+            events[i]:trigger(packet)
+        end
     end
 
-    for i = 1, #events do
-        events[i]:trigger(packet)
-    end
+    history[path] = packet
 end
 
 local make_timestamp
@@ -176,36 +163,33 @@ do
     end
 end
 
-local handle_packet = function(direction, raw)
-    local id = raw.id
-    local data = raw.data
+local handle_packet
+do
+    local char_ptr = ffi.typeof('char const*')
 
-    local packet = {
-        id = id,
-        direction = direction,
-        data = data,
-        blocked = raw.blocked,
-        modified = raw.modified,
-        injected = raw.injected,
-        timestamp = make_timestamp(),
-    }
+    handle_packet = function(direction, raw)
+        local id = raw.id
+        local data = raw.data
 
-    local indices = {direction, id, parse_single(packet, char_ptr(data), types[direction][id], #data)}
+        local packet = {
+            direction = direction,
+            id = id,
+            data = data,
+            blocked = raw.blocked,
+            modified = raw.modified,
+            injected = raw.injected,
+            timestamp = make_timestamp(),
+        }
 
-    local registry = registry
-    local history = history
+        local indices = {direction, id, parse_single(packet, char_ptr(data), types[direction][id], #data)}
 
-    trigger_events(registry, packet)
-    history_lookup[history] = packet
+        local path = ''
+        process_packet(packet, path)
 
-    for i = 1, #indices do
-        local index = indices[i]
-
-        registry = registry[index]
-        history = history[index]
-
-        trigger_events(registry, packet)
-        history_lookup[history] = packet
+        for i = 1, #indices do
+            path = path .. '/' .. tostring(indices[i])
+            process_packet(packet, path)
+        end
     end
 end
 

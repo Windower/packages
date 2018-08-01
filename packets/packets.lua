@@ -12,29 +12,15 @@ local make_event = function(_, ...)
     return make_event(...)
 end
 
-local nesting_meta
-nesting_meta = {
-    __index = function(t, k)
-        local v = setmetatable({}, nesting_meta)
-        t[k] = v
-        return v
-    end,
-}
-
-local registry = setmetatable({}, nesting_meta)
-
-local get_recursive
-get_recursive = function(base, ...)
-    if select('#', ...) == 0 then
-        return base
-    end
-
-    if base[...] == nil then
-        base[...] = { fns = {} }
-    end
-
-    return get_recursive(base[...], select(2, ...))
+local make_new = function(_, values, ...)
+    return make_new(values, ...)
 end
+
+local inject = function(_, p)
+    inject(p)
+end
+
+local registry = {}
 
 local fns = {}
 
@@ -42,19 +28,21 @@ local make_table
 local packet_meta = {
     __index = function(t, k)
         if k == 'last' then
-            return fetch:call(get_last, unpack(t.path))
+            return fetch:call(get_last, t.path)
         end
 
-        local new = make_table(t)
-        new.path[#new.path + 1] = k
-        return new
+        return make_table(t.path .. '/' .. tostring(k))
     end,
 }
 
 local register_path = function(path, fn)
-    local base = get_recursive(registry, unpack(path))
-    local event = fetch:call(make_event, unpack(path))
-    base.fns[fn] = event
+    local events = registry[path]
+    if not events then
+        events = {}
+        registry[path] = events
+    end
+    local event = fetch:call(make_event, path)
+    events[fn] = event
     event:register(fn)
 end
 
@@ -63,25 +51,23 @@ fns.register = function(t, fn)
 end
 
 fns.unregister = function(t, fn)
-    local base = get_recursive(registry, unpack(t.path))
-    base.fns[fn] = nil
+    registry[t.path][fn] = nil
 end
 
 fns.new = function(t, values)
-    error('Not yet implemented.')
+    return setmetatable(fetch:call(make_new, values, t.path), {
+        __index = function(p, k)
+            if k == 'inject' then
+                fetch:call(inject, p)
+            end
+        end,
+    })
 end
 
 fns.register_init = function(t, init_table)
     local paths = {}
     for indices, fn in pairs(init_table) do
-        local path = {}
-        for i, index in ipairs(t.path) do
-            path[i] = index
-        end
-
-        for _, index in ipairs(indices) do
-            path[#path + 1] = index
-        end
+        local path = t.path .. '/' .. table.concat(indices, '/')
 
         register_path(path, fn)
 
@@ -90,7 +76,7 @@ fns.register_init = function(t, init_table)
 
     local lasts = {}
     for _, path in ipairs(paths) do
-        local last = fetch:call(get_last, unpack(path.path))
+        local last = fetch:call(get_last, path.path)
         if last then
             lasts[#lasts + 1] = { packet = last, fn = path.fn }
         end
@@ -105,15 +91,9 @@ fns.register_init = function(t, init_table)
     end
 end
 
-make_table = function(t)
-    local path = t.path
-    local new_path = {}
-    for i = 1, #path do
-        new_path[i] = path[i]
-    end
-
+make_table = function(path)
     return setmetatable({
-        path = new_path,
+        path = path,
         register = fns.register,
         unregister = fns.unregister,
         register_init = fns.register_init,
@@ -121,7 +101,7 @@ make_table = function(t)
     }, packet_meta)
 end
 
-return make_table({ path = {} })
+return make_table('')
 
 --[[
 Copyright © 2018, Windower Dev Team

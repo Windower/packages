@@ -353,7 +353,7 @@ types.incoming[0x00D] = struct({
     face_model_id       = {0x44, uint8},
     race_id             = {0x45, race},
     model               = {0x46, model},
-    name                = {0x56, string()},
+    name                = {0x56, string(0x10)},
 })
 
 -- NPC Update
@@ -397,7 +397,7 @@ types.incoming[0x00E] = struct({
     face_model_id       = {0x2D, uint8},
     race_id             = {0x2E, race},
     model               = {0x2F, model},
-    name                = {0x30, string()},
+    name                = {0x30, string(0x10)},
 })
 
 -- Incoming Chat
@@ -406,7 +406,7 @@ types.incoming[0x017] = struct({
     gm                  = {0x01, bool},
     zone                = {0x02, zone},
     name                = {0x04, pc_name},
-    message             = {0x14, string()}, -- Max of 150 characters
+    message             = {0x14, string(0xEC)}, -- Max of 150 characters? Is this still accurate?
 })
 
 -- Job Info
@@ -1264,13 +1264,11 @@ types.incoming[0x04C] = multiple({
     }),
 })
 
-
-
 -- Servmes Resp
 -- Length of the packet may vary based on message length? Kind of hard to test.
 -- The server message appears to generate some kind of feedback to the server based on the flags?
 -- If you set the first byte to 0 in incoming chunk with eval and do /smes, the message will not display until you unload eval.
-types.incoming[0x4D] = struct({
+types.incoming[0x04D] = struct({
     _known1             = {0x00, uint8, const=0x01}, -- Message does not appear without this
     _known2             = {0x01, uint8, const=0x01}, -- Nonessential to message appearance
     _known3             = {0x02, uint8, const=0x01}, -- Message does not appear without this
@@ -1278,7 +1276,8 @@ types.incoming[0x4D] = struct({
     timestamp           = {0x04, uint32}, -- UTC timestamp
     message_length      = {0x08, uint32}, -- Number of characters in the message
     other_message_length= {0x10, uint32}, -- Same as original message length
-    message             = {0x14, string()} -- Currently prefixed with 0x81, 0xA1 - A custom shift-jis character that translates to a square.
+    message             = {0x14, string()}, -- Currently prefixed with 0x81, 0xA1 - A custom shift-jis character that translates to a square.
+                                            -- This string may not contain a null terminating byte
 })
 
 -- Data Download 2
