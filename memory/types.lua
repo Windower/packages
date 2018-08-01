@@ -192,7 +192,7 @@ local party_member = struct({size = 0x7C}, {
 })
 
 local chat_menu_entry = struct({
-    _ptr_chat_ipput_this    = {0x00, ptr()}, -- This pointer to the parent struct of the chat input struct
+    _ptr_chat_input_this    = {0x00, ptr()}, -- This pointer to the parent struct of the chat input struct
     display                 = {0x04, ptr()}, -- Pointer to a null-terminated string for display in the menu
     length_display          = {0x08, uint16}, -- Length (in bytes) of the display buffer associated with this entry
     internal                = {0x0C, ptr()}, -- Pointer to a null-terminated string which will be copied to the internal buffer
@@ -295,17 +295,17 @@ types.party = struct({signature = '6A0E8BCE89442414E8????????8B0D'}, {
 })
 
 types.tell_history = struct({signature = '8B0D????????85C9740F8B15'}, {
-    recipient_count         = {0x04, uint16},
-    recipients              = {0x8, pc_name[8]}, -- last 8 /tell recipients
-    _dupe_recipient_count   = {0x88, uint16},
-    _dupe_recipients        = {0x8C, pc_name[8]},
+    recipient_count         = {0x004, uint16},
+    recipients              = {0x008, pc_name[8]}, -- last 8 /tell recipients
+    _dupe_recipient_count   = {0x088, uint16},
+    _dupe_recipients        = {0x08C, pc_name[8]},
     chatlog_open            = {0x10D, bool},
     chatmode_tell_target    = {0x10E, pc_name[8]}, -- Only set when /chatmode tell
     senders                 = {0x11E, pc_name[8]},
 })
 
 types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D', static_offsets = {0x00}}, {
-    auto_translate_this_pos = {0x0004, ptr()},
+    _prt                    = {0x0004, ptr()},
     temporary_buffer        = {0x7EDC, chat_input_buffer},
     history                 = {0x7F73, chat_input_buffer[9]},
     temporary_length        = {0x84C4, uint8},
@@ -331,7 +331,7 @@ types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D', static_
 types.follow = struct({signature = '8BCFE8????FFFF8B0D????????E8????????8BE885ED750CB9'}, {
     target_index            = {0x04, entity_index},
     target_id               = {0x08, entity_id},
-    pos                     = {0x0C, world_coord},
+    postion                 = {0x0C, world_coord},
     follow_index            = {0x20, entity_index},
     follow_id               = {0x24, entity_id}, -- Once set will overwrite pos with directional values
     first_person_view       = {0x28, bool},
