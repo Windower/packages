@@ -253,6 +253,7 @@ do
         local last_ftype = last and last.type
         if last_ftype and last_ftype.size == '*' then
             ftype.var_size = ffi_sizeof(last_ftype.cdef)
+            ftype.var_key = last.label
         end
 
         ftype.info = info

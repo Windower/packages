@@ -17,19 +17,22 @@ local amend_packet
 amend_packet = function(packet, cdata, ftype)
     local count = ftype.count
     if count then
-        for i = 0, count - 1 do
-            local inner_value = cdata[i]
-            if type(inner_value) == 'cdata' then
+        local base = ftype.base
+        if base.fields then
+            for i = 0, count - 1 do
                 local inner = packet[i]
                 if not inner then
                     inner = {}
                     packet[i] = inner
                 end
-                amend_packet(inner, inner_value, ftype.base)
-            else
-                packet[i] = inner_value
+                amend_packet(inner, cdata[i], base)
+            end
+        else
+            for i = 0, count - 1 do
+                packet[i] = cdata[i]
             end
         end
+
         return
     end
 
@@ -47,6 +50,132 @@ amend_packet = function(packet, cdata, ftype)
     end
 end
 
+local amend_cdata
+amend_cdata = function(cdata, packet, ftype)
+    local count = ftype.count
+    if count then
+        local base = ftype.base
+        if base.fields then
+            for i = 0, count - 1 do
+                local value = packet[i]
+                if value then
+                    amend_cdata(cdata[i], value, base)
+                end
+            end
+        else
+            for i = 0, count - 1 do
+                local value = packet[i]
+                if value then
+                    cdata[i] = value
+                end
+            end
+        end
+
+        return
+    end
+
+    for key, value in pairs(packet) do
+        local value_ftype = ftype.fields[key].type
+        if value_ftype.fields then
+            amend_cdata(cdata[key], value, value_type)
+        else
+            cdata[key] = value
+        end
+    end
+end
+
+packets.env = {}
+
+packets.env.get_last = function(path)
+    return history[path]
+end
+
+do
+    local event_new = event.new
+
+    packets.env.make_event = function(path)
+        local events = registry[path]
+        if not events then
+            events = {}
+            registry[path] = events
+        end
+
+        local event = event_new()
+        events[#events + 1] = event
+
+        return event
+    end
+end
+
+do
+    local string_find = string.find
+    local string_sub = string.sub
+    local ffi_copy = ffi.copy
+    local ffi_new = ffi.new
+    local ffi_sizeof = ffi.sizeof
+    local ffi_string = ffi.string
+    local packet_new = packet.new
+    local packet_inject_incoming = packet.inject_incoming
+    local packet_inject_outgoing = packet.inject_outgoing
+    local buffer_type = ffi.typeof('char[?]')
+
+    local build_packet = function(path, values)
+        local direction = string_sub(path, 2, 9)
+        local next_slash_index = string_find(path, '/', 11)
+        local id = tonumber(string_sub(path, 11, next_slash_index))
+        local ftype = types[direction][id]
+
+        local cdata
+        local var_key = ftype.var_key
+        local var_data = var_key and values[var_key]
+        if var_data then
+            if type(var_data) == 'string' then
+                if ftype.converter == 'string' then
+                    cdata = ffi_new(ftype.name, #var_data + 1)
+                else
+                    cdata = ffi_new(ftype.name, #var_data)
+                end
+            else
+                local max_key = 0
+                for key in pairs(var_data) do
+                    if key > max_key then
+                        max_key = key
+                    end
+                end
+                cdata = ffi_new(ftype.name, max_key)
+            end
+        else
+            cdata = ffi_new(ftype.name)
+        end
+
+        amend_cdata(cdata, values, ftype)
+        return cdata, ftype, direction, id
+    end
+
+    packets.env.make_new = function(path, values)
+        local cdata, ftype = build_packet(path, values)
+
+        local data = {}
+        amend_packet(data, cdata, ftype)
+        return data
+    end
+
+    packets.env.inject = function(path, values)
+        local cdata, _, direction, id = build_packet(path, values)
+
+        local size = ffi_sizeof(cdata)
+        local buffer = buffer_type(size)
+        ffi_copy(buffer, cdata, size)
+
+        local p = packet_new(id, ffi_string(buffer, size))
+        if direction == 'incoming' then
+            packet_inject_incoming(p)
+        else
+            packet_inject_outgoing(p)
+        end
+    end
+end
+
 local parse_single
 do
     local math_floor = math.floor
@@ -59,17 +188,17 @@ do
         end
 
         if ftype.multiple == nil then
-            local instance
+            local cdata
             local size = ftype.size
             local var_size = ftype.var_size
             if var_size then
-                instance = ffi_new(ftype.name, math_floor((size - size) / var_size))
+                cdata = ffi_new(ftype.name, math_floor((size - size) / var_size))
             else
-                instance = ffi_new(ftype.name)
+                cdata = ffi_new(ftype.name)
             end
-            ffi_copy(instance, ptr, size)
+            ffi_copy(cdata, ptr, size)
 
-            amend_packet(packet, instance, ftype)
+            amend_packet(packet, cdata, ftype)
             return
         end
 
@@ -106,29 +235,6 @@ do
         end
 
         return unpack(indices)
-    end
-end
-
-packets.env = {}
-
-packets.env.get_last = function(path)
-    return history[path]
-end
-
-do
-    local event_new = event.new
-
-    packets.env.make_event = function(path)
-        local events = registry[path]
-        if not events then
-            events = {}
-            registry[path] = events
-        end
-
-        local event = event_new()
-        events[#events + 1] = event
-
-        return event
     end
 end
 
