@@ -189,10 +189,9 @@ do
 
         if ftype.multiple == nil then
             local cdata
-            local size = ftype.size
             local var_size = ftype.var_size
             if var_size then
-                cdata = ffi_new(ftype.name, math_floor((size - size) / var_size))
+                cdata = ffi_new(ftype.name, math_floor((size - ftype.size) / var_size))
             else
                 cdata = ffi_new(ftype.name)
             end
