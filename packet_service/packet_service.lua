@@ -140,9 +140,22 @@ do
     local build_packet = function(path, values)
         local direction = string_sub(path, 2, 9)
         local next_slash_index = string_find(path, '/', 11)
-        local id = tonumber(string_sub(path, 11, next_slash_index))
+        local id = tonumber(string_sub(path, 11, next_slash_index and next_slash_index - 1))
 
-        local ftype = types[direction][id]
+        local base_type = types[direction][id]
+        local ftype
+        local types = base_type.types
+        if not types then
+            ftype = base_type
+        else
+            if not next_slash_index then
+                ftype = base_type.base
+            else
+                local key = string_sub(path, next_slash_index + 1)
+                ftype = types[tonumber(key) or key] or base_type.base
+            end
+        end
+
         local cdata = build_cdata(ftype, values)
 
         amend_cdata(cdata, values, ftype)
