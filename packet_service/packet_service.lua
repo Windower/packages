@@ -119,12 +119,8 @@ do
     local packet_inject_outgoing = packet.inject_outgoing
     local buffer_type = ffi.typeof('char[?]')
 
-    local build_packet = function(path, values)
-        local direction = string_sub(path, 2, 9)
-        local next_slash_index = string_find(path, '/', 11)
-        local id = tonumber(string_sub(path, 11, next_slash_index))
-        local ftype = types[direction][id]
-
+    local build_cdata
+    build_cdata = function(ftype, values)
         local cdata
         local var_key = ftype.var_key
         local var_data = var_key and values[var_key]
@@ -147,6 +143,17 @@ do
         else
             cdata = ffi_new(ftype.name)
         end
+
+        return cdata
+    end
+
+    local build_packet = function(path, values)
+        local direction = string_sub(path, 2, 9)
+        local next_slash_index = string_find(path, '/', 11)
+        local id = tonumber(string_sub(path, 11, next_slash_index))
+
+        local ftype = types[direction][id]
+        local cdata = build_cdata(ftype, values)
 
         amend_cdata(cdata, values, ftype)
         return cdata, ftype, direction, id
@@ -187,7 +194,7 @@ do
             return
         end
 
-        if ftype.multiple == nil then
+        if ftype.lookups == nil then
             local cdata
             local var_size = ftype.var_size
             if var_size then
