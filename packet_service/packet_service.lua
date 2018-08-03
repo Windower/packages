@@ -183,64 +183,48 @@ do
     end
 end
 
-local parse_single
+local parse_packet
 do
     local math_floor = math.floor
     local ffi_copy = ffi.copy
     local ffi_new = ffi.new
 
-    parse_single = function(packet, ptr, ftype, size)
-        if ftype == nil then
+    local parse_single = function(packet, data, ftype)
+        local size = #data
+        local offset = ftype.size
+        local single_var_size = ftype.var_size
+
+        local cdata
+        if single_var_size then
+            local total_var_size = math_floor((size - offset) / single_var_size)
+            offset = offset + total_var_size
+            cdata = ffi_new(ftype.name, total_var_size)
+        else
+            cdata = ffi_new(ftype.name)
+        end
+        ffi_copy(cdata, data, offset)
+
+        amend_packet(packet, cdata, ftype)
+    end
+
+    parse_packet = function(packet, data, ftype, size)
+        if not ftype then
             return
         end
 
-        if ftype.lookups == nil then
-            local cdata
-            local var_size = ftype.var_size
-            if var_size then
-                cdata = ffi_new(ftype.name, math_floor((size - ftype.size) / var_size))
-            else
-                cdata = ffi_new(ftype.name)
-            end
-            ffi_copy(cdata, ptr, size)
-
-            amend_packet(packet, cdata, ftype)
+        if not ftype.types then
+            parse_single(packet, data, ftype, size)
             return
         end
 
-        local base = ftype.base
-        local indices = {parse_single(packet, ptr, base, size)}
-        local size_diff = base.size
-        ptr = ptr + size_diff
-        size = size - size_diff
+        parse_single(packet, data, ftype.base, size)
 
-        do
-            local lookups = ftype.lookups
-            local base_index = #indices
-            for i = 1, #lookups do
-                indices[base_index + i] = packet[lookups[i]]
-            end
+        local inner_ftype = ftype.types[packet[ftype.key]]
+        if not inner_ftype then
+            return
         end
 
-        local new_type = ftype
-        for i = 1, #indices do
-            local index = indices[i]
-            new_type = new_type[index]
-
-            if new_type == nil then
-                return unpack(indices)
-            end
-        end
-
-        do
-            local new_indices = {parse_single(packet, ptr, new_type, size)}
-            local base_index = #indices
-            for i = 1, #new_indices do
-                indices[base_index + i] = new_indices[i]
-            end
-        end
-
-        return unpack(indices)
+        parse_single(packet, data, inner_ftype, size)
     end
 end
 
@@ -275,33 +259,28 @@ do
     end
 end
 
-local handle_packet
-do
-    local char_ptr = ffi.typeof('char const*')
+local handle_packet =  function(direction, raw)
+    local id = raw.id
+    local data = raw.data
 
-    handle_packet = function(direction, raw)
-        local id = raw.id
-        local data = raw.data
+    local packet = {
+        direction = direction,
+        id = id,
+        data = data,
+        blocked = raw.blocked,
+        modified = raw.modified,
+        injected = raw.injected,
+        timestamp = make_timestamp(),
+    }
 
-        local packet = {
-            direction = direction,
-            id = id,
-            data = data,
-            blocked = raw.blocked,
-            modified = raw.modified,
-            injected = raw.injected,
-            timestamp = make_timestamp(),
-        }
+    local indices = {direction, id, parse_packet(packet, data, types[direction][id])}
 
-        local indices = {direction, id, parse_single(packet, char_ptr(data), types[direction][id], #data)}
+    local path = ''
+    process_packet(packet, path)
 
-        local path = ''
+    for i = 1, #indices do
+        path = path .. '/' .. tostring(indices[i])
         process_packet(packet, path)
-
-        for i = 1, #indices do
-            path = path .. '/' .. tostring(indices[i])
-            process_packet(packet, path)
-        end
     end
 end
 

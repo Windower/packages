@@ -9,11 +9,11 @@ local structs = {}
 local tolua = {}
 local toc = {}
 
-local make_cdef
+local make_struct_cdef
 do
     local table_concat = table.concat
 
-    make_cdef = function(arranged, size)
+    make_struct_cdef = function(arranged, size)
         local cdefs = {}
         local index = 0x00
         local offset = 0
@@ -33,7 +33,7 @@ do
                 if diff > 0 then
                     if bit_type then
                         cdef_count = cdef_count + 1
-                        cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset)
+                        cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset) .. ';'
                         unknown_count = unknown_count + 1
 
                         diff = diff - bit_type_size
@@ -45,7 +45,7 @@ do
                     end
                     if diff > 0 then
                         cdef_count = cdef_count + 1
-                        cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. ']'
+                        cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. '];'
                         unknown_count = unknown_count + 1
                     end
                 end
@@ -58,7 +58,7 @@ do
                 local bit_diff = field.offset - offset
                 if bit_diff > 0 then
                     cdef_count = cdef_count + 1
-                    cdefs[cdef_count] = (bit_type or ftype.cdef) .. ' __' .. tostring(unknown_count) .. ':' .. tostring(bit_diff)
+                    cdefs[cdef_count] = (bit_type or ftype.cdef) .. ' __' .. tostring(unknown_count) .. ':' .. tostring(bit_diff) .. ';'
                     unknown_count = unknown_count + 1
                 end
                 offset = offset + bit_diff
@@ -66,7 +66,7 @@ do
 
             cdef_count = cdef_count + 1
             if is_bit then
-                cdefs[cdef_count] = ftype.cdef .. ' ' .. field.cname .. ':' .. tostring(ftype.bits)
+                cdefs[cdef_count] = ftype.cdef .. ' ' .. field.cname .. ':' .. tostring(ftype.bits) .. ';'
                 offset = offset + ftype.bits
                 if offset == 8 * ftype.size then
                     offset = 0
@@ -91,7 +91,7 @@ do
                     cdef = base.name or base.cdef
                 end
 
-                cdefs[cdef_count] = cdef .. ' ' .. field.cname .. suffix
+                cdefs[cdef_count] = cdef .. ' ' .. field.cname .. suffix .. ';'
 
                 if ftype.size ~= '*' then
                     index = index + ftype.size
@@ -101,10 +101,10 @@ do
 
         if size and index < size then
             cdef_count = cdef_count + 1
-            cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(size - index) .. ']'
+            cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(size - index) .. ']' .. ';'
         end
 
-        return cdef_count > 0 and ('struct{' .. table_concat(cdefs, ';') .. ';}') or 'struct{}', size or index
+        return 'struct{' .. table_concat(cdefs) .. '}', size or index
     end
 end
 
@@ -245,7 +245,7 @@ do
             end)
         end
 
-        local cdef, size = make_cdef(arranged, info.size)
+        local cdef, size = make_struct_cdef(arranged, info.size)
         info.size = size
         local ftype = build_type(cdef, info)
 
