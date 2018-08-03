@@ -74,7 +74,7 @@ fns.register_init = function(t, init_table)
     end
 
     table.sort(lasts, function(l1, l2)
-        return l1.packet.timestamp < l2.packet.timestamp
+        return l1.packet._info.timestamp < l2.packet._info.timestamp
     end)
 
     for _, last in ipairs(lasts) do
