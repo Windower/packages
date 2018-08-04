@@ -17,95 +17,60 @@ local amend_packet
 amend_packet = function(packet, cdata, ftype)
     local count = ftype.count
     if count then
-        for i = 0, count - 1 do
-            local inner_value = cdata[i]
-            if type(inner_value) == 'cdata' then
-                local inner = packet[i]
-                if not inner then
-                    inner = {}
-                    packet[i] = inner
-                end
-                amend_packet(inner, inner_value, ftype.base)
-            else
-                packet[i] = inner_value
+        local base = ftype.base
+        if base.fields then
+            for i = 0, count - 1 do
+                packet[i] = amend_packet(packet[i] or {}, cdata[i], base)
+            end
+        else
+            for i = 0, count - 1 do
+                packet[i] = cdata[i]
             end
         end
+    else
+        for key, value in pairs(cdata) do
+            if type(value) == 'cdata' then
+                packet[key] = amend_packet(packet[key] or {}, value, ftype.fields[key].type)
+            else
+                packet[key] = value
+            end
+        end
+    end
+
+    return packet
+end
+
+local amend_cdata
+amend_cdata = function(cdata, packet, ftype)
+    local count = ftype.count
+    if count then
+        local base = ftype.base
+        if base.fields then
+            for i = 0, count - 1 do
+                local value = packet[i]
+                if value then
+                    amend_cdata(cdata[i], value, base)
+                end
+            end
+        else
+            for i = 0, count - 1 do
+                local value = packet[i]
+                if value then
+                    cdata[i] = value
+                end
+            end
+        end
+
         return
     end
 
-    for key, value in pairs(cdata) do
-        if type(value) == 'cdata' then
-            local inner = packet[key]
-            if not inner then
-                inner = {}
-                packet[key] = inner
-            end
-            amend_packet(inner, value, ftype.fields[key].type)
+    for key, value in pairs(packet) do
+        local value_ftype = ftype.fields[key].type
+        if value_ftype.fields then
+            amend_cdata(cdata[key], value, value_type)
         else
-            packet[key] = value
+            cdata[key] = value
         end
-    end
-end
-
-local parse_single
-do
-    local math_floor = math.floor
-    local ffi_copy = ffi.copy
-    local ffi_new = ffi.new
-
-    parse_single = function(packet, ptr, ftype, size)
-        if ftype == nil then
-            return
-        end
-
-        if ftype.multiple == nil then
-            local instance
-            local size = ftype.size
-            local var_size = ftype.var_size
-            if var_size then
-                instance = ffi_new(ftype.name, math_floor((size - size) / var_size))
-            else
-                instance = ffi_new(ftype.name)
-            end
-            ffi_copy(instance, ptr, size)
-
-            amend_packet(packet, instance, ftype)
-            return
-        end
-
-        local base = ftype.base
-        local indices = {parse_single(packet, ptr, base, size)}
-        local size_diff = base.size
-        ptr = ptr + size_diff
-        size = size - size_diff
-
-        do
-            local lookups = ftype.lookups
-            local base_index = #indices
-            for i = 1, #lookups do
-                indices[base_index + i] = packet[lookups[i]]
-            end
-        end
-
-        local new_type = ftype
-        for i = 1, #indices do
-            local index = indices[i]
-            new_type = new_type[index]
-
-            if new_type == nil then
-                return unpack(indices)
-            end
-        end
-
-        do
-            local new_indices = {parse_single(packet, ptr, new_type, size)}
-            local base_index = #indices
-            for i = 1, #new_indices do
-                indices[base_index + i] = new_indices[i]
-            end
-        end
-
-        return unpack(indices)
     end
 end
 
@@ -129,6 +94,133 @@ do
         events[#events + 1] = event
 
         return event
+    end
+end
+
+do
+    local string_find = string.find
+    local string_sub = string.sub
+    local ffi_copy = ffi.copy
+    local ffi_new = ffi.new
+    local ffi_sizeof = ffi.sizeof
+    local ffi_string = ffi.string
+    local packet_new = packet.new
+    local packet_inject_incoming = packet.inject_incoming
+    local packet_inject_outgoing = packet.inject_outgoing
+    local buffer_type = ffi.typeof('char[?]')
+
+    local build_cdata
+    build_cdata = function(ftype, values)
+        local cdata
+        local var_key = ftype.var_key
+        local var_data = var_key and values[var_key]
+        if var_data then
+            if type(var_data) == 'string' then
+                if ftype.converter == 'string' then
+                    cdata = ffi_new(ftype.name, #var_data + 1)
+                else
+                    cdata = ffi_new(ftype.name, #var_data)
+                end
+            else
+                local max_key = 0
+                for key in pairs(var_data) do
+                    if key > max_key then
+                        max_key = key
+                    end
+                end
+                cdata = ffi_new(ftype.name, max_key)
+            end
+        else
+            cdata = ffi_new(ftype.name)
+        end
+
+        return cdata
+    end
+
+    local build_packet = function(path, values)
+        local direction = string_sub(path, 2, 9)
+        local next_slash_index = string_find(path, '/', 11)
+        local id = tonumber(string_sub(path, 11, next_slash_index and next_slash_index - 1))
+
+        local base_type = types[direction][id]
+        local ftype
+        local types = base_type.types
+        if not types then
+            ftype = base_type
+        else
+            if not next_slash_index then
+                ftype = base_type.base
+            else
+                local key = string_sub(path, next_slash_index + 1)
+                ftype = types[tonumber(key) or key] or base_type.base
+            end
+        end
+
+        local cdata = build_cdata(ftype, values)
+
+        amend_cdata(cdata, values, ftype)
+        return cdata, ftype, direction, id
+    end
+
+    packets.env.inject = function(path, values)
+        local cdata, _, direction, id = build_packet(path, values)
+
+        local size = ffi_sizeof(cdata)
+        local buffer = buffer_type(size)
+        ffi_copy(buffer, cdata, size)
+
+        local p = packet_new(id, ffi_string(buffer, size))
+        if direction == 'incoming' then
+            packet_inject_incoming(p)
+        else
+            packet_inject_outgoing(p)
+        end
+    end
+end
+
+local parse_packet
+do
+    local math_floor = math.floor
+    local ffi_copy = ffi.copy
+    local ffi_new = ffi.new
+
+    local parse_single = function(data, ftype, packet)
+        packet = packet or {}
+
+        local size = #data
+        local offset = ftype.size
+        local single_var_size = ftype.var_size
+
+        local cdata
+        if single_var_size then
+            local total_var_size = math_floor((size - offset) / single_var_size)
+            offset = offset + total_var_size
+            cdata = ffi_new(ftype.name, total_var_size)
+        else
+            cdata = ffi_new(ftype.name)
+        end
+        ffi_copy(cdata, data, offset)
+
+        return amend_packet(packet, cdata, ftype)
+    end
+
+    parse_packet = function(data, ftype)
+        if not ftype then
+            return {}
+        end
+
+        if not ftype.types then
+            return parse_single(data, ftype)
+        end
+
+        local base_packet = parse_single(data, ftype.base)
+
+        local inner_ftype = ftype.types[base_packet[ftype.key]]
+        if not inner_ftype then
+            return base_packet
+        end
+
+        return parse_single(data, inner_ftype, base_packet)
     end
 end
 
@@ -163,31 +255,34 @@ do
     end
 end
 
-local handle_packet
-do
-    local char_ptr = ffi.typeof('char const*')
+local handle_packet =  function(direction, raw)
+    local id = raw.id
+    local data = raw.data
 
-    handle_packet = function(direction, raw)
-        local id = raw.id
-        local data = raw.data
+    local packet_info = {
+        direction = direction,
+        id = id,
+        data = data,
+        blocked = raw.blocked,
+        modified = raw.modified,
+        injected = raw.injected,
+        timestamp = make_timestamp(),
+    }
 
-        local packet = {
-            direction = direction,
-            id = id,
-            data = data,
-            blocked = raw.blocked,
-            modified = raw.modified,
-            injected = raw.injected,
-            timestamp = make_timestamp(),
-        }
+    local ftype = types[direction][id]
+    local packet = parse_packet(data, ftype)
+    packet._info = packet_info
 
-        local indices = {direction, id, parse_single(packet, char_ptr(data), types[direction][id], #data)}
+    process_packet(packet, '')
+    local path = '/' .. direction
+    process_packet(packet, path)
+    path = path .. '/' .. id
+    process_packet(packet, path)
 
-        local path = ''
-        process_packet(packet, path)
-
-        for i = 1, #indices do
-            path = path .. '/' .. tostring(indices[i])
+    local cache = ftype and ftype.cache
+    if cache then
+        for i = 1, #cache do
+            path = path .. '/' .. tostring(cache[i])
             process_packet(packet, path)
         end
     end

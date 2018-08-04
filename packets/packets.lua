@@ -1,23 +1,20 @@
 local event = require('event')
 local shared = require('shared')
 local table = require('table')
+local string = require('string')
 
 local fetch = shared.get('packet_service', 'packets')
 
-local get_last = function(_, ...)
-    return get_last(...)
+local get_last = function(_, path)
+    return get_last(path)
 end
 
-local make_event = function(_, ...)
-    return make_event(...)
+local make_event = function(_, path)
+    return make_event(path)
 end
 
-local make_new = function(_, values, ...)
-    return make_new(values, ...)
-end
-
-local inject = function(_, p)
-    inject(p)
+local inject = function(_, path, values)
+    inject(path, values)
 end
 
 local registry = {}
@@ -54,16 +51,6 @@ fns.unregister = function(t, fn)
     registry[t.path][fn] = nil
 end
 
-fns.new = function(t, values)
-    return setmetatable(fetch:call(make_new, values, t.path), {
-        __index = function(p, k)
-            if k == 'inject' then
-                fetch:call(inject, p)
-            end
-        end,
-    })
-end
-
 fns.register_init = function(t, init_table)
     local paths = {}
     for indices, fn in pairs(init_table) do
@@ -83,7 +70,7 @@ fns.register_init = function(t, init_table)
     end
 
     table.sort(lasts, function(l1, l2)
-        return l1.packet.timestamp < l2.packet.timestamp
+        return l1.packet._info.timestamp < l2.packet._info.timestamp
     end)
 
     for _, last in ipairs(lasts) do
@@ -91,14 +78,23 @@ fns.register_init = function(t, init_table)
     end
 end
 
-make_table = function(path)
-    return setmetatable({
-        path = path,
-        register = fns.register,
-        unregister = fns.unregister,
-        register_init = fns.register_init,
-        new = fns.new,
-    }, packet_meta)
+fns.inject = function(t, values)
+    fetch:call(inject, t.path, values)
+end
+
+do
+    local string_find = string.find
+
+    make_table = function(path)
+        local id_path = string_find(path, '/', 2)
+        return setmetatable({
+            path = path,
+            register = fns.register,
+            unregister = fns.unregister,
+            register_init = fns.register_init,
+            inject = id_path and fns.inject,
+        }, packet_meta)
+    end
 end
 
 return make_table('')
