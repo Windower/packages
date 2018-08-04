@@ -13,10 +13,6 @@ local make_event = function(_, path)
     return make_event(path)
 end
 
-local make_new = function(_, path, values)
-    return make_new(path, values)
-end
-
 local inject = function(_, path, values)
     inject(path, values)
 end
@@ -82,16 +78,6 @@ fns.register_init = function(t, init_table)
     end
 end
 
-fns.new = function(t, values)
-    return setmetatable(fetch:call(make_new, t.path, values), {
-        __index = function(p, k)
-            if k == 'inject' then
-                fetch:call(inject, t.path, p)
-            end
-        end,
-    })
-end
-
 fns.inject = function(t, values)
     fetch:call(inject, t.path, values)
 end
@@ -106,7 +92,6 @@ do
             register = fns.register,
             unregister = fns.unregister,
             register_init = fns.register_init,
-            new = id_path and fns.new,
             inject = id_path and fns.inject,
         }, packet_meta)
     end

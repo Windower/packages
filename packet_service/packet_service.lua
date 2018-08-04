@@ -162,12 +162,6 @@ do
         return cdata, ftype, direction, id
     end
 
-    packets.env.make_new = function(path, values)
-        local cdata, ftype = build_packet(path, values)
-
-        return amend_packet({}, cdata, ftype)
-    end
-
     packets.env.inject = function(path, values)
         local cdata, _, direction, id = build_packet(path, values)
 
