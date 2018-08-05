@@ -1,19 +1,6 @@
 local client = require('shared.client')
 
-return client.new('world_service', {
-    add = {
-        weather = function(data)
-            return data.weather_id and res.weather[data.weather_id]
-        end,
-        zone = function(data)
-            return data.zone_id and res.zones[data.zone_id]
-        end,
-    },
-    disable = {
-        weather_id = true,
-        zone_id = true,
-    }
-})
+return client.new('world_service')
 
 --[[
 Copyright © 2018, Windower Dev Team

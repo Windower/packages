@@ -222,16 +222,76 @@ do
     local ffi_sizeof = ffi.sizeof
     local table_sort = table.sort
 
+    structs.metatype = function(ftype)
+        local fields = ftype.fields
+
+        ffi_metatype(ftype.name, {
+            __index = function(cdata, key)
+                local field = fields[key]
+                if not field then
+                    return nil
+                end
+
+                local cname = field.cname
+
+                local data
+                do
+                    local converter = field.type.converter
+                    data = cdata[cname]
+                    if converter then
+                        data = tolua[converter](data, field)
+                    end
+                end
+
+                local lookup = field.lookup
+                if not lookup then
+                    return data
+                end
+
+                if type(lookup) == 'table' then
+                    return lookup[data]
+                end
+
+                return lookup(data, field)
+            end,
+            __newindex = function(cdata, key, value)
+                local field = fields[key]
+                if not field then
+                    error('Cannot set value ' .. key .. '.')
+                end
+
+                local cname = field.cname
+
+                local converter = field.type.converter
+                if not converter then
+                    cdata[cname] = value
+                    return
+                end
+
+                toc[converter](cdata, cname, value, field)
+            end,
+            __pairs = function(cdata)
+                return function(t, k)
+                    local label, field = next(t, k)
+                    return label, label and cdata[field.label]
+                end, fields, nil
+            end,
+        })
+    end
+
     structs.struct = function(fields, info)
         fields, info = info or fields, info and fields or {}
 
+        local typedef_count = 0
         local arranged = {}
         local arranged_index = 0
         for label, field in pairs(fields) do
+            local ftype = field[2] or field[1]
+
             field.label = label
-            field.type = field[2] or field[1]
+            field.type = ftype
             field.position = field[2] and field[1]
-            field.cname = (field.type.converter or keywords[label]) and ('_' .. label) or label
+            field.cname = (type(field.label) == 'number' or ftype.converter or field.lookup or keywords[label]) and ('_' .. tostring(label)) or label
             field.offset = field.offset or 0
 
             arranged_index = arranged_index + 1
@@ -260,45 +320,7 @@ do
         ftype.fields = fields
         ftype.arranged = arranged
 
-        ffi_metatype(ftype.name, {
-            __index = function(cdata, key)
-                local field = fields[key]
-                if not field then
-                    return nil
-                end
-
-                local cname = field.cname
-
-                local converter = field.type.converter
-                if not converter then
-                    return cdata[cname]
-                end
-
-                return tolua[converter](cdata[cname], field)
-            end,
-            __newindex = function(cdata, key, value)
-                local field = fields[key]
-                if not field then
-                    error('Cannot set value ' .. key .. '.')
-                end
-
-                local cname = field.cname
-
-                local converter = field.type.converter
-                if not converter then
-                    cdata[cname] = value
-                    return
-                end
-
-                toc[converter](cdata, cname, value, field)
-            end,
-            __pairs = function(cdata)
-                return function(t, k)
-                    local label, field = next(t, k)
-                    return label, label and cdata[field.label]
-                end, fields, nil
-            end,
-        })
+        structs.metatype(ftype)
 
         return ftype
     end

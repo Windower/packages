@@ -1,15 +1,6 @@
 local client = require('shared.client')
 
-return client.new('account_service', {
-    add = {
-        server = function(data)
-            return data.server_id and res.servers[data.server_id]
-        end,
-    },
-    disable = {
-        server_id = true,
-    }
-})
+return client.new('account_service')
 
 --[[
 Copyright © 2018, Windower Dev Team
