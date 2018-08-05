@@ -1,20 +1,22 @@
 local event = require('event')
 local memory = require('memory')
 local packets = require('packets')
+local resources = require('resources')
 local server = require('shared.server')
-local res = require('resources')
+local structs = require('structs')
 
-account_data, account_events = server.new()
+local data, events = server.new(structs.struct({
+    logged_in           = {structs.bool},
+    name                = {structs.string(0x10)},
+    id                  = {structs.int32},
+    server              = {structs.int32, lookup=resources.servers},
+}))
 
-account_data.data.logged_in = false
-account_data.env.res = res
+events.login = event.new()
+events.logout = event.new()
 
-account_events.data.login = event.new()
-account_events.data.logout = event.new()
-
-local data = account_data.data
-local login_event = account_events.data.login
-local logout_event = account_events.data.logout
+local login_event = events.login
+local logout_event = events.logout
 
 packets.incoming:register_init({
     [{0x00A}] = function(p)
@@ -31,7 +33,7 @@ packets.incoming:register_init({
 
             data.name = info.name
             data.id = info.id
-            data.server_id = info.server_id % 0x20
+            data.server = info.server_id % 0x20
             data.logged_in = true
 
             login_event:trigger()
@@ -44,9 +46,9 @@ packets.incoming:register_init({
         end
 
         data.logged_in = false
-        data.server_id = nil
-        data.name = nil
-        data.id = nil
+        data.server = 0
+        data.name = ''
+        data.id = 0
 
         logout_event:trigger()
     end,

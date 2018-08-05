@@ -1,48 +1,64 @@
 local packets = require('packets')
 local server = require('shared.server')
+local structs = require('structs')
 
-linkshell_data, linkshell_events = server.new()
+local ls_struct = structs.struct({
+    name                = {structs.string(0x14)},
+    permissions         = {structs.uint32},
+    color               = {structs.struct({
+        red                 = {structs.uint8},
+        green               = {structs.uint8},
+        blue                = {structs.uint8},
+    })},
+    lsmes               = {structs.struct({
+        message             = {structs.string(0x80)},
+        player_name         = {structs.string(0x10)},
+        timestamp           = {structs.uint32},
+    })},
+    bag_index           = {structs.uint8},
+})
 
-local root_data = linkshell_data.data
+local data, events = server.new(structs.struct({
+    [1]                 = {ls_struct},
+    [2]                 = {ls_struct},
+}))
 
 local handle_0CC = function(p)
-    local linkshell_number = p.linkshell_index + 1
-    local data = root_data[linkshell_number]
+    local ls_data = data[p.linkshell_index + 1]
 
-    data.name = p.linkshell_name
-    data.permissions = p.permissions
-    data.lsmes = {
-        p.timestamp,
-        p.player_name,
-        p.message,
-    }
+    ls_data.name = p.linkshell_name
+    ls_data.permissions = p.permissions
+    ls_data.lsmes.message = p.message
+    ls_data.lsmes.timestamp = p.timestamp
+    ls_data.lsmes.player_name = p.player_name
 end
 
 packets.incoming:register_init({
     [{0x0CC, 0}] = handle_0CC,
     [{0x0CC, 1}] = handle_0CC,
     [{0x037}] = function(p)
-        local data = root_data[1]
-        if not data then
-            return
-        end
+        local ls_data = data[1]
 
-        data.color = {
-            p.linkshell1_red,
-            p.linkshell1_green,
-            p.linkshell1_blue,
-        }
+        ls_data.color.red = p.linkshell1_red
+        ls_data.color.green = p.linkshell1_green
+        ls_data.color.blue = p.linkshell1_blue
     end,
     [{0x0E0}] = function(p)
-        local new_index = p.bag_index
-        if new_index == 0 then
-            root_data[p.linkshell_number] = nil
+        local ls_data = data[p.linkshell_number]
+
+        ls_data.bag_index = p.bag_index
+        if ls_data.bag_index ~= 0 then
             return
         end
 
-        root_data[p.linkshell_number] = {
-            bag_index = new_index,
-        }
+        ls_data.name = ''
+        ls_data.permissions = 0
+        ls_data.color.red = 0
+        ls_data.color.green = 0
+        ls_data.color.blue = 0
+        ls_data.lsmes.message = ''
+        ls_data.lsmes.player_name = ''
+        ls_data.lsmes.timestamp = 0
     end,
 })
 

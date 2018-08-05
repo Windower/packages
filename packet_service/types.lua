@@ -282,7 +282,7 @@ types.incoming[0x00A] = struct({
     zone_model          = {0xA6, uint16},
     main_job_id         = {0xB0, job},
     sub_job_id          = {0xB3, job},
-    job_levels          = {0xB8, uint8[0x10], lookup='jobs'},
+    job_levels          = {0xB8, uint8[0x10], key_lookup='jobs'},
     stats_base          = {0xC8, stats},
     stats_bonus         = {0xD6, stats},
     hp_max              = {0xE4, uint32},
@@ -432,11 +432,11 @@ types.incoming[0x01B] = struct({
     sub_job_id          = {0x07, job},
     sub_job_unlocked    = {0x08, boolbit(uint32)},
     sub_jobs_unlocked   = {0x08, bit(uint32, 0x16), offset=1}, -- flags field
-    job_levels_pre_toau = {0x0C, uint8[0x10], lookup='jobs'},
+    job_levels_pre_toau = {0x0C, uint8[0x10], key_lookup='jobs'},
     stats_base          = {0x1C, stats}, -- Altering these stat values has no impact on your equipment menu.
     hp_max              = {0x38, uint32},
     mp_max              = {0x3C, uint32},
-    job_levels          = {0x40, uint8[0x18], lookup='jobs'},
+    job_levels          = {0x40, uint8[0x18], key_lookup='jobs'},
     monster_level       = {0x5B, uint8},
     encumbrance_flags   = {0x5C, uint32}, -- [legs, hands, body, head, ammo, range, sub, main,] [back, right_ring, left_ring, right_ear, left_ear, waist, neck, feet] [HP, CHR, MND, INT, AGI, VIT, DEX, STR,] [X X X X X X X MP]
 })
@@ -449,11 +449,11 @@ types.incoming[0x01B] = struct({
 -- for now.
 -- There appears to be space for another 8 bags.
 types.incoming[0x01C] = struct({
-    size                = {0x00, uint8[13], lookup='bags'},
+    size                = {0x00, uint8[13], key_lookup='bags'},
     -- These "dupe" sizes are set to 0 if the inventory disabled.
     -- storage: The accumulated storage from all items (uncapped) -1
     -- wardrobe 3/4: This is not set to 0 despite being disabled for whatever reason
-    other_size          = {0x10, uint16[13], lookup='bags'},
+    other_size          = {0x10, uint16[13], key_lookup='bags'},
 })
 
 -- Finish Inventory
@@ -1584,8 +1584,8 @@ types.incoming[0x061] = struct({
 
 -- Skills Update
 types.incoming[0x062] = struct({
-    combat_skills       = {0x7C, combat_skill[0x30], lookup='skills', lookup_index=0x00},
-    crafting_skills     = {0xDC, crafting_skill[0x0A], lookup='skills', lookup_index=0x30},
+    combat_skills       = {0x7C, combat_skill[0x30], key_lookup='skills', lookup_index=0x00},
+    crafting_skills     = {0xDC, crafting_skill[0x0A], key_lookup='skills', lookup_index=0x30},
 })
 
 -- Set Update
@@ -1623,7 +1623,7 @@ types.incoming[0x063] = multiple({
         },
 
         [0x05] = {
-            job_points      = {0x08, job_point_info[0x18], lookup='jobs'}
+            job_points      = {0x08, job_point_info[0x18], key_lookup='jobs'}
         },
 
         [0x09] = {
@@ -2103,7 +2103,7 @@ types.incoming[0x112] = struct({
 
 --Currency Info (Currencies I)
 types.incoming[0x113] = struct({
-    conquest_points         = {0x00, int32[3], lookup='nations', lookup_index=0x00},
+    conquest_points         = {0x00, int32[3], key_lookup='nations', lookup_index=0x00},
     beastmens_seals         = {0x0C, uint16},
     kindred_seals           = {0x0E, uint16},
     kindred_crests          = {0x10, uint16},
@@ -2112,12 +2112,12 @@ types.incoming[0x113] = struct({
     ancient_beastcoins      = {0x16, uint16},
     valor_points            = {0x18, uint16},
     scylds                  = {0x1A, uint16},
-    guild_points            = {0x1C, int32[0x09], lookup='skills', lookup_index=0x30},
+    guild_points            = {0x1C, int32[0x09], key_lookup='skills', lookup_index=0x30},
     cinders                 = {0x40, int32},
-    fewell                  = {0x44, uint8[0x08], lookup='elements', lookup_index=0x00},
+    fewell                  = {0x44, uint8[0x08], key_lookup='elements', lookup_index=0x00},
     ballista_points         = {0x4C, int32},
     fellow_points           = {0x50, int32},
-    chocobucks              = {0x54, uint16[3], lookup='nations', lookup_index=0x00},
+    chocobucks              = {0x54, uint16[3], key_lookup='nations', lookup_index=0x00},
     daily_tally             = {0x5A, uint16},
     research_marks          = {0x5C, uint32},
     wizened_tunnel_worms    = {0x60, uint8},
@@ -2185,7 +2185,7 @@ types.incoming[0x115] = struct({
 
 -- Equipset Build Response
 types.incoming[0x116] = struct({
-    equipment           = {0x00, equipset_build[0x10], lookup='slots'}, -- Ordered according to equipment slot ID
+    equipment           = {0x00, equipset_build[0x10], key_lookup='slots'}, -- Ordered according to equipment slot ID
 })
 
 -- Equipset
@@ -2572,7 +2572,7 @@ types.outgoing[0x052] = struct({
     new_equipment       = {0x04, equipset_build},
 
     -- The next 16 are the entire current equipset, excluding the newly changed item
-    previous_equipment  = {0x08, equipset_build[0x10], lookup='slots'},
+    previous_equipment  = {0x08, equipset_build[0x10], key_lookup='slots'},
 })
 
 -- lockstyleset
@@ -2581,7 +2581,7 @@ types.outgoing[0x053] = struct({
     count               = {0x00, uint8},
     type                = {0x01, uint8}, -- 0 = "Stop locking style", 1 = "Continue locking style", 3 = "Lock style in this way". Might be flags?
     _known1             = {0x02, uint16, const=0},
-    lockstyle_equipment = {0x04, lockstyle_entry[0x10], lookup='slots'},
+    lockstyle_equipment = {0x04, lockstyle_entry[0x10], key_lookup='slots'},
 })
 
 -- End Synth

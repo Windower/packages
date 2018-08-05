@@ -1,11 +1,12 @@
 <package>
   <name>account_service</name>
-  <version>1.1.1.1</version>
+  <version>1.2.0.0</version>
   <type>service</type>
   <dependencies>
-    <dependency>shared</dependency>
-    <dependency>packets</dependency>
     <dependency>memory</dependency>
+    <dependency>packets</dependency>
     <dependency>resources</dependency>
+    <dependency>shared</dependency>
+    <dependency>structs</dependency>
   </dependencies>
 </package>
