@@ -5,18 +5,17 @@ local resources = require('resources')
 local server = require('shared.server')
 local structs = require('structs')
 
-local data, events = server.new(structs.struct({
+local data = server.new(structs.struct({
     logged_in           = {structs.bool},
     name                = {structs.string(0x10)},
     id                  = {structs.int32},
     server              = {structs.int32, lookup=resources.servers},
+    login               = {data=event.new()},
+    logout              = {data=event.new()},
 }))
 
-events.login = event.new()
-events.logout = event.new()
-
-local login_event = events.login
-local logout_event = events.logout
+local login_event = data.login
+local logout_event = data.logout
 
 packets.incoming:register_init({
     [{0x00A}] = function(p)

@@ -4,7 +4,7 @@ local resources = require('resources')
 local server = require('shared.server')
 local structs = require('structs')
 
-local data, events = server.new(structs.struct({
+local data = server.new(structs.struct({
     zone                = {structs.int32, lookup=resources.zones},
     weather             = {structs.int32, lookup=resources.weather},
     music               = {structs.struct({
@@ -13,18 +13,17 @@ local data, events = server.new(structs.struct({
         solo_combat         = {structs.int32},
         party_combat        = {structs.int32},
     })},
+    zone_change         = {data=event.new()},
+    weather_change      = {data=event.new()},
 }))
 
 data.zone = -1
 data.weather = -1
 
-events.zone_change = event.new()
-events.weather_change = event.new()
-
 local music = data.music
 
-local zone_change_event = events.zone_change
-local weather_change_event = events.weather_change
+local zone_change_event = data.zone_change
+local weather_change_event = data.weather_change
 
 packets.incoming:register_init({
     [{0x00A}] = function(p)

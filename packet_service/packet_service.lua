@@ -279,7 +279,7 @@ local handle_packet =  function(direction, raw)
     path = path .. '/' .. id
     process_packet(packet, path)
 
-    local cache = ftype and ftype.info.cache
+    local cache = ftype and ftype.info and ftype.info.cache
     if cache then
         for i = 1, #cache do
             path = path .. '/' .. tostring(packet[cache[i]])
