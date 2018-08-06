@@ -5,21 +5,23 @@ local player = require('player')
 
 local send = command.new('send')
 
-local send_msg = function(target, message)
-    ipc.send(target .. ' ' .. message)
+local prepare_cmd = function(source, message)
+    local receiver, cmd = command.core.parse_args(message:sub(7), 1)
+    receiver = receiver:lower()
+    ipc.send(receiver .. ' ' .. cmd)
 end
 
-send:register(send_msg, '<target:string(@?%a+)>', '<message:text>')
-
 ipc.received:register(function(message)
-    local target, text = message:match('(@?%a+) (.*)')
-    if target == player.name or target == '@all' then
-        local ok, error = pcall(command.input, text)
+    local receiver, cmd = command.core.parse_args(message, 1)
+    if receiver == player.name:lower() or receiver == '@all' then
+        local ok, error = pcall(command.input, cmd)
         if not ok then
             chat.add_text(error, 167)
         end
     end
 end)
+
+command.core.register('send', prepare_cmd, true)
 
 --[[
 Copyright © 2018, Windower Dev Team
