@@ -53,19 +53,22 @@ end
 
 fns.register_init = function(t, init_table)
     local paths = {}
+    local path_count = 0
     for indices, fn in pairs(init_table) do
         local path = t.path .. '/' .. table.concat(indices, '/')
 
         register_path(path, fn)
 
-        paths[#paths + 1] = { path = path, fn = fn }
+        path_count = path_count + 1
+        paths[path_count] = { path = path, fn = fn }
     end
 
     local lasts = {}
-    for _, path in ipairs(paths) do
+    for i = 1, #paths do
+        local path = paths[i]
         local last = fetch:call(get_last, path.path)
         if last then
-            lasts[#lasts + 1] = { packet = last, fn = path.fn }
+            lasts[#lasts + 1] = { packet = last, fn = path.fn, path = path }
         end
     end
 
