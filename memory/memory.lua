@@ -10,26 +10,27 @@ local modules = {'FFXiMain.dll', 'polcore.dll', 'polcoreEU.dll'}
 local byte_ptr = ffi.typeof('char*')
 local void_ptr_ptr = ffi.typeof('void**')
 
+local ffi_cast = ffi.cast
+local scanner_scan = scanner.scan
+
 local get_instance = function(ftype, ptr)
-    return ffi.cast(ftype.name .. '*', ptr)
+    return ffi_cast(ftype.name .. '*', ptr)[0]
 end
 
 local setup_name = function(name)
     local ftype = types[name]
-    assert(ftype ~= nil, 'Memory definition for \'' .. name .. '\' not found.')
 
     local ptr = scan_results[name]
     if ptr == nil then
         for _, module in ipairs(modules) do
-            ptr = scanner.scan(ftype.signature, module)
+            ptr = scanner_scan(ftype.signature, module)
             if ptr ~= nil then
                 break
             end
         end
-        assert(ptr ~= nil, 'Signature ' .. ftype.signature .. ' not found.')
 
         for _, offset in ipairs(ftype.static_offsets) do
-            ptr = ffi.cast(void_ptr_ptr, ffi.cast(byte_ptr, ptr) + offset)[0]
+            ptr = ffi_cast(void_ptr_ptr, ffi_cast(byte_ptr, ptr) + offset)[0]
         end
 
         scan_results[name] = ptr
@@ -43,23 +44,24 @@ return setmetatable({}, {
         do
             local cached = fixed_types[name]
             if cached ~= nil then
-                return cached[0]
+                return cached
             end
         end
 
         local ftype, ptr = setup_name(name)
 
-        if next(ftype.offsets) == nil then
+        local offsets = ftype.offsets
+        if next(offsets) == nil then
             local res = get_instance(ftype, ptr)
             fixed_types[name] = res
-            return res[0]
+            return res
         end
 
-        for _, offset in ipairs(ftype.offsets) do
-            ptr = ffi.cast(byte_ptr, ptr)[offset]
+        for _, offset in ipairs(offsets) do
+            ptr = ffi_cast(byte_ptr, ptr)[offset]
         end
 
-        return get_instance(ftype, ptr)[0]
+        return get_instance(ftype, ptr)
     end,
     __newindex = function(_, name, value)
         types[name] = value

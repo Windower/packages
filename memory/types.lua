@@ -2,10 +2,7 @@ local ffi = require('ffi')
 local structs = require('structs')
 
 local struct = structs.struct
-
-local array = function(info, type, count)
-    return structs.array(type, count, info)
-end
+local array = structs.array
 
 local tag = structs.tag
 local string = structs.string
