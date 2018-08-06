@@ -7,7 +7,7 @@ local send = command.new('send')
 
 local prepare_cmd = function(source, arg_string)
     arg_string = arg_string:sub(7)
-    local receiver, cmd = arg_string:match('(@?%a+) (.*)')
+    local receiver, cmd = command.core.parse_args(arg_string, 1)
     receiver = receiver:lower()
     ipc.send(receiver .. ' ' .. cmd)
 end
