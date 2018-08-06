@@ -4,7 +4,7 @@ local structs = require('structs')
 
 local ls_struct = structs.struct({
     name                = {structs.string(0x14)},
-    permissions         = {structs.uint32},
+    permissions         = {structs.data(0x04)},
     color               = {structs.struct({
         red                 = {structs.uint8},
         green               = {structs.uint8},

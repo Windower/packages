@@ -238,12 +238,18 @@ do
                     return nil
                 end
 
-                local cname = field.cname
+                if field.fn then
+                    return field.fn(cdata)
+                end
+
+                if field.data then
+                    return field.data
+                end
 
                 local data
                 do
                     local converter = field.type.converter
-                    data = cdata[cname]
+                    data = cdata[field.cname]
                     if converter then
                         data = tolua[converter](data, field)
                     end
@@ -262,19 +268,14 @@ do
             end,
             __newindex = function(cdata, key, value)
                 local field = fields[key]
-                if not field then
-                    error('Cannot set value ' .. key .. '.')
-                end
-
-                local cname = field.cname
 
                 local converter = field.type.converter
                 if not converter then
-                    cdata[cname] = value
+                    cdata[field.cname] = value
                     return
                 end
 
-                toc[converter](cdata, cname, value, field)
+                toc[converter](cdata, field.cname, value, field)
             end,
             __pairs = function(cdata)
                 return function(t, k)
@@ -297,11 +298,13 @@ do
             field.label = label
             field.type = ftype
             field.position = field[2] and field[1]
-            field.cname = (type(field.label) == 'number' or ftype.converter or field.lookup or keywords[label]) and ('_' .. tostring(label)) or label
             field.offset = field.offset or 0
 
-            arranged_index = arranged_index + 1
-            arranged[arranged_index] = field
+            if ftype then
+                field.cname = (type(field.label) == 'number' or ftype.converter or field.lookup or keywords[label]) and ('_' .. tostring(label)) or label
+                arranged_index = arranged_index + 1
+                arranged[arranged_index] = field
+            end
         end
 
         local first = arranged[1]

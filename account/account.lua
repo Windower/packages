@@ -1,4 +1,5 @@
 local client = require('shared.client')
+local event = require('event')
 
 return client.new('account_service')
 
