@@ -23,27 +23,19 @@ end
 
 local service_name = windower.package_path:gsub('(.+\\)', '')
 
-local make_shared = function(name)
-    local server = shared.new(service_name .. '_' .. name)
-    server.data = {}
-    server.env = {}
-    cache[name] = server
-
-    return server
-end
-
 return {
-    new = function(struct)
-        local data_server = make_shared('data')
+    new = function(name, struct)
+        name, struct = struct and name or 'data', struct or name
+
+        local server = shared.new(service_name .. '_' .. name)
+        cache[name] = server
 
         local ptr = make_ptr(struct.name)
-        data_server.data.ptr = tonumber(ffi_cast('intptr_t', ptr))
-        data_server.data.struct = struct
+        server.data = {
+            ptr = tonumber(ffi_cast('intptr_t', ptr)),
+            struct = struct,
+        }
 
-        local cdata = ffi_cast(struct.name .. '*', ptr)
-
-        local events_server = make_shared('events')
-
-        return cdata[0], events_server.data
+        return ffi_cast(struct.name .. '*', ptr)[0]
     end,
 }

@@ -9,6 +9,16 @@ local structs = {}
 local tolua = {}
 local toc = {}
 
+local get_array_cdef_info = function(ftype)
+    local counts = ''
+    local base = ftype
+    while base.count ~= nil do
+        counts =  counts .. '[' .. (base.count == '*' and '?' or tostring(base.count)) .. ']'
+        base = base.base
+    end
+    return base.name or base.cdef, counts
+end
+
 local make_struct_cdef
 do
     local table_concat = table.concat
@@ -78,20 +88,12 @@ do
                     bit_type_size = ftype.size
                 end
             else
-                local suffix = ''
-                local cdef = ftype.name or ftype.cdef
-                if ftype.count ~= nil then
-                    local counts = ''
-                    local base = ftype
-                    while base.count ~= nil do
-                        counts =  counts .. '[' .. (base.count == '*' and '?' or tostring(base.count)) .. ']'
-                        base = base.base
-                    end
-                    suffix = counts
-                    cdef = base.name or base.cdef
+                if ftype.count == nil then
+                    cdefs[cdef_count] = (ftype.name or ftype.cdef) .. ' ' .. field.cname .. ';'
+                else
+                    local name, counts = get_array_cdef_info(ftype)
+                    cdefs[cdef_count] = name .. ' ' .. field.cname .. counts .. ';'
                 end
-
-                cdefs[cdef_count] = cdef .. ' ' .. field.cname .. suffix .. ';'
 
                 if ftype.size ~= '*' then
                     index = index + ftype.size
@@ -121,6 +123,8 @@ do
 
             ftype.base = base
             ftype.count = count
+            local name, counts = get_array_cdef_info(ftype)
+            ftype.cdef = name .. counts
             ftype.size = count == '*' and '*' or base.size * count
 
             return ftype
@@ -202,19 +206,21 @@ do
             info.name = '_' .. string_gsub(tostring(ftype), '%W', '')
         end
 
-        structs.name(ftype, info.name)
-
         return ftype
     end
 
     structs.array = function(base, count, info)
-        info = info or {}
+        base, count, info = info and count or base, info or count, info and base or {}
 
         local ftype = build_type(base.cdef, info)
 
         ftype.base = base
         ftype.count = count
+        local name, counts = get_array_cdef_info(ftype)
+        ftype.cdef = name .. counts
         ftype.size = count == '*' and '*' or base.size * count
+
+        structs.name(ftype, info.name)
 
         return ftype
     end
@@ -232,12 +238,18 @@ do
                     return nil
                 end
 
-                local cname = field.cname
+                if field.fn then
+                    return field.fn(cdata)
+                end
+
+                if field.data then
+                    return field.data
+                end
 
                 local data
                 do
                     local converter = field.type.converter
-                    data = cdata[cname]
+                    data = cdata[field.cname]
                     if converter then
                         data = tolua[converter](data, field)
                     end
@@ -256,19 +268,14 @@ do
             end,
             __newindex = function(cdata, key, value)
                 local field = fields[key]
-                if not field then
-                    error('Cannot set value ' .. key .. '.')
-                end
-
-                local cname = field.cname
 
                 local converter = field.type.converter
                 if not converter then
-                    cdata[cname] = value
+                    cdata[field.cname] = value
                     return
                 end
 
-                toc[converter](cdata, cname, value, field)
+                toc[converter](cdata, field.cname, value, field)
             end,
             __pairs = function(cdata)
                 return function(t, k)
@@ -291,11 +298,13 @@ do
             field.label = label
             field.type = ftype
             field.position = field[2] and field[1]
-            field.cname = (type(field.label) == 'number' or ftype.converter or field.lookup or keywords[label]) and ('_' .. tostring(label)) or label
             field.offset = field.offset or 0
 
-            arranged_index = arranged_index + 1
-            arranged[arranged_index] = field
+            if ftype then
+                field.cname = (type(field.label) == 'number' or ftype.converter or field.lookup or keywords[label]) and ('_' .. tostring(label)) or label
+                arranged_index = arranged_index + 1
+                arranged[arranged_index] = field
+            end
         end
 
         local first = arranged[1]
@@ -309,10 +318,12 @@ do
         info.size = size
         local ftype = build_type(cdef, info)
 
+        structs.name(ftype, info.name)
+
         local last = arranged[arranged_index]
         local last_ftype = last and last.type
         if last_ftype and last_ftype.size == '*' then
-            ftype.var_size = ffi_sizeof(last_ftype.cdef)
+            ftype.var_size = ffi_sizeof(last_ftype.base.cdef)
             ftype.var_key = last.label
         end
 
@@ -346,7 +357,12 @@ do
 
             declared_cache[name] = nil
         else
-            ffi_cdef('typedef ' .. ftype.cdef .. ' ' .. name .. ';')
+            if ftype.count then
+                local base_name, counts = get_array_cdef_info(ftype)
+                ffi_cdef('typedef ' .. base_name .. ' ' .. name .. counts .. ';')
+            else
+                ffi_cdef('typedef ' .. ftype.cdef .. ' ' .. name .. ';')
+            end
         end
     end
 

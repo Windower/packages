@@ -11,7 +11,7 @@ local prepare_struct
 prepare_struct = function(struct)
     for label, field in pairs(struct.fields) do
         local ftype = field.type
-        if ftype.fields then
+        if ftype and ftype.fields then
             prepare_struct(ftype)
         end
     end
@@ -28,8 +28,10 @@ prepare_struct = function(struct)
 end
 
 return {
-    new = function(name)
-        local data_client = shared.get(name, name .. '_data')
+    new = function(service_name, name)
+        name = name or 'data'
+
+        local data_client = shared.get(service_name, service_name .. '_' .. name)
         local data = data_client:read()
 
         local struct = data.struct
