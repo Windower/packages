@@ -5,15 +5,14 @@ local player = require('player')
 
 local send = command.new('send')
 
-local prepare_cmd = function(source, arg_string)
-    arg_string = arg_string:sub(7)
-    local receiver, cmd = command.core.parse_args(arg_string, 1)
+local prepare_cmd = function(source, message)
+    local receiver, cmd = command.core.parse_args(message:sub(7), 1)
     receiver = receiver:lower()
     ipc.send(receiver .. ' ' .. cmd)
 end
 
 ipc.received:register(function(message)
-    local receiver, cmd = message:match('(@?%a+) (.*)')
+    local receiver, cmd = command.core.parse_args(message, 1)
     if receiver == player.name:lower() or receiver == '@all' then
         local ok, error = pcall(command.input, cmd)
         if not ok then
