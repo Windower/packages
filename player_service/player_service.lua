@@ -1,28 +1,64 @@
-local shared = require('shared')
 local packets = require('packets')
+local resources = require('resources')
+local server = require('shared.server')
+local structs = require('structs')
 
-player = shared.new('player')
+local skill = structs.struct({
+    level               = {structs.int32},
+    capped              = {structs.bool},
+    rank_id             = {structs.int32},
+})
 
-player.env = {
-    next = next,
-}
+local data = server.new(structs.struct({
+    id                  = {structs.int32},
+    index               = {structs.int32},
+    name                = {structs.string(0x10)},
+    state               = {structs.int32},
+    hp                  = {structs.int32},
+    hp_max              = {structs.int32},
+    hp_percent          = {structs.int32},
+    mp                  = {structs.int32},
+    mp_max              = {structs.int32},
+    mp_percent          = {structs.int32},
+    tp                  = {structs.int32},
+    main_job            = {structs.int32, lookup=resources.jobs},
+    main_job_level      = {structs.int32},
+    sub_job             = {structs.int32, lookup=resources.jobs},
+    sub_job_level       = {structs.int32},
+    pet_index           = {structs.int32},
+    superior_level      = {structs.int32},
+    item_level          = {structs.int32},
+    exp                 = {structs.int32},
+    exp_required        = {structs.int32},
+    movement_speed      = {structs.double},
+    animation_speed     = {structs.double},
+    title               = {structs.int32, lookup=resources.titles},
+    nation_id           = {structs.int32},
+    nation_rank         = {structs.int32},
+    nation_rank_points  = {structs.int32},
+    home_point_zone     = {structs.int32, lookup=resources.zones},
+    job_levels          = {structs.int32[0x18]},
+    skills              = {skill[0x40]},
+    race                = {structs.int32, lookup=resources.races},
+    model               = {structs.struct({
+        face_id             = {structs.int32},
+        head_id             = {structs.int32},
+        body_id             = {structs.int32},
+        hands_id            = {structs.int32},
+        legs_id             = {structs.int32},
+        feet_id             = {structs.int32},
+        main_id             = {structs.int32},
+        sub_id              = {structs.int32},
+        range_id            = {structs.int32},
+    })},
+}))
 
-player.data = {
-    skills = {},
-    model = {},
-    job_levels = {},
-}
-
-do
-    local skills = player.data.skills
-    for i = 0x00, 0x38 do
-        skills[i] = {}
-    end
-end
+local model = data.model
+local skills = data.skills
+local job_levels = data.job_levels
 
 packets.incoming:register_init({
     [{0x00D}] = function(p)
-        local data = player.data
         if p.player_id ~= data.id then
             return
         end
@@ -42,7 +78,6 @@ packets.incoming:register_init({
         end
 
         if p.update_model then
-            local model = data.model
             local m = p.model
             data.race_id = m.race_id
             model.face_id = m.face_model_id
@@ -58,31 +93,28 @@ packets.incoming:register_init({
     end,
 
     [{0x00A}] = function(p)
-        local data = player.data
         data.id = p.player_id
         data.index = p.player_index
         data.name = p.player_name
-        data.main_job_id = p.main_job_id
-        data.sub_job_id = p.sub_job_id
+        data.main_job = p.main_job_id
+        data.sub_job = p.sub_job_id
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
         data.hp_percent = p.hp_percent
     end,
 
     [{0x01B}] = function(p)
-        local data = player.data
-        data.race_id = p.race_id
-        data.main_job_id = p.main_job_id
-        data.sub_job_id = p.sub_job_id
+        data.race = p.race_id
+        data.main_job = p.main_job_id
+        data.sub_job = p.sub_job_id
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
         for i = 0, 0x17 do
-            data.job_levels[i] = p.job_levels[i]
+            job_levels[i] = p.job_levels[i]
         end
     end,
 
     [{0x037}] = function(p)
-        local data = player.data
         data.id = p.player_id
         data.hp_percent = p.hp_percent
         data.state = p.state
@@ -90,17 +122,16 @@ packets.incoming:register_init({
     end,
 
     [{0x061}] = function(p)
-        local data = player.data
-        data.main_job_id = p.main_job_id
+        data.main_job = p.main_job_id
         data.main_job_level = p.main_job_level
-        data.sub_job_id = p.sub_job_id
+        data.sub_job = p.sub_job_id
         data.sub_job_level = p.sub_job_level
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
-        data.title_id = p.title_id
+        data.title = p.title_id
         data.nation_rank = p.nation_rank
         data.nation_rank_points = p.nation_rank_points
-        data.home_point_zone_id = p.home_point_zone_id
+        data.home_point_zone = p.home_point_zone_id
         data.nation_id = p.nation_id
         data.superior_level = p.superior_level
         data.item_level = p.item_level_over_99 + p.main_job_level
@@ -109,24 +140,22 @@ packets.incoming:register_init({
     end,
 
     [{0x062}] = function(p)
-        local skills = player.data.skills
         for i = 0x00, 0x2F do
             local skill = skills[i]
-            local packet = p.combat_skills[i]
-            skill.level = packet.level
-            skill.capped = packet.capped
+            local s = p.combat_skills[i]
+            skill.level = s.level
+            skill.capped = s.capped
         end
         for i = 0x00, 0x09 do
             local skill = skills[i + 0x2F]
-            local packet = p.crafting_skills[i]
-            skill.level = packet.level
-            skill.rank_id = packet.rank_id
-            skill.capped = packet.capped
+            local s = p.crafting_skills[i]
+            skill.level = s.level
+            skill.rank_id = s.rank_id
+            skill.capped = s.capped
         end
     end,
 
     [{0x0DF}] = function(p)
-        local data = player.data
         if data.id ~= p.id then
             return
         end
@@ -138,14 +167,13 @@ packets.incoming:register_init({
         data.tp = p.tp
         data.hp_percent = p.hp_percent
         data.mp_percent = p.mp_percent
-        data.main_job_id = p.main_job_id
+        data.main_job = p.main_job_id
         data.main_job_level = p.main_job_level
-        data.sub_job_id = p.sub_job
+        data.sub_job = p.sub_job_id
         data.sub_job_level = p.sub_job_level
     end,
 
     [{0x0E2}] = function(p)
-        local data = player.data
         if data.id ~= p.id then
             return
         end

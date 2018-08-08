@@ -1,78 +1,81 @@
 local packets = require('packets')
-local res = require('resources')
-local shared = require('shared')
+local resources = require('resources')
+local server = require('shared.server')
+local structs = require('structs')
+local string = require('string')
 
-items = shared.new('items')
-equipment = shared.new('equipment')
+local item = structs.struct({
+    item                = {structs.int32},--, lookup=resources.items},
+    bag                 = {structs.int32},
+    index               = {structs.int32},
+    count               = {structs.int32},
+    status              = {structs.int32},
+    bazaar              = {structs.int32},
+    extdata             = {structs.data(0x18)},
+})
 
-equipment.data = {}
+local equipment = server.new('equipment', item[16])
 
-equipment.env = {
-    next = next,
-}
+local bag_count = #resources.bags
+local bag_size = 80
 
-items.data = {
-    bags = {
-        [0]  = { },
-        [1]  = { },
-        [2]  = { },
-        [3]  = { },
-        [4]  = { },
-        [5]  = { },
-        [6]  = { },
-        [7]  = { },
-        [8]  = { },
-        [9]  = { },
-        [10] = { },
-        [11] = { },
-        [12] = { },
-    },
-    sizes = {},
-    gil = 0,
-}
+local items = server.new('items', structs.struct({
+    bags                = {item[bag_size][bag_count]},
+    sizes               = {structs.int32[bag_count]},
+    gil                 = {structs.int32},
+}))
 
-items.env = {
-    next = next,
-}
+local equipment_references = {}
 
-local new_item = function(bag, index)
-    return { bag = bag, index = index }
+for bag = 0, bag_count do
+    for index = 0, bag_size do
+        local item = items.bags[bag][index]
+        item.bag = bag
+        item.index = index
+    end
+
+    equipment_references[bag] = {}
 end
 
+local empty_item = structs.make(item)
+
 local update_item = function(bag, index, count, status, id, bazaar, extdata)
-
     if bag == 0 and index == 0 then
-        items.data.gil = count
+        items.gil = count
         return
     end
 
-    if count == 0 then
-        items.data.bags[bag][index] = nil
-        return
-    end
-
-    if not items.data.bags[bag][index] then 
-        items.data.bags[bag][index] = new_item(bag, index)
-    end
-
-    local item = items.data.bags[bag][index]
-
+    local item = items.bags[bag][index]
     item.count = count
     item.status = status
 
-    if id then 
-        item.id = id 
-        item.resource = res.items[id]
+    if count == 0 then
+        item.item = 0
+        item.bazaar = 0
+        item.extdata = empty_item.extdata
+        return
     end
 
-    if bazaar then item.bazaar = bazaar end
-    if extdata then item.extdata = extdata end
+    if id then 
+        item.item = id 
+    end
+    if bazaar then
+        item.bazaar = bazaar
+    end
+    if extdata then
+        item.extdata = extdata
+    end
+
+    local slot = equipment_references[bag][index]
+    if slot then
+        equipment[slot] = item
+    end
 end
 
 packets.incoming:register_init({
     [{0x01C}] = function(p)
-        for i = 0, #items.data.bags do
-            items.data.sizes[i] = p.size[i] - 1
+        for bag = 0, bag_count - 1 do
+            items.sizes[bag] = p.size[bag] - 1
         end
     end,
 
@@ -89,13 +92,19 @@ packets.incoming:register_init({
     end,
 
     [{0x050}] = function(p)
-        if p.bag_index == 0 then
-            equipment.data[p.slot_id] = nil
+        local slot = p.slot_id
+        local bag = p.bag_id
+        local index = p.bag_index
+
+        local old = equipment[slot]
+        equipment_references[old.bag][old.index] = nil
+
+        if index == 0 then
+            equipment[slot] = empty_item
         else
-            if not items.data.bags[p.bag_id][p.bag_index] then
-                items.data.bags[p.bag_id][p.bag_index] = new_item(p.bag_id, p.bag_index)
-            end
-            equipment.data[p.slot_id] = items.data.bags[p.bag_id][p.bag_index]
+            local new = items.bags[bag][index]
+            equipment[slot] = new
+            equipment_references[new.bag][new.index] = slot
         end
     end,
 })
