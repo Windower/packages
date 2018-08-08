@@ -1,6 +1,7 @@
 local ffi = require('ffi')
 local shared = require('shared')
 local windower = require('windower')
+local structs = require('structs')
 
 ffi.cdef[[
     void* HeapAlloc(void*, uint32_t, size_t);
@@ -10,32 +11,35 @@ ffi.cdef[[
 
 local C = ffi.C
 local ffi_cast = ffi.cast
+local ffi_cdef = ffi.cdef
 local ffi_gc = ffi.gc
 local ffi_sizeof = ffi.sizeof
+local shared_new = shared.new
+local structs_from_ptr = structs.from_ptr
 
 cache = {}
 
 cache.heap = ffi_gc(C.HeapCreate(0, 0, 0), C.HeapDestroy)
 
-local make_ptr = function(def)
-    return C.HeapAlloc(cache.heap, 8, ffi_sizeof(def))
+local make_ptr = function(identifier)
+    return C.HeapAlloc(cache.heap, 8, ffi_sizeof(identifier))
 end
 
 local service_name = windower.package_path:gsub('(.+\\)', '')
 
 return {
-    new = function(name, struct)
-        name, struct = struct and name or 'data', struct or name
+    new = function(name, ftype)
+        name, ftype = ftype and name or 'data', ftype or name
 
-        local server = shared.new(service_name .. '_' .. name)
+        local server = shared_new(service_name .. '_' .. name)
         cache[name] = server
 
-        local ptr = make_ptr(struct.name)
+        local ptr = make_ptr(ftype.cdef)
         server.data = {
             ptr = tonumber(ffi_cast('intptr_t', ptr)),
-            struct = struct,
+            ftype = ftype,
         }
 
-        return ffi_cast(struct.name .. '*', ptr)[0]
+        return structs.from_ptr(ftype, ptr)
     end,
 }

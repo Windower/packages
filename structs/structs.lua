@@ -186,7 +186,6 @@ local keywords = {
 }
 
 do
-    local string_gsub = string.gsub
     local ffi_metatype = ffi.metatype
     local ffi_sizeof = ffi.sizeof
 
@@ -200,10 +199,6 @@ do
 
         if info.size then
             ftype.size = info.size
-        end
-
-        if not info.name then
-            info.name = '_' .. string_gsub(tostring(ftype), '%W', '')
         end
 
         return ftype
@@ -235,7 +230,7 @@ do
             __index = function(cdata, key)
                 local field = fields[key]
                 if not field then
-                    return nil
+                    error('Unknown field \'' .. key .. '\'.')
                 end
 
                 if field.fn then
@@ -268,6 +263,9 @@ do
             end,
             __newindex = function(cdata, key, value)
                 local field = fields[key]
+                if not field then
+                    error('Unknown field \'' .. key .. '\'.')
+                end
 
                 local converter = field.type.converter
                 if not converter then
@@ -338,12 +336,17 @@ do
 end
 
 do
-    local ffi_cdef = ffi.cdef
+    local ffi_cdef = function(def)
+        ffi.cdef(def)
+    end
     local string_sub = string.sub
+    local string_gsub = string.gsub
 
     local declared_cache = {}
 
     structs.name = function(ftype, name)
+        name = name or ftype.name or '_' .. string_gsub(tostring(ftype), '%W', '')
+
         ftype.name = name
 
         local declared = declared_cache[name]
@@ -393,6 +396,31 @@ do
         end
 
         return ftype
+    end
+end
+
+do
+    local ffi_cast = ffi.cast
+
+    structs.from_ptr = function(ftype, ptr)
+        structs.name(ftype)
+        return ffi_cast(ftype.name .. '*', ptr)[0]
+    end
+end
+
+do
+    local ffi_typeof = ffi.typeof
+
+    local type_cache = {}
+
+    structs.make = function(ftype, n)
+        local ctype = type_cache[ftype]
+        if not ctype then
+            ctype = ffi_typeof(ftype.name or ftype.cdef)
+            type_cache[type] = ctype
+        end
+
+        return n and ctype(n) or ctype()
     end
 end
 
