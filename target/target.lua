@@ -56,7 +56,6 @@ if package then
 
         channel.env = {
             report_result = function(counter, target_id)
-                print(counter, target_id)
                 while #pending ~= 0 do
                     local descriptor = table.remove(pending, 1)
                     if descriptor.counter == counter then
