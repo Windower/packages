@@ -5,7 +5,7 @@ local structs = require('structs')
 local string = require('string')
 
 local item = structs.struct({
-    item                = {structs.int32},--, lookup=resources.items},
+    id                  = {structs.int32},
     bag                 = {structs.int32},
     index               = {structs.int32},
     count               = {structs.int32},
@@ -50,14 +50,14 @@ local update_item = function(bag, index, count, status, id, bazaar, extdata)
     item.status = status
 
     if count == 0 then
-        item.item = 0
+        item.id = 0
         item.bazaar = 0
         item.extdata = empty_item.extdata
         return
     end
 
     if id then 
-        item.item = id 
+        item.id = id 
     end
     if bazaar then
         item.bazaar = bazaar

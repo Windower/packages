@@ -278,7 +278,7 @@ do
             __pairs = function(cdata)
                 return function(t, k)
                     local label, field = next(t, k)
-                    return label, label and cdata[field.label]
+                    return label, label and cdata[label]
                 end, fields, nil
             end,
         })

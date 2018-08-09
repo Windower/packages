@@ -1,5 +1,4 @@
 local packets = require('packets')
-local resources = require('resources')
 local server = require('shared.server')
 local structs = require('structs')
 
@@ -13,7 +12,7 @@ local data = server.new(structs.struct({
     id                  = {structs.int32},
     index               = {structs.int32},
     name                = {structs.string(0x10)},
-    state               = {structs.int32},
+    state_id            = {structs.int32},
     hp                  = {structs.int32},
     hp_max              = {structs.int32},
     hp_percent          = {structs.int32},
@@ -21,9 +20,9 @@ local data = server.new(structs.struct({
     mp_max              = {structs.int32},
     mp_percent          = {structs.int32},
     tp                  = {structs.int32},
-    main_job            = {structs.int32, lookup=resources.jobs},
+    main_job_id         = {structs.int32},
     main_job_level      = {structs.int32},
-    sub_job             = {structs.int32, lookup=resources.jobs},
+    sub_job_id          = {structs.int32},
     sub_job_level       = {structs.int32},
     pet_index           = {structs.int32},
     superior_level      = {structs.int32},
@@ -32,14 +31,14 @@ local data = server.new(structs.struct({
     exp_required        = {structs.int32},
     movement_speed      = {structs.double},
     animation_speed     = {structs.double},
-    title               = {structs.int32, lookup=resources.titles},
+    title_id            = {structs.int32},
     nation_id           = {structs.int32},
     nation_rank         = {structs.int32},
     nation_rank_points  = {structs.int32},
-    home_point_zone     = {structs.int32, lookup=resources.zones},
+    home_point_zone_id  = {structs.int32},
     job_levels          = {structs.int32[0x18]},
     skills              = {skill[0x40]},
-    race                = {structs.int32, lookup=resources.races},
+    race_id             = {structs.int32},
     model               = {structs.struct({
         face_id             = {structs.int32},
         head_id             = {structs.int32},
@@ -70,7 +69,7 @@ packets.incoming:register_init({
 
         if p.update_vitals then
             data.hp_percent = p.hp_percent
-            data.state = p.state
+            data.state_id = p.state_id
         end
 
         if p.update_name then
@@ -96,17 +95,17 @@ packets.incoming:register_init({
         data.id = p.player_id
         data.index = p.player_index
         data.name = p.player_name
-        data.main_job = p.main_job_id
-        data.sub_job = p.sub_job_id
+        data.main_job_id = p.main_job_id
+        data.sub_job_id = p.sub_job_id
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
         data.hp_percent = p.hp_percent
     end,
 
     [{0x01B}] = function(p)
-        data.race = p.race_id
-        data.main_job = p.main_job_id
-        data.sub_job = p.sub_job_id
+        data.race_id = p.race_id
+        data.main_job_id = p.main_job_id
+        data.sub_job_id = p.sub_job_id
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
         for i = 0, 0x17 do
@@ -117,21 +116,21 @@ packets.incoming:register_init({
     [{0x037}] = function(p)
         data.id = p.player_id
         data.hp_percent = p.hp_percent
-        data.state = p.state
+        data.state_id = p.state_id
         data.pet_index = p.pet_index
     end,
 
     [{0x061}] = function(p)
-        data.main_job = p.main_job_id
+        data.main_job_id = p.main_job_id
         data.main_job_level = p.main_job_level
-        data.sub_job = p.sub_job_id
+        data.sub_job_id = p.sub_job_id
         data.sub_job_level = p.sub_job_level
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
-        data.title = p.title_id
+        data.title_id = p.title_id
         data.nation_rank = p.nation_rank
         data.nation_rank_points = p.nation_rank_points
-        data.home_point_zone = p.home_point_zone_id
+        data.home_point_zone_id = p.home_point_zone_id
         data.nation_id = p.nation_id
         data.superior_level = p.superior_level
         data.item_level = p.item_level_over_99 + p.main_job_level
@@ -167,9 +166,9 @@ packets.incoming:register_init({
         data.tp = p.tp
         data.hp_percent = p.hp_percent
         data.mp_percent = p.mp_percent
-        data.main_job = p.main_job_id
+        data.main_job_id = p.main_job_id
         data.main_job_level = p.main_job_level
-        data.sub_job = p.sub_job_id
+        data.sub_job_id = p.sub_job_id
         data.sub_job_level = p.sub_job_level
     end,
 

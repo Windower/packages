@@ -32,7 +32,7 @@ amend = function(main, defaults)
 end
 
 local get_file = function(path)
-    local dir = windower.settings_path .. '\\' .. account.name .. '_' .. (account.server_name or account.id) .. '\\'
+    local dir = windower.settings_path .. '\\' .. account.name .. '_' .. (account.server and account.server.name or account.id) .. '\\'
     os.execute('mkdir "' .. dir .. '" >nul 2>nul')
     return files.create(dir .. path)
 end

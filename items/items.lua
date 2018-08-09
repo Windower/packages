@@ -1,6 +1,15 @@
 local client = require('shared.client')
+local resources = require('resources')
 
-return client.new('items_service', 'items')
+local data, ftype = client.new('items_service', 'items')
+
+ftype.fields.bags.type.base.base.fields.item = {
+    fn = function(data)
+        return resources.items[data.id]
+    end,
+}
+
+return data
 
 --[[
 Copyright © 2018, Windower Dev Team

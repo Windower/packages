@@ -4,6 +4,7 @@
   <type>library</type>
   <dependencies>
     <dependency>items_service</dependency>
+    <dependency>resources</dependency>
     <dependency>shared</dependency> 
   </dependencies>
 </package>

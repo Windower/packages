@@ -36,6 +36,11 @@ prepare_struct = function(struct)
         if ftype then
             setup_ftype(ftype)
         end
+
+        local lookup = field.lookup
+        if type(lookup) == 'function' then
+            setfenv(lookup, _G)
+        end
     end
 end
 
@@ -56,6 +61,6 @@ return {
         local ftype = data.ftype
         setup_ftype(ftype)
 
-        return structs.from_ptr(ftype, data.ptr)
+        return structs.from_ptr(ftype, data.ptr), ftype
     end,
 }

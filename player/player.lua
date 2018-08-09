@@ -1,6 +1,45 @@
 local client = require('shared.client')
+local resources = require('resources')
 
-return client.new('player_service')
+local data, ftype = client.new('player_service')
+
+ftype.fields.state_id = {
+    fn = function(data)
+        return resources.statuses[data.state_id]
+    end
+}
+
+ftype.fields.main_job_id = {
+    fn = function(data)
+        return resources.jobs[data.main_job_id]
+    end
+}
+
+ftype.fields.sub_job_id = {
+    fn = function(data)
+        return resources.jobs[data.sub_job_id]
+    end
+}
+
+ftype.fields.title_id = {
+    fn = function(data)
+        return resources.titles[data.title_id]
+    end
+}
+
+ftype.fields.race_id = {
+    fn = function(data)
+        return resources.races[data.race_id]
+    end
+}
+
+ftype.fields.home_point_zone_id = {
+    fn = function(data)
+        return resources.zones[data.home_point_zone_id]
+    end
+}
+
+return data
 
 --[[
 Copyright © 2018, Windower Dev Team
