@@ -1,7 +1,12 @@
+local bit = require('bit')
 local command = require('command')
+local entities = require('entities')
 local memory = require('memory')
 local player = require('player')
 local party = require('party')
+local shared = require('shared')
+local table = require('table')
+local windower = require('windower')
 
 local key_fns = {
     t = function() return memory.target_array.targets[memory.target_array.sub_target_mask ~= 0xFFFFFFFF and 1 or 0].entity end,
@@ -35,6 +40,64 @@ local key_fns = {
     locked = function() return memory.target_array.target_locked end,
     set = function() return function(id) command.input('/:ta ' .. tostring(id), 'client') end end,
 }
+
+local package = windower.package_name
+
+-- Changes to the core shared and event libs are required to make this
+-- work in the script environment.
+if package then
+    local counter = 0
+    local pending = {}
+
+    do
+        local channel = shared.new('__sub_target_channel')
+        -- keep channel alive without polluting globals
+        pending.channel = channel
+
+        channel.env = {
+            report_result = function(counter, target_id)
+                print(counter, target_id)
+                while #pending ~= 0 do
+                    local descriptor = table.remove(pending, 1)
+                    if descriptor.counter == counter then
+                        coroutine.schedule(descriptor.callback, 0, entities.get_by_id(target_id))
+                        return
+                    end
+                end
+            end
+        }
+    end
+
+    do
+        local tobit = bit.tobit
+        local valid_sub_targets = {
+            ['<st>'] = true,
+            ['<stpc>'] = true,
+            ['<stnpc>'] = true,
+            ['<stpt>'] = true,
+            ['<stal>'] = true,
+        }
+
+        local select = function(target, callback)
+            if not valid_sub_targets[target] then
+                error('bad argument #1 to \'select\' ' .. 
+                    '(expected one of \'<st>\', \'<stpc>\', \'<stnpc>\', \'<stpt>\' or \'<stal>\'; ' ..
+                    'got \'' .. tostring(target) .. '\')')
+            end
+
+            if type(callback) ~= 'function' then
+                error('bad argument #2 to \'select\' (function expected; got ' .. type(callback) .. ')')
+            end
+
+            local temp = counter
+            counter = tobit(counter + 1)
+            table.insert(pending, {counter = temp, callback = callback})
+            command.input('/:aim \u{FFFD}select_sub_target\u{FFFD} "' .. package .. '" ' .. temp .. ' ' .. target)
+        end
+
+        key_fns.select = function() return select end
+    end
+end
 
 return setmetatable({}, {
     __index = function(_, key)
