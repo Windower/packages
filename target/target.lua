@@ -70,17 +70,17 @@ if package then
     do
         local tobit = bit.tobit
         local valid_sub_targets = {
-            ['<st>'] = true,
-            ['<stpc>'] = true,
-            ['<stnpc>'] = true,
-            ['<stpt>'] = true,
-            ['<stal>'] = true,
+            ['st'] = true,
+            ['stpc'] = true,
+            ['stnpc'] = true,
+            ['stpt'] = true,
+            ['stal'] = true,
         }
 
         local select = function(target, callback)
             if not valid_sub_targets[target] then
                 error('bad argument #1 to \'select\' ' .. 
-                    '(expected one of \'<st>\', \'<stpc>\', \'<stnpc>\', \'<stpt>\' or \'<stal>\'; ' ..
+                    '(expected one of \'st\', \'stpc\', \'stnpc\', \'stpt\' or \'stal\'; ' ..
                     'got \'' .. tostring(target) .. '\')')
             end
 
