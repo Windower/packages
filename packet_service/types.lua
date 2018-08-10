@@ -262,8 +262,8 @@ types.incoming[0x00A] = struct({
     movement_speed      = {0x18, uint8},
     animation_speed     = {0x19, uint8},
     hp_percent          = {0x1A, percent},
-    state               = {0x1B, state},
-    zone                = {0x2C, zone},
+    state_id            = {0x1B, state},
+    zone_id             = {0x2C, zone},
     timestamp_1         = {0x34, time},
     timestamp_2         = {0x38, time},
     _dupe_zone          = {0x3E, zone},
@@ -276,7 +276,7 @@ types.incoming[0x00A] = struct({
     party_combat_music  = {0x58, uint16},
     menu_zone           = {0x5E, uint16},
     menu_id             = {0x60, uint16},
-    weather             = {0x64, weather},
+    weather_id          = {0x64, weather},
     player_name         = {0x80, pc_name},
     abyssea_timestamp   = {0x9C, time},
     zone_model          = {0xA6, uint16},
@@ -842,7 +842,7 @@ types.incoming[0x037] = struct({
     hp_percent          = {0x26, percent},
     movement_speed_half = {0x28, bit(uint16, 12), offset=0},
     yalms_per_step      = {0x2A, bit(uint16, 9), offset=0}, -- Determines how quickly your animation walks
-    state               = {0x2C, state},
+    state_id            = {0x2C, state},
     linkshell1_red      = {0x2D, uint8},
     linkshell1_green    = {0x2E, uint8},
     linkshell1_blue     = {0x2F, uint8},
@@ -1433,7 +1433,7 @@ types.incoming[0x056] = multiple({ -- #BYRTH# unadjusted for the base offset
 -- Weather Change
 types.incoming[0x057] = struct({
     vanadiel_time       = {0x00, time}, -- Units of minutes.
-    weather             = {0x04, weather},
+    weather_id          = {0x04, weather},
 })
 
 -- Emote

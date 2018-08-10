@@ -1,7 +1,16 @@
 local client = require('shared.client')
 local event = require('event')
+local resources = require('resources')
 
-return client.new('account_service')
+local data, ftype = client.new('account_service')
+
+ftype.fields.server = {
+    fn = function(data)
+        return resources.servers[data.id]
+    end,
+}
+
+return data
 
 --[[
 Copyright © 2018, Windower Dev Team

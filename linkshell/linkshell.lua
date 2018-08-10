@@ -1,6 +1,8 @@
 local client = require('shared.client')
 
-return client.new('linkshell_service')
+local data, ftype = client.new('linkshell_service')
+
+return data
 
 --[[
 Copyright © 2018, Windower Dev Team

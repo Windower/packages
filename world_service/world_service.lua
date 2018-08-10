@@ -1,12 +1,11 @@
 local event = require('event')
 local packets = require('packets')
-local resources = require('resources')
 local server = require('shared.server')
 local structs = require('structs')
 
 local data = server.new(structs.struct({
-    zone                = {structs.int32, lookup=resources.zones},
-    weather             = {structs.int32, lookup=resources.weather},
+    zone_id             = {structs.int32},
+    weather_id          = {structs.int32},
     music               = {structs.struct({
         day                 = {structs.int32},
         night               = {structs.int32},
@@ -17,8 +16,8 @@ local data = server.new(structs.struct({
     weather_change      = {data=event.new()},
 }))
 
-data.zone = -1
-data.weather = -1
+data.zone_id = -1
+data.weather_id = -1
 
 local music = data.music
 
@@ -27,8 +26,8 @@ local weather_change_event = data.weather_change
 
 packets.incoming:register_init({
     [{0x00A}] = function(p)
-        data.zone = p.zone
-        data.weather = p.weather
+        data.zone_id = p.zone_id
+        data.weather_id = p.weather_id
         music.day = p.day_music
         music.night = p.night_music
         music.solo_combat = p.solo_combat_music
@@ -38,13 +37,13 @@ packets.incoming:register_init({
         weather_change_event:trigger()
     end,
     [{0x057}] = function(p)
-        data.weather = p.weather
+        data.weather_id = p.weather_id
 
         weather_change_event:trigger()
     end,
     [{0x00B}] = function(p)
-        data.zone = -1
-        data.weather = -1
+        data.zone_id = -1
+        data.weather_id = -1
         music.day = 0
         music.night = 0
         music.solo_combat = 0
