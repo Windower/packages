@@ -1,9 +1,11 @@
 <package>
   <name>items_service</name>
-  <version>1.0.1.0</version>
+  <version>1.2.0.0</version>
   <type>service</type>
   <dependencies>
-    <dependency>resources</dependency>
     <dependency>packets</dependency>
+    <dependency>resources</dependency>
+    <dependency>shared</dependency>
+    <dependency>structs</dependency>
   </dependencies>
 </package>

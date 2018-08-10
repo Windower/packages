@@ -1,7 +1,6 @@
 local event = require('event')
 local memory = require('memory')
 local packets = require('packets')
-local resources = require('resources')
 local server = require('shared.server')
 local structs = require('structs')
 
@@ -9,7 +8,7 @@ local data = server.new(structs.struct({
     logged_in           = {structs.bool},
     name                = {structs.string(0x10)},
     id                  = {structs.int32},
-    server              = {structs.int32, lookup=resources.servers},
+    server_id           = {structs.int32},
     login               = {data=event.new()},
     logout              = {data=event.new()},
 }))
@@ -32,7 +31,7 @@ packets.incoming:register_init({
 
             data.name = info.name
             data.id = info.id
-            data.server = info.server_id % 0x20
+            data.server_id = info.server_id % 0x20
             data.logged_in = true
 
             login_event:trigger()
@@ -45,7 +44,7 @@ packets.incoming:register_init({
         end
 
         data.logged_in = false
-        data.server = 0
+        data.server_id = 0
         data.name = ''
         data.id = 0
 

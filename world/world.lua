@@ -1,7 +1,22 @@
 local client = require('shared.client')
 local event = require('event')
+local resources = require('resources')
 
-return client.new('world_service')
+local data, ftype = client.new('world_service')
+
+ftype.fields.zone = {
+    fn = function(data)
+        return resources.zones[data.id]
+    end,
+}
+
+ftype.fields.weather = {
+    fn = function(data)
+        return resources.weather[data.id]
+    end,
+}
+
+return data
 
 --[[
 Copyright © 2018, Windower Dev Team

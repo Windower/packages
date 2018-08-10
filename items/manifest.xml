@@ -1,10 +1,10 @@
 <package>
   <name>items</name>
-  <version>1.0.0.0</version>
+  <version>1.2.0.0</version>
   <type>library</type>
   <dependencies>
-    <dependency>enumerable</dependency> 
     <dependency>items_service</dependency>
-    <dependency>resources</dependency> 
+    <dependency>resources</dependency>
+    <dependency>shared</dependency> 
   </dependencies>
 </package>
