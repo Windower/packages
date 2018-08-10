@@ -39,8 +39,8 @@ local data = server.new(structs.struct({
     job_levels          = {structs.int32[0x18]},
     skills              = {skill[0x40]},
     race_id             = {structs.int32},
+    face_id             = {structs.int32},
     model               = {structs.struct({
-        face_id             = {structs.int32},
         head_id             = {structs.int32},
         body_id             = {structs.int32},
         hands_id            = {structs.int32},
@@ -77,9 +77,10 @@ packets.incoming:register_init({
         end
 
         if p.update_model then
+            data.race_id = p.race_id
+            data.face_id = p.face_model_id
+
             local m = p.model
-            data.race_id = m.race_id
-            model.face_id = m.face_model_id
             model.head_id = m.head_model_id
             model.body_id = m.body_model_id
             model.hands_id = m.hands_model_id

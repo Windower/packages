@@ -52,7 +52,7 @@ packets.incoming:register_init({
         end
 
         ls_data.name = ''
-        ls_data.permissions = 0
+        ls_data.permissions = '\x00\x00\x00\x00'
         ls_data.color.red = 0
         ls_data.color.green = 0
         ls_data.color.blue = 0
