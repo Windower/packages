@@ -6,7 +6,7 @@ local helper = {
     no_args = function(...)
         return select('#', ...) == 0
     end,
-    true_fn = function(...)
+    true_fn = function()
         return true
     end,
     equal = function(v1, v2)
@@ -31,12 +31,12 @@ enumerable.enumerate = function(t)
     end, table, key
 end
 
-enumerable.count = function(t, fn)
+enumerable.count = function(t, fn, ...)
     fn = fn == nil and helper.true_fn or fn
 
     local count = 0
     for _, v in pairs(t) do
-        if fn(v) == true then
+        if fn(v, ...) == true then
             count = count + 1
         end
     end
@@ -44,11 +44,11 @@ enumerable.count = function(t, fn)
     return count
 end
 
-enumerable.any = function(t, fn)
+enumerable.any = function(t, fn, ...)
     fn = fn == nil and helper.true_fn or fn
 
     for _, v in pairs(t) do
-        if fn(v) == true then
+        if fn(v, ...) == true then
             return true
         end
     end
@@ -56,11 +56,11 @@ enumerable.any = function(t, fn)
     return false
 end
 
-enumerable.all = function(t, fn)
+enumerable.all = function(t, fn, ...)
     fn = fn == nil and helper.true_fn or fn
 
     for _, v in pairs(t) do
-        if fn(v) == false then
+        if fn(v, ...) == false then
             return false
         end
     end
@@ -78,11 +78,11 @@ enumerable.contains = function(t, search)
     return false
 end
 
-enumerable.first = function(t, fn)
+enumerable.first = function(t, fn, ...)
     fn = fn == nil and helper.true_fn or fn
 
     for k, v in pairs(t) do
-        if fn(v, k, t) == true then
+        if fn(v, ...) == true then
             return v
         end
     end
@@ -90,12 +90,12 @@ enumerable.first = function(t, fn)
     return nil
 end
 
-enumerable.last = function(t, fn)
+enumerable.last = function(t, fn, ...)
     fn = fn == nil and helper.true_fn or fn
 
     local res
     for k, v in pairs(t) do
-        if fn(v, k, t) == true then
+        if fn(v, ...) == true then
             res = v
         end
     end
@@ -103,12 +103,12 @@ enumerable.last = function(t, fn)
     return res
 end
 
-enumerable.single = function(t, fn)
+enumerable.single = function(t, fn, ...)
     fn = fn == nil and helper.true_fn or fn
 
     local res
     for k, v in pairs(t) do
-        if fn(v, k, t) == true then
+        if fn(v, ...) == true then
             if res ~= nil then
                 return nil
             else
@@ -120,14 +120,12 @@ enumerable.single = function(t, fn)
     return res
 end
 
-enumerable.sequence_equal = function(t, compare, fn)
-    fn = fn == nil and helper.equal or fn
-
+enumerable.sequence_equal = function(t, compare)
     local iterator, table, key = pairs(t)
     local value
     key, value = iterator(table, key)
     for compare_key, compare_value in pairs(compare) do
-        if key == nil or compare_value ~= value then
+        if key == nil or not compare_value ~= value then
             return false
         end
         key, value = iterator(table, key)
@@ -165,23 +163,23 @@ enumerable.aggregate = function(t, initial, accumulator, selector)
     return selector ~= nil and selector(res) or res
 end
 
-enumerable.sum = function(t, fn)
+enumerable.sum = function(t, fn, ...)
     fn = fn == nil and helper.add or fn
-    return t:aggregate(fn)
+    return t:aggregate(fn, ...)
 end
 
-enumerable.min = function(t, fn)
+enumerable.min = function(t, fn, ...)
     fn = fn == nil and helper.min or fn
-    return t:aggregate(fn)
+    return t:aggregate(fn, ...)
 end
 
-enumerable.max = function(t, fn)
+enumerable.max = function(t, fn, ...)
     fn = fn == nil and helper.max or fn
-    return t:aggregate(fn)
+    return t:aggregate(fn, ...)
 end
 
-enumerable.average = function(t, fn)
-    return t:sum(fn) / #t
+enumerable.average = function(t, fn, ...)
+    return t:sum(fn, ...) / #t
 end
 
 enumerable.totable = function(t)
@@ -196,8 +194,9 @@ enumerable.totable = function(t)
 end
 
 local lazy_functions = {
-    select = function(constructor, original, fn)
+    select = function(constructor, original, fn, ...)
         local res = constructor()
+        local args = {...}
 
         enumerator_cache[res] = function(res)
             local iterator, table, key = pairs(original)
@@ -207,14 +206,15 @@ local lazy_functions = {
                     return nil, nil
                 end
 
-                return key, fn(value, key, original)
+                return key, fn(value, unpack(args))
             end, table, key
         end
 
         return res
     end,
-    select_many = function(constructor, original, fn)
+    select_many = function(constructor, original, fn, ...)
         local res = constructor()
+        local args = {...}
 
         enumerator_cache[res] = function(res)
             local iterator, table, key = pairs(original)
@@ -237,7 +237,7 @@ local lazy_functions = {
                         return nil, nil
                     end
 
-                    inner = fn(inner, outer_key, table)
+                    inner = fn(inner, unpack(args))
                     inner_iterator, inner_table, inner_key = pairs(inner)
 
                     inner_key, value = inner_iterator(inner, inner_key)
@@ -249,14 +249,15 @@ local lazy_functions = {
 
         return res
     end,
-    where = function(constructor, original, fn)
+    where = function(constructor, original, fn, ...)
         local res = constructor()
+        local args = {...}
 
         enumerator_cache[res] = function(res)
             local iterator, table, key = pairs(original)
             return function(t, k)
                 local key, value = iterator(t, k)
-                while key ~= nil and not fn(value, key, original) do
+                while key ~= nil and not fn(value, unpack(args)) do
                     key, value = iterator(t, key)
                 end
 
