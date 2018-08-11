@@ -120,12 +120,14 @@ enumerable.single = function(t, fn, ...)
     return res
 end
 
-enumerable.sequence_equal = function(t, compare)
+enumerable.sequence_equal = function(t, compare, fn, ...)
+    fn = fn == nil and helper.equal or fn
+
     local iterator, table, key = pairs(t)
     local value
     key, value = iterator(table, key)
     for compare_key, compare_value in pairs(compare) do
-        if key == nil or not compare_value ~= value then
+        if key == nil or not fn(compare_value, value, ...) then
             return false
         end
         key, value = iterator(table, key)
