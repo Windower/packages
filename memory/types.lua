@@ -142,7 +142,7 @@ local entity = struct({
     -- npc_walk_mode           = {0x160, uint16},
 })
 
-local target_array_entry = struct({
+local target_array_entry = struct({size = 0x28}, {
     index                   = {0x00, entity_index},
     id                      = {0x04, entity_id},
     entity                  = {0x08, ptr(entity)},
