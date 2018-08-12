@@ -1,10 +1,17 @@
 local account = require('account')
 local event = require('event')
 local files = require('files')
-local os = require('os')
+local ffi = require('ffi')
 local string = require('string')
 local table = require('table')
+local unicode = require('unicode')
 local windower = require('windower')
+
+ffi.cdef[[
+    bool CreateDirectoryW(wchar_t*, void*);
+]]
+
+local C = ffi.C
 
 local info_cache = {}
 
@@ -33,7 +40,11 @@ end
 
 local get_file = function(path)
     local dir = windower.settings_path .. '\\' .. account.name .. '_' .. (account.server and account.server.name or account.id) .. '\\'
-    os.execute('mkdir "' .. dir .. '" >nul 2>nul')
+
+    C.CreateDirectoryW(unicode.to_utf16(windower.settings_path .. '\\..'), nil)
+    C.CreateDirectoryW(unicode.to_utf16(windower.settings_path), nil)
+    C.CreateDirectoryW(unicode.to_utf16(dir), nil)
+
     return files.create(dir .. path)
 end
 
