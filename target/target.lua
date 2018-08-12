@@ -91,7 +91,7 @@ if package then
             local temp = counter
             counter = tobit(counter + 1)
             table.insert(pending, {counter = temp, callback = callback})
-            command.input('/:aim \u{FFFD}select_sub_target\u{FFFD} "' .. package .. '" ' .. temp .. ' ' .. target)
+            command.input('/:aim \u{FFFD}select_sub_target\u{FFFD} "' .. package .. '" ' .. temp .. ' <' .. target .. '>')
         end
 
         key_fns.select = function() return select end
