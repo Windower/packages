@@ -1,27 +1,46 @@
-local chat = require('chat')
 local command = require('command')
+local entities = require('entities')
 local ipc = require('ipc')
 local player = require('player')
+local string = require('string')
+local target = require('target')
 
-local send = command.new('send')
-
-local prepare_cmd = function(source, message)
+local send_message = function(message)
     local receiver, cmd = command.core.parse_args(message:sub(7), 1)
+
     receiver = receiver:lower()
+    cmd = cmd:gsub('({(%w+)%.(%w+)})', function(whole, target_string, property)
+        local target_index = tonumber(target_string)
+        local entity = target_index and entities[target_index] or target[target_string]
+        assert(entity, 'Cannot resolve <' .. target_string .. '>.')
+        local result = entity[property]
+        assert(result ~= nil, 'Cannot resolve property \'' .. property .. '\' on <' .. target_string .. '>.')
+
+        return tostring(result)
+    end)
+
     ipc.send(receiver .. ' ' .. cmd)
 end
 
 ipc.received:register(function(message)
     local receiver, cmd = command.core.parse_args(message, 1)
     if receiver == player.name:lower() or receiver == '@all' then
-        local ok, error = pcall(command.input, cmd)
-        if not ok then
-            chat.add_text(error, 167)
-        end
+        command.input(cmd, 'client')
     end
 end)
 
-command.core.register('send', prepare_cmd, true)
+command.core.register('send', function(source, message)
+    message = message:gsub('{(%w+)}', '{%1.id}')
+
+    local st = message:match('{(st%a*).%w+}')
+    if st then
+        target.select(st, function(entity)
+            send_message(message:gsub('{' .. st .. '.(%w+)}', '{' .. tostring(entity.index) .. '.%1}'))
+        end)
+    else
+        send_message(message)
+    end
+end, true)
 
 --[[
 Copyright © 2018, Windower Dev Team
