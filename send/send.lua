@@ -1,27 +1,60 @@
-local chat = require('chat')
 local command = require('command')
+local entities = require('entities')
 local ipc = require('ipc')
 local player = require('player')
+local string = require('string')
+local target = require('target')
 
-local send = command.new('send')
-
-local prepare_cmd = function(source, message)
+local send_message = function(message)
     local receiver, cmd = command.core.parse_args(message:sub(7), 1)
+
     receiver = receiver:lower()
+    cmd = cmd:gsub('%b{}', function(match)
+        match = match:sub(2, -2)
+
+        local target_string = match:match('%w+')
+        local target_index = tonumber(target_string)
+        local entity = target_index and entities[target_index] or target[target_string]
+        assert(entity, 'Cannot resolve <' .. target_string .. '>.')
+
+        local accessor = match:sub(#target_string + 1)
+        local ok, result = pcall(loadstring('local entity = ... return entity' .. accessor), entity)
+        assert(ok and result ~= nil, 'Cannot resolve path \'<' .. target_string .. '>' .. accessor .. '\'.')
+
+        return tostring(result)
+    end)
+
     ipc.send(receiver .. ' ' .. cmd)
 end
 
 ipc.received:register(function(message)
     local receiver, cmd = command.core.parse_args(message, 1)
     if receiver == player.name:lower() or receiver == '@all' then
-        local ok, error = pcall(command.input, cmd)
-        if not ok then
-            chat.add_text(error, 167)
-        end
+        command.input(cmd, 'client')
     end
 end)
 
-command.core.register('send', prepare_cmd, true)
+command.core.register('send', function(source, message)
+    message = message:gsub('{(%w+)}', '{%1.id}')
+
+    local st
+    for match in message:gmatch('%b{}') do
+        if match:sub(2, 3) == 'st' then
+            assert(not st, 'Send does not support multiple <st> selections.')
+            st = {}
+            st.identifier, st.accessor = match:match('^{(%w+)(.*)}$')
+            st.from, st.to = message:find(match, 1, true)
+        end
+    end
+
+    if st then
+        target.select(st.identifier, function(entity)
+            send_message(message:sub(1, st.from) .. entity.index .. st.accessor .. message:sub(st.to))
+        end)
+    else
+        send_message(message)
+    end
+end, true)
 
 --[[
 Copyright © 2018, Windower Dev Team
