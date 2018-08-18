@@ -8,7 +8,10 @@ local table = require('table')
 local types = require('types')
 local os = require('os')
 
-packets = shared.new('packets')
+packets_server = shared.new('packets')
+types_server = shared.new('types')
+
+types_server.data = types
 
 local registry = {}
 local history = {}
@@ -74,16 +77,16 @@ amend_cdata = function(cdata, packet, ftype)
     end
 end
 
-packets.env = {}
+packets_server.env = {}
 
-packets.env.get_last = function(path)
+packets_server.env.get_last = function(path)
     return history[path]
 end
 
 do
     local event_new = event.new
 
-    packets.env.make_event = function(path)
+    packets_server.env.make_event = function(path)
         local events = registry[path]
         if not events then
             events = {}
@@ -162,7 +165,7 @@ do
         return cdata, ftype, direction, id
     end
 
-    packets.env.inject = function(path, values)
+    packets_server.env.inject = function(path, values)
         local cdata, _, direction, id = build_packet(path, values)
 
         local size = ffi_sizeof(cdata)
