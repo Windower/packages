@@ -508,7 +508,7 @@ do
         local ftype = structs.make_type('char')[size]
         ftype.converter = 'packed_string'
 
-        ftype.unpacked_size = math_floor(4 * size / 3 + 0.1)
+        ftype.unpacked_size = math_floor(4 * size / 3)
 
         local lua_lookup = {}
         do
