@@ -336,9 +336,7 @@ do
 end
 
 do
-    local ffi_cdef = function(def)
-        ffi.cdef(def)
-    end
+    local ffi_cdef = ffi.cdef
     local string_sub = string.sub
     local string_gsub = string.gsub
 
@@ -504,13 +502,13 @@ do
     local string_sub = string.sub
     local string_byte = string.byte
 
+    local ctype = ffi_typeof('char[?]')
+
     structs.packed_string = function(size, lookup_string)
         local ftype = structs.make_type('char')[size]
         ftype.converter = 'packed_string'
 
-        local unpacked_size = math_floor(4 * size / 3 + 0.1)
-        ftype.ctype = ffi_typeof('char[' .. unpacked_size .. ']')
-        ftype.unpacked_size = unpacked_size
+        ftype.unpacked_size = math_floor(4 * size / 3 + 0.1)
 
         local lua_lookup = {}
         do
@@ -534,7 +532,7 @@ do
     tolua.packed_string = function(value, field)
         local ftype = field.type
         local lua_lookup = ftype.lua_lookup
-        local res = ftype.ctype()
+        local res = ctype(ftype.unpacked_size)
         local ptr = res
         for i = 1, ftype.size - 2, 3 do
             local v1 = value[0]
