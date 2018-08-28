@@ -1,0 +1,5 @@
+<package>
+    <name>client_data_service</name>
+    <version>1.0</version>
+    <type>service</type>
+</package>
