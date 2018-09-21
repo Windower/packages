@@ -249,7 +249,7 @@ packets.incoming[0x0DC]:register(function(p)
     elseif options.auto.decline and options.blacklist:contains(p.player_name) then
         command.input('/decline')
     else
-        default.invite[options.default](p.player_name)
+        default_handlers.invite[options.default](p.player_name)
     end
 end)
 
@@ -259,7 +259,7 @@ packets.incoming[0x11D]:register(function(p)
     elseif options.auto.decline and options.blacklist:contains(p.player_name) then
         return --ignore request by providing a dialog to user
     else
-        default.request[options.default](p.player_name)
+        default_handlers.request[options.default](p.player_name)
     end
 end)
 
