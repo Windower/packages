@@ -192,7 +192,7 @@ local shop_item = struct({
     item_id             = {0x04, item},
     shop_slot           = {0x06, uint16},
     craft_skill         = {0x08, skill}, -- Zero on normal shops, has values that correlate to res\skills.
-    craft_rank          = {0x0A, uint16}, -- Correlates to Rank able to purchase product from GuildNPC  
+    craft_rank          = {0x0A, uint16}, -- Correlates to Rank able to purchase product from GuildNPC
 })
 
 local merit_entry = struct({
@@ -665,7 +665,7 @@ types.incoming[0x030] = struct({
 -- Synth List / Synth Recipe
 --[[ This packet is used for list of recipes, but also for details of a specific recipe.
 
-   If you ask the guild NPC that provides regular Image Suppor for recipes, 
+   If you ask the guild NPC that provides regular Image Suppor for recipes,
    s/he will give you a list of recipes, fields are as follows:
    Field1-2: NPC ID
    Field3: NPC Index
@@ -675,13 +675,13 @@ types.incoming[0x030] = struct({
    Field24: Usually Item ID of the recipe on next page
 
 
-   If you ask a guild NPC for a specific recipe, fields are as follows:   
+   If you ask a guild NPC for a specific recipe, fields are as follows:
    field1: item to make (item id)
    field2,3,4: sub-crafts needed. Note that main craft will not be listed.
       1 = woodworking
       2 = smithing
       3 = goldsmithing
-      4 = clothcraft    
+      4 = clothcraft
       5 = leatherworking
       6 = bonecraft
       7 = Alchemy
@@ -690,10 +690,10 @@ types.incoming[0x030] = struct({
    field6: KeyItem needed, if any (in Big Endian)
    field7-14: material required (item id)
    field15-22: qty for each material above.
-   field23-24: Unknown   
+   field23-24: Unknown
  ]]
 --fields.incoming[0x031] = L{
---    {ctype='unsigned short[24]',    label='Field'},                             -- 04    
+--    {ctype='unsigned short[24]',    label='Field'},                             -- 04
 --}
 
 -- NPC Interaction Type 1
@@ -956,7 +956,7 @@ types.incoming[0x044] = multiple({
         [0x12] = {
             automaton_head  = {0x04, uint8}, -- Harlequinn 1, Valoredge 2, Sharpshot 3, Stormwaker 4, Soulsoother 5, Spiritreaver 6
             automaton_frame = {0x05, uint8}, -- Harlequinn 20, Valoredge 21, Sharpshot 22, Stormwaker 23
-            attachments     = {0x06, item[0x0C]}, -- Attachment assignments are based off their position in the equipment list. Offset is +2237, so Strobe is 01, etc.
+            attachments     = {0x06, uint8[0x0C]}, -- Attachment assignments are based off their position in the equipment list. Offset is +2237, so Strobe is 01, etc.
             available_heads = {0x14, data(4)}, -- Flags for the available heads (Position corresponds to Item ID shifted down by 8192)
             available_bodies= {0x18, data(4)}, -- #BYRTH# Flags for the available bodies (position corresponds to the item ID shifted down by ???)
             available_attach= {0x34, data(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments {position corresponds to the item ID shifted down by 2237)
@@ -1258,7 +1258,7 @@ types.incoming[0x04C] = multiple({
             item_id         = {0x24, item},
             count           = {0x26, uint8},
             ah_category     = {0x27, uint8},
-            price           = {0x28, uint32}, 
+            price           = {0x28, uint32},
             auction_state   = {0x2C, uint32}, -- 04 00 00 00 in the first packet and 00 00 00 00 when confirmed canceled.
             auction_id      = {0x30, uint32}, -- present in the first packet and blanked in the second.
             auction_start   = {0x34, time}, -- UTC time
@@ -1370,9 +1370,9 @@ types.incoming[0x055] = struct({cache = {'type'}}, { -- #BYRTH# unadjusted for t
     [0x00E8] = 'Completed Abyssea Quests',
     [0x00F0] = 'Current Adoulin Quests',
     [0x00F8] = 'Completed Adoulin Quests',
-    [0x0100] = 'Current Coalition Quests', 
-    [0x0108] = 'Completed Coalition Quests', 
-    [0xFFFF] = 'Current Missions',               
+    [0x0100] = 'Current Coalition Quests',
+    [0x0108] = 'Completed Coalition Quests',
+    [0xFFFF] = 'Current Missions',
 }]]
 
 -- There are 27 variations of this packet to populate different quest information.
@@ -1813,7 +1813,7 @@ types.incoming[0x0B5] = struct({
 
 -- Alliance status update
 types.incoming[0x0C8] = struct({
-    -- 0x00: fields.lua implies this byte might be useful 
+    -- 0x00: fields.lua implies this byte might be useful
     alliance_members    = {0x04, alliance_member[18]},
     -- 0xDC~0xF4: fields.lua claims it might always be 0, but the fact that it is another 18 bytes is suspicious
 })
@@ -1985,7 +1985,7 @@ types.incoming[0x0F4] = struct({
     level               = {0x02, uint8},
     type                = {0x03, uint8}, -- 0: Other, 1: Friendly, 2: Enemy
     x_offset            = {0x04, uint16}, -- Offset on the map
-    y_offset            = {0x06, uint16}, 
+    y_offset            = {0x06, uint16},
     name                = {0x08, pc_name}, -- Slugged, may not extend all the way to 27. Up to 25 has been observed. This will be used if Type == 0
 })
 
@@ -2046,7 +2046,7 @@ types.incoming[0x107] = struct({
 types.incoming[0x108] = struct({
     player_id           = {0x00, entity},
     type                = {0x04, bool},
-    _known1             = {0x05, data(4), const=0}, 
+    _known1             = {0x05, data(4), const=0},
     player_index        = {0x0A, entity_index},
     player_name         = {0x0C, pc_name},
 })
@@ -2730,7 +2730,7 @@ types.outgoing[0x083] = struct({
 types.outgoing[0x084] = struct({
     count               = {0x00, uint32},
     item                = {0x04, item},
-    bag_index           = {0x06, uint8}, 
+    bag_index           = {0x06, uint8},
     -- 0x07: Always 0? Likely padding
 })
 
