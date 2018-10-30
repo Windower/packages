@@ -40,6 +40,6 @@ return {
             ftype = ftype,
         }
 
-        return structs.from_ptr(ftype, ptr)
+        return structs_from_ptr(ftype, ptr)
     end,
 }
