@@ -6,13 +6,13 @@ local data, ftype = client.new('world_service')
 
 ftype.fields.zone = {
     fn = function(data)
-        return resources.zones[data.id]
+        return resources.zones[data.zone_id]
     end,
 }
 
 ftype.fields.weather = {
     fn = function(data)
-        return resources.weather[data.id]
+        return resources.weather[data.weather_id]
     end,
 }
 
