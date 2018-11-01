@@ -409,10 +409,8 @@ types.incoming[0x00E] = struct({
     state               = {0x1B, state},
     flags               = {0x1C, flags},
     claimer_id          = {0x28, entity},
-    face_model_id       = {0x2D, uint8},
-    race_id             = {0x2E, race},
-    model               = {0x2F, model},
-    name                = {0x30, string(0x10)},
+    model_id            = {0x2E, uint16},
+    name                = {0x30, string()},
 })
 
 -- Incoming Chat
