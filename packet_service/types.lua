@@ -434,7 +434,7 @@ types.incoming[0x01B] = struct({
     stats_base          = {0x1C, stats}, -- Altering these stat values has no impact on your equipment menu.
     hp_max              = {0x38, uint32},
     mp_max              = {0x3C, uint32},
-    job_levels          = {0x40, uint8[0x18], key_lookup='jobs'},
+    job_levels          = {0x44, uint8[0x18], key_lookup='jobs'},
     monster_level       = {0x5B, uint8},
     encumbrance_flags   = {0x5C, uint32}, -- [legs, hands, body, head, ammo, range, sub, main,] [back, right_ring, left_ring, right_ear, left_ear, waist, neck, feet] [HP, CHR, MND, INT, AGI, VIT, DEX, STR,] [X X X X X X X MP]
 })
