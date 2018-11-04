@@ -66,13 +66,13 @@ format_table = function(t, nested)
     res[1] = '{'
 
     for key, child in pairs(t) do
-        local formatted_key = type(key) == 'string' and key:match('^%a[%w_]+$') or '[' .. format_value(key) .. ']'
+        local formatted_key = type(key) == 'string' and key:match('^%a[%w_]*$') or '[' .. format_value(key) .. ']'
         res[#res + 1] = indent .. formatted_key .. ' = ' .. (type(child) == 'table' and format_table(child, nested + 1) or format_value(child)) .. ','
     end
 
     res[#res + 1] = ('    '):rep(nested - 1) .. '}'
 
-    return table.concat(res, '\n')
+    return table.concat(res, '\n') .. '\n'
 end
 
 settings.load = function(defaults, path)
