@@ -13,11 +13,13 @@ do
 
     multiple = function(ftype)
         local types = {}
+        local cache = {cache = {ftype.key}}
         for index, definitions in pairs(ftype.lookups) do
-            types[index] = struct({cache = {ftype.key}}, update(update({}, ftype.base), definitions))
+            types[index] = struct(cache, update(update({}, ftype.base), definitions))
         end
 
-        ftype.base = struct({cache = {ftype.key}}, ftype.base)
+        ftype.info = { cache = cache }
+        ftype.base = struct(cache, ftype.base)
         ftype.lookups = nil
 
         ftype.types = types
