@@ -72,7 +72,12 @@ format_table = function(t, nested)
 
     res[#res + 1] = ('    '):rep(nested - 1) .. '}'
 
-    return table.concat(res, '\n') .. '\n'
+    local joined = table.concat(res, '\n')
+    if nested > 1 then
+        return joined
+    end
+
+    return joined .. '\n'
 end
 
 settings.load = function(defaults, path)
