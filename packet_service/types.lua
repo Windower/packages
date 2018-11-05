@@ -13,11 +13,13 @@ do
 
     multiple = function(ftype)
         local types = {}
+        local cache = {cache = {ftype.key}}
         for index, definitions in pairs(ftype.lookups) do
-            types[index] = struct({cache = {ftype.key}}, update(update({}, ftype.base), definitions))
+            types[index] = struct(cache, update(update({}, ftype.base), definitions))
         end
 
-        ftype.base = struct({cache = {ftype.key}}, ftype.base)
+        ftype.info = { cache = cache }
+        ftype.base = struct(cache, ftype.base)
         ftype.lookups = nil
 
         ftype.types = types
@@ -409,10 +411,8 @@ types.incoming[0x00E] = struct({
     state               = {0x1B, state},
     flags               = {0x1C, flags},
     claimer_id          = {0x28, entity},
-    face_model_id       = {0x2D, uint8},
-    race_id             = {0x2E, race},
-    model               = {0x2F, model},
-    name                = {0x30, string(0x10)},
+    model_id            = {0x2E, uint16},
+    name                = {0x30, string()},
 })
 
 -- Incoming Chat
@@ -436,7 +436,7 @@ types.incoming[0x01B] = struct({
     stats_base          = {0x1C, stats}, -- Altering these stat values has no impact on your equipment menu.
     hp_max              = {0x38, uint32},
     mp_max              = {0x3C, uint32},
-    job_levels          = {0x40, uint8[0x18], key_lookup='jobs'},
+    job_levels          = {0x44, uint8[0x18], key_lookup='jobs'},
     monster_level       = {0x5B, uint8},
     encumbrance_flags   = {0x5C, uint32}, -- [legs, hands, body, head, ammo, range, sub, main,] [back, right_ring, left_ring, right_ear, left_ear, waist, neck, feet] [HP, CHR, MND, INT, AGI, VIT, DEX, STR,] [X X X X X X X MP]
 })

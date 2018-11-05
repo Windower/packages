@@ -212,13 +212,14 @@ do
             return {}
         end
 
-        if not ftype.types then
+        local types = ftype.types
+        if not types then
             return parse_single(data, ftype)
         end
 
         local base_packet = parse_single(data, ftype.base)
 
-        local inner_ftype = ftype.types[base_packet[ftype.key]]
+        local inner_ftype = types[base_packet[ftype.key]]
         if not inner_ftype then
             return base_packet
         end
@@ -282,9 +283,8 @@ local handle_packet =  function(direction, raw)
     path = path .. '/' .. id
     process_packet(packet, path)
 
-    local base = ftype and ftype.base
-    local base_info = base and base.info
-    local cache = base_info and base_info.cache
+    local info = ftype and ftype.info
+    local cache = info and info.cache
     if cache then
         for i = 1, #cache do
             path = path .. '/' .. tostring(packet[cache[i]])
