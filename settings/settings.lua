@@ -27,8 +27,8 @@ do
         return account.name .. '_' .. (account.server and account.server.name or account.id)
     end
 
-    get_file = function(path)
-        local dir = windower.settings_path .. '\\' .. make_account_name() .. '\\'
+    get_file = function(path, global)
+        local dir = windower.settings_path .. '\\' .. (global and '[global]' or make_account_name()) .. '\\'
 
         C.CreateDirectoryW(unicode.to_utf16(windower.settings_path .. '\\..'), nil)
         C.CreateDirectoryW(unicode.to_utf16(windower.settings_path), nil)
@@ -104,8 +104,8 @@ do
         end
     end
 
-    parse = function(path, defaults)
-        local file = get_file(path)
+    parse = function(path, defaults, global)
+        local file = get_file(path, global)
         local options
         if file:exists() then
             options = loadfile(file.path)()
@@ -120,14 +120,20 @@ do
     end
 end
 
-settings.load = function(defaults, path)
-    path = path or 'settings.lua'
+settings.load = function(defaults, path, global)
+    if type(path) == 'boolean' then
+        path, global = global, path
+    end
 
-    local options = parse(path, defaults)
+    path = path or 'settings.lua'
+    global = global ~= nil and global
+
+    local options = parse(path, defaults, global)
 
     info_cache[options] = {
         path = path,
         defaults = defaults,
+        global = global,
     }
 
     settings.save(options)
@@ -137,7 +143,8 @@ settings.load = function(defaults, path)
 end
 
 settings.save = function(options)
-    get_file(info_cache[options].path):write('return ' .. format_table(options))
+    local info = info_cache[options]
+    get_file(info.path, info.global):write('return ' .. format_table(options))
 end
 
 do
@@ -162,13 +169,12 @@ do
 
     local reparse = function()
         for options, info in pairs(info_cache) do
-            local parsed = parse(info.path, info.defaults)
-            update(options, parsed)
-            settings.save(options)
-        end
-
-        for options, info in pairs(info_cache) do
-            settings.settings_change:trigger(options)
+            if not info_cache.global then
+                local parsed = parse(info.path, info.defaults)
+                update(options, parsed)
+                settings.save(options)
+                settings.settings_change:trigger(options)
+            end
         end
     end
 
