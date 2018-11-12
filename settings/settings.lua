@@ -142,9 +142,19 @@ settings.load = function(defaults, path, global)
     return options
 end
 
-settings.save = function(options)
-    local info = info_cache[options]
+local save_options = function(options, info)
     get_file(info.path, info.global):write('return ' .. format_table(options))
+end
+
+settings.save = function(options)
+    if options then
+        save_options(options, info_cache[options])
+        return
+    end
+
+    for options, info in pairs(info_cache) do
+        save_options(options, info)
+    end
 end
 
 do
