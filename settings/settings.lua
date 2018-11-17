@@ -179,7 +179,7 @@ do
 
     local reparse = function()
         for options, info in pairs(info_cache) do
-            if not info_cache.global then
+            if not info.global then
                 local parsed = parse(info.path, info.defaults)
                 update(options, parsed)
                 settings.save(options)
