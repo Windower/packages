@@ -5,11 +5,18 @@ local shared = require('shared')
 local string = require('string')
 local math = require('math')
 local table = require('table')
-local types = require('types')
 local os = require('os')
+local windower = require('windower')
 
 packets_server = shared.new('packets')
 types_server = shared.new('types')
+
+local types
+local parse_types = function()
+    types = dofile(windower.package_path .. '\\types.lua')
+end
+
+parse_types()
 
 types_server.data = types
 
