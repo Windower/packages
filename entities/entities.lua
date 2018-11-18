@@ -18,7 +18,7 @@ entities.get_by_id = function(id)
         end
 
         local entity = memory.entities[index]
-        if not entity or entity.id ~= id then
+        if entity == nil or entity.id ~= id then
             return nil
         end
 
@@ -27,16 +27,18 @@ entities.get_by_id = function(id)
 
     for i = player_begin, ally_begin - 1 do
         local entity = memory.entities[i]
-        if entity and entity.id == id then
+        if entity ~= nil and entity.id == id then
             return entity
         end
     end
+
+    return nil
 end
 
 entities.get_by_name = function(name)
     for i = 0, array_size do
         local entity = memory.entities[i]
-        if entity and entity.name == name then
+        if entity ~= nil and entity.name == name then
             return entity
         end
     end
@@ -48,6 +50,7 @@ return setmetatable(entities, {
             return nil
         end
 
-        return memory.entities[key]
+        local entity = memory.entities[key]
+        return entity ~= nil and entity or nil
     end,
 })
