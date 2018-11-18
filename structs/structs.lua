@@ -444,11 +444,26 @@ do
     local ffi_string = ffi.string
     local ffi_copy = ffi.copy
 
-    structs.string = function(size)
-        local ftype = structs.make_type('char')[size or '*']
-        ftype.converter = 'string'
+    local string_cache = {}
+    local data_cache = {}
 
-        return ftype
+    local make = function(size, tag, cache)
+        size = size or '*'
+
+        local cached = cache[size]
+        if not cached then
+            cached = structs.make_type('char')[size]
+            cached.converter = tag
+            cached.tag = tag
+
+            string_cache[size] = cached
+        end
+
+        return cached
+    end
+
+    structs.string = function(size)
+        return make(size, 'string', string_cache)
     end
 
     tolua.string = function(value, field)
@@ -460,10 +475,7 @@ do
     end
 
     structs.data = function(size)
-        local ftype = structs.make_type('char')[size or '*']
-        ftype.converter = 'data'
-
-        return ftype
+        return make(size, 'data', data_cache)
     end
 
     tolua.data = function(value, field)
