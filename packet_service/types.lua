@@ -850,6 +850,7 @@ types.incoming[0x037] = struct({
     ballista_stuff      = {0x30, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
     time_offset_maybe   = {0x38, uint32}, -- For me, this is the number of seconds in 66 hours
     timestamp           = {0x3C, time}, -- This is 32 years off of JST at the time the packet is sent.
+    fish_hook_delay     = {0x46, uint8}, -- number of seconds between casting and hooking a fish, only set when state_id changes to 56
     status_effect_mask  = {0x48, data(8)},
     indi_status_effect  = {0x54, indi},
 })
@@ -2177,10 +2178,18 @@ types.incoming[0x113] = struct({
     -- Packet structure current as of 2018-07-05 update.
 })
 
--- Fish Bite Info
+-- Fishing Minigame Parameters
 types.incoming[0x115] = struct({
-    fish_bite_id        = {0x06, uint32},
-    catch_key           = {0x10, uint32}, -- This value is used in the catch key of the 0x110 packet when catching a fish
+    fish_hp             = {0x00, uint16}, -- max fish hp
+    arrow_time          = {0x02, uint16}, -- a higher value means you have more time to correctly pick the arrow direction
+    auto_regen          = {0x04, uint16}, -- bellow 128 will auto-drain fish hp, above 128 will auto-regen fish hp, 128 is neutral
+    movement            = {0x06, uint16}, -- a lower value means the fishing rod will stay in the center longer (no arrow)
+    damage              = {0x08, uint16}, -- amount of damage done when correctly picking the arrow direction
+    healing             = {0x0a, uint16}, -- amount of healing given when incorrectly picking the arrow direction
+    time_limit          = {0x0c, uint16}, -- amount of time you have to reel in the fish
+    danger_music        = {0x0e, boolbit(uint8), offset=0}, -- if true the more intense fishing music is used
+    critical_bite       = {0x0e, boolbit(uint8), offset=1}, -- if true the light bulb graphic will appear over the players head
+    gold_arrows         = {0x10, uint32}, -- percentage chance of getting a gold arrow, used in the outgoing 0x110 packet when attempting to catch
 })
 
 -- Equipset Build Response
@@ -3036,20 +3045,13 @@ types.outgoing[0x10E] = struct({
 -- Currency Menu
 types.outgoing[0x10F] = struct({ })
 
---[[enums['fishing'] = {
-    [2] = 'Cast rod',
-    [3] = 'Release/catch',
-    [4] = 'Put away rod',
-}]]
-
--- Fishing Action
+-- Fishing Minigame Action
 types.outgoing[0x110] = struct({
     player_id           = {0x00, entity},
-    fish_hp             = {0x04, uint32}, -- Always 200 when releasing, zero when casting and putting away rod
+    fish_hp             = {0x04, uint32}, -- catch = remaining fish hp %, release = 200, release before hook = 201, time out = 300, time warning = seconds remaining, otherwise zero
     player_index        = {0x08, entity_index},
-    action_type         = {0x0A, uint8},
-    -- 0x0B: Always zero (pre-March fishing update this value would increase over time, probably zone fatigue)
-    catch_key           = {0x0C, uint32}, -- When catching this matches the catch key from the 0x115 packet, otherwise zero
+    action_type         = {0x0A, uint8}, -- hook fish = 2, catch/release/time out = 3, put away rod = 4, time warning = 5
+    gold_arrows         = {0x0C, uint32}, -- when catching this will match gold_arrows from the incoming 0x115 packet, otherwise zero
 })
 
 -- Lockstyle
