@@ -24,23 +24,25 @@ local registry = {}
 local history = {}
 
 local amend_packet
-amend_packet = function(packet, cdata, ftype)
+amend_packet = function(packet, cdata, ftype, var_count)
     local count = ftype.count
     if count then
+        local limit = (count ~= '*' and count or var_count) - 1
         local base = ftype.base
         if base.fields then
-            for i = 0, count - 1 do
-                packet[i] = amend_packet(packet[i] or {}, cdata[i], base)
+            for i = 0, limit do
+                packet[i] = amend_packet(packet[i] or {}, cdata[i], base, var_count)
             end
         else
-            for i = 0, count - 1 do
+            for i = 0, limit do
                 packet[i] = cdata[i]
             end
         end
     else
+        local fields = ftype.fields
         for key, value in pairs(cdata) do
             if type(value) == 'cdata' then
-                packet[key] = amend_packet(packet[key] or {}, value, ftype.fields[key].type)
+                packet[key] = amend_packet(packet[key] or {}, value, fields[key].type, var_count)
             else
                 packet[key] = value
             end
@@ -51,35 +53,35 @@ amend_packet = function(packet, cdata, ftype)
 end
 
 local amend_cdata
-amend_cdata = function(cdata, packet, ftype)
+amend_cdata = function(cdata, packet, ftype, var_count)
     local count = ftype.count
     if count then
+        local limit = (count ~= '*' and count or var_count) - 1
         local base = ftype.base
         if base.fields then
-            for i = 0, count - 1 do
+            for i = 0, limit do
                 local value = packet[i]
                 if value then
-                    amend_cdata(cdata[i], value, base)
+                    amend_cdata(cdata[i], value, base, var_count)
                 end
             end
         else
-            for i = 0, count - 1 do
+            for i = 0, limit do
                 local value = packet[i]
                 if value then
                     cdata[i] = value
                 end
             end
         end
-
-        return
-    end
-
-    for key, value in pairs(packet) do
-        local value_ftype = ftype.fields[key].type
-        if value_ftype.fields then
-            amend_cdata(cdata[key], value, value_type)
-        else
-            cdata[key] = value
+    else
+        local fields = ftype.fields
+        for key, value in pairs(packet) do
+            local value_ftype = fields[key].type
+            if not value_ftype.converter and (value_ftype.fields or value_ftype.base) then
+                amend_cdata(cdata[key], value, value_ftype, var_count)
+            else
+                cdata[key] = value
+            end
         end
     end
 end
@@ -119,32 +121,31 @@ do
     local packet_inject_outgoing = packet.inject_outgoing
     local buffer_type = ffi.typeof('char[?]')
 
-    local build_cdata
-    build_cdata = function(ftype, values)
+    local build_cdata = function(ftype, values)
         local cdata
         local var_key = ftype.var_key
         local var_data = var_key and values[var_key]
-        if var_data then
-            if type(var_data) == 'string' then
-                if ftype.converter == 'string' then
-                    cdata = ffi_new(ftype.name, #var_data + 1)
-                else
-                    cdata = ffi_new(ftype.name, #var_data)
-                end
-            else
-                local max_key = 0
-                for key in pairs(var_data) do
-                    if key > max_key then
-                        max_key = key
-                    end
-                end
-                cdata = ffi_new(ftype.name, max_key)
-            end
-        else
-            cdata = ffi_new(ftype.name)
+        if not var_data then
+            return ffi_new(ftype.name)
         end
 
-        return cdata
+        if type(var_data) == 'string' then
+            if ftype.converter == 'string' then
+                return ffi_new(ftype.name, #var_data + 1)
+            end
+
+            return ffi_new(ftype.name, #var_data)
+        end
+
+        local max_key = 0
+        for key in pairs(var_data) do
+            if key + 1 > max_key then
+                max_key = key + 1
+            end
+        end
+        cdata = ffi_new(ftype.name, max_key)
+
+        return cdata, max_key
     end
 
     local build_packet = function(path, values)
@@ -166,9 +167,9 @@ do
             end
         end
 
-        local cdata = build_cdata(ftype, values)
+        local cdata, var_count = build_cdata(ftype, values)
 
-        amend_cdata(cdata, values, ftype)
+        amend_cdata(cdata, values, ftype, var_count)
         return cdata, ftype, direction, id
     end
 
@@ -199,19 +200,20 @@ do
 
         local size = #data
         local offset = ftype.size
-        local single_var_size = ftype.var_size
+        local var_size = ftype.var_size
 
         local cdata
-        if single_var_size then
-            local total_var_size = math_floor((size - offset) / single_var_size)
-            offset = offset + total_var_size
-            cdata = ffi_new(ftype.name, total_var_size)
+        local var_count
+        if var_size then
+            var_count = math_floor((size - offset) / var_size)
+            offset = offset + var_count * var_size
+            cdata = ffi_new(ftype.name, var_count)
         else
             cdata = ffi_new(ftype.name)
         end
         ffi_copy(cdata, data, offset)
 
-        return amend_packet(packet, cdata, ftype)
+        return amend_packet(packet, cdata, ftype, var_count)
     end
 
     parse_packet = function(data, ftype)
