@@ -421,7 +421,7 @@ types.incoming[0x017] = struct({
     gm                  = {0x01, bool},
     zone                = {0x02, zone},
     name                = {0x04, pc_name},
-    message             = {0x14, string(0xEC)}, -- Max of 150 characters? Is this still accurate?
+    message             = {0x14, string(0xEC)},
 })
 
 -- Job Info
@@ -2570,7 +2570,7 @@ types.outgoing[0x050] = struct({cache = {'slot_id'}}, {
 types.outgoing[0x051] = struct({
     count               = {0x00, uint8},
     -- Same as _unknown1 is outgoing 0x052
-    equipment           = {0x04, equipset_entry[0x01]}, -- Should be count entries instead of 0x01
+    equipment           = {0x04, equipset_entry[0x10]},
     -- There is also a bunch of junk at the end of the packet.
 })
 

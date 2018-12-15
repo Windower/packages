@@ -152,6 +152,7 @@ end
 local keywords = {
     ['auto'] = true,
     ['break'] = true,
+    ['bool'] = true,
     ['case'] = true,
     ['char'] = true,
     ['complex'] = true,
