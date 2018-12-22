@@ -108,7 +108,7 @@ local entity = struct({
     owner                   = {0x0E8, entity_id},
     hp_percent              = {0x0EC, percent},
     target_type             = {0x0EE, uint8}, -- 0 = PC, 1 = NPC, 2 = NPC with fixed model (including various types of books), 3 = Doors and similar objects
-    race_id                 = {0x0EF, uint16},
+    race_id                 = {0x0EF, uint8},
     face_model_id           = {0x0FC, uint16},
     model                   = {0x0FE, model},
     freeze                  = {0x11C, bool},
@@ -333,6 +333,11 @@ types.follow = struct({signature = '8BCFE8????FFFF8B0D????????E8????????8BE885ED
     follow_id               = {0x24, entity_id}, -- Once set will overwrite pos with directional values
     first_person_view       = {0x28, bool},
     auto_run                = {0x29, bool},
+})
+
+types.camera = struct({signature = '89542418E8????????8B0D????????68'}, {
+    view_matrix             = {0x000, float[4][4]},
+    projection_matrix       = {0x240, float[4][4]},
 })
 
 return types
