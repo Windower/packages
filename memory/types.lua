@@ -77,7 +77,7 @@ local model = struct({
 structs.declare('entity')
 
 local display = struct({
-    pos                     = {0x34, world_coord},
+    position                = {0x34, world_coord},
     heading                 = {0x48, float},
     entity                  = {0x70, ptr('entity')},
     name_color              = {0x78, rgba},
