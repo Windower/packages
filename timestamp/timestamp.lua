@@ -18,6 +18,7 @@ do
     local string_char = string.char
 
     settings.settings_change:register(function(options)
+        -- TODO: Export color reading code to a lib?
         local color = options.color
         if color < 1 or color > 0x1FF then
             error('Invalid color specified for the timestamp. Color must be between 1 and 511.')
@@ -50,9 +51,12 @@ do
 
     chat.text_added:register(function(obj)
         local format = timestamp_format
+
+        -- This type adjustment prevents the game from indenting newlines before the timestamp is added
         if obj.type == 150 then
             obj.type = 151
         end
+
         if obj.indented then
             obj.indented = false
             format = format .. '\u{3000}'
