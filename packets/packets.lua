@@ -3,7 +3,7 @@ local shared = require('shared')
 local table = require('table')
 local string = require('string')
 
-local fetch = shared.get('packet_service', 'packets')
+local client = shared.get('packet_service', 'packets')
 
 local get_last = function(_, path)
     return get_last(path)
@@ -17,6 +17,14 @@ local inject = function(_, path, values)
     inject(path, values)
 end
 
+local block = function(_)
+    block()
+end
+
+local update = function(_, p)
+    update(p)
+end
+
 local registry = {}
 
 local fns = {}
@@ -27,7 +35,7 @@ local register_path = function(path, fn)
         events = {}
         registry[path] = events
     end
-    local event = fetch:call(make_event, path)
+    local event = client:call(make_event, path)
     events[fn] = event
     event:register(fn)
 end
@@ -56,7 +64,7 @@ fns.register_init = function(t, init_table)
     local lasts_count = 0
     for i = 1, #paths do
         local path = paths[i]
-        local last = fetch:call(get_last, path.path)
+        local last = client:call(get_last, path.path)
         if last then
             lasts_count = lasts_count + 1
             lasts[lasts_count] = { packet = last, fn = path.fn, path = path }
@@ -74,7 +82,7 @@ fns.register_init = function(t, init_table)
 end
 
 fns.inject = function(t, values)
-    fetch:call(inject, t.path, values)
+    client:call(inject, t.path, values)
 end
 
 local make_table = function(path, allow_injection)
@@ -91,7 +99,7 @@ local packet_meta
 packet_meta = {
     __index = function(t, k)
         if k == 'last' then
-            return fetch:call(get_last, t.path)
+            return client:call(get_last, t.path)
         end
 
         return setmetatable(make_table(t.path .. '/' .. tostring(k), true), packet_meta)
@@ -102,6 +110,12 @@ local packets = make_table('', false)
 
 packets.incoming = setmetatable(make_table('/incoming', false), packet_meta)
 packets.outgoing = setmetatable(make_table('/outgoing', false), packet_meta)
+packets.block = function()
+    client:call(block)
+end
+packets.update = function(p)
+    client:call(update, p)
+end
 
 return packets
 
