@@ -50,7 +50,7 @@ do
 
     chat.text_added:register(function(obj)
         local format = timestamp_format
-        if obj.original_type == 150 then
+        if obj.type == 150 then
             obj.type = 151
         end
         if obj.indented then
