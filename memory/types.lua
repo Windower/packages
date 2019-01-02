@@ -197,6 +197,11 @@ local chat_menu_entry = struct({
     auto_translate          = {0x14, string(0x04)}, -- Auto-translate code, 0 if the phrase is a regular string
 })
 
+local entity_string = struct({
+    name                    = {0x00, string(0x18)},
+    id                      = {0x1C, uint32},
+})
+
 local types = {}
 
 types.misc2_graphics = struct({signature = '894E188B15????????33FF6A24893D'}, {
@@ -338,6 +343,19 @@ types.follow = struct({signature = '8BCFE8????FFFF8B0D????????E8????????8BE885ED
 types.camera = struct({signature = '89542418E8????????8B0D????????68'}, {
     view_matrix             = {0x000, float[4][4]},
     projection_matrix       = {0x240, float[4][4]},
+})
+
+types.string_tables = struct({signature = '8B81????0000F6C402750532C0C20400A0'}, {
+    skills                  = {0x10, ptr()},
+    elements                = {0x14, ptr()},
+    entities                = {0x18, ptr(entity_string)},
+    emotes                  = {0x1C, ptr()},
+    actions                 = {0x20, ptr()},
+    status_effects          = {0x24, ptr()},
+    gameplay                = {0x28, ptr()},
+    abilities               = {0x34, ptr()},
+    unity                   = {0x38, ptr()},
+    zone                    = {0x3C, ptr()},
 })
 
 return types
