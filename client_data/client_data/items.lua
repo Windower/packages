@@ -1,8 +1,11 @@
 local bit = require('bit')
 local files = require('client_data.files')
 local ffi = require('ffi')
-local structs = require('structs')
+local types = require('client_data.types.items')
 local unicode = require('unicode')
+local windower = require('windower')
+
+windower.client_language = 'en'
 
 local band = bit.band
 local bor = bit.bor
@@ -14,28 +17,13 @@ local ffi_string = ffi.string
 local ffi_typeof = ffi.typeof
 local to_utf16 = unicode.to_utf16
 local from_shift_jis = unicode.from_shift_jis
+local to_shift_jis = unicode.to_shift_jis
+local unpack = unpack
 
 local size_type = ffi.typeof('unsigned long[1]')
 local raw_data_ptr = ffi.typeof('uint8_t*')
 local int32_ptr = ffi.typeof('int32_t*')
 local invalid_handle = ffi.cast('void*', -1)
-
-local int8 = structs.int8
-local int16 = structs.int16
-local int32 = structs.int32
-local int64 = structs.int64
-local uint8 = structs.uint8
-local uint16 = structs.uint16
-local uint32 = structs.uint32
-local uint64 = structs.uint64
-local float = structs.float
-local double = structs.double
-local bool = structs.bool
-
-local string = structs.string
-
-local struct = structs.struct
-local bit = structs.bit
 
 ffi.cdef[[
 typedef struct _OVERLAPPED OVERLAPPED;
@@ -76,248 +64,18 @@ local decrypt = function(data, size)
     end
 end
 
-local string_table = struct({
-    count           = {0x00, uint32},
-    entries         = {0x04, struct({
-        offset      = {0x00, uint32},
-        type        = {0x04, uint32},
-    })[5]},
-})
-
-local item_struct
+local lookup_info
 do
-    local icon_descriptor = {0x280, uint8[0x980]}
-    item_struct = function(fields)
-        fields.icon = icon_descriptor
-        return struct(fields)
-    end
-end
-
-local general_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    element         = {0x0E, uint16},
-    storage         = {0x10, uint16},
-    _item_ref_id    = {0x12, uint16},
-    _unknown1       = {0x14, uint16},
-    attachment_id   = {0x16, uint16},
-    strings         = {0x18, string_table},
-})
-
-local usable_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    activation_time = {0x0E, uint16},
-    _item_ref_id    = {0x10, uint16},
-    _unknown2       = {0x12, uint8},
-    action_type     = {0x13, uint8},
-    action_id       = {0x14, uint16},
-    aoe_range       = {0x16, uint8},
-    aoe             = {0x17, bool},
-    aoe_targets     = {0x18, uint8},
-    strings         = {0x1C, string_table},
-})
-
-local automaton_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    automaton_slot  = {0x0E, uint16},
-    charge          = {0x10, struct({
-        fire        = {0x00, bit(uint32, 4), offset = 0x00},
-        ice         = {0x00, bit(uint32, 4), offset = 0x04},
-        wind        = {0x00, bit(uint32, 4), offset = 0x08},
-        earth       = {0x00, bit(uint32, 4), offset = 0x0C},
-        lightning   = {0x00, bit(uint32, 4), offset = 0x10},
-        water       = {0x00, bit(uint32, 4), offset = 0x14},
-        light       = {0x00, bit(uint32, 4), offset = 0x18},
-        dark        = {0x00, bit(uint32, 4), offset = 0x1C},
-    })},
-    _unknown3       = {0x14, uint32},
-    strings         = {0x18, string_table},
-})
-
-local armor_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    level           = {0x0E, uint16},
-    equipment_slots = {0x10, uint16},
-    races           = {0x12, uint16},
-    jobs            = {0x14, uint32},
-    superior_level  = {0x18, uint16},
-    shield_type     = {0x1A, uint16},
-    max_charges     = {0x1C, uint8},
-    cast_time       = {0x1D, uint8},
-    use_delay       = {0x1E, uint16},
-    reuse_delay     = {0x20, uint32},
-    _item_ref_id    = {0x24, uint16},
-    item_level      = {0x26, uint8},
-    _augmentable    = {0x27, bool},
-    aoe_modifier    = {0x28, uint8},
-    aoe_range       = {0x29, uint8},
-    aoe             = {0x2A, bool},
-    aoe_targets     = {0x2B, uint8},
-    strings         = {0x2C, string_table},
-})
-
-local weapon_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    level           = {0x0E, uint16},
-    equipment_slots = {0x10, uint16},
-    races           = {0x12, uint16},
-    jobs            = {0x14, uint32},
-    superior_level  = {0x18, uint16},
-    damage          = {0x1C, uint16},
-    delay           = {0x1E, uint16},
-    dps             = {0x20, uint16},
-    skill           = {0x22, uint8},
-    animation       = {0x24, uint32},
-    max_charges     = {0x28, uint8},
-    cast_time       = {0x29, uint8},
-    use_delay       = {0x2A, uint16},
-    reuse_delay     = {0x2C, uint32},
-    _item_ref_id    = {0x30, uint16},
-    item_level      = {0x32, uint8},
-    _augmentable    = {0x33, bool},
-    aoe_modifier    = {0x34, uint8},
-    aoe_range       = {0x35, uint8},
-    aoe             = {0x36, bool},
-    targets         = {0x37, uint8},
-    strings         = {0x38, string_table},
-})
-
-local maze_tabula_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    _unknown4       = {0x0E, uint16},
-    tabula_layout   = {0x14, int8[25]},
-    strings         = {0x54, string_table},
-})
-
-local maze_voucher_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    _unknown4       = {0x0E, uint16},
-    _unknown5       = {0x14, uint8[15]},
-    strings         = {0x54, string_table},
-})
-
-local maze_rune_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    _unknown4       = {0x0E, uint16},
-    element         = {0x14, int8},
-    shape           = {0x15, uint8},
-    strings         = {0x54, string_table},
-})
-
-local basic_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    _unknown4       = {0x0E, uint16},
-    strings         = {0x54, string_table},
-})
-
-local instinct_item = item_struct({
-    id              = {0x00, uint16},
-    _unknown6       = {0x04, uint32},
-    _unknown7       = {0x08, uint16},
-    instinct_id     = {0x0A, uint16},
-    _unknown8       = {0x0E, uint16},
-    _unknown9       = {0x12, uint16},
-    faculty_points  = {0x18, uint32},
-    strings         = {0x28, string_table},
-})
-
-local monipulator_item = item_struct({
-    id              = {0x00, uint16},
-    monipulator_id  = {0x04, uint16},
-    name            = {0x06, string(32)},
-    family          = {0x26, uint16},
-    species         = {0x28, uint16},
-    sort_value      = {0x2A, uint16},
-    _unknown10      = {0x2C, uint16},
-    size            = {0x2E, uint16},
-    abilities       = {0x30, struct({
-        id          = {0x00, uint16},
-        level       = {0x02, uint8},
-        _unknown    = {0x03, uint8},
-    })[16]},
-    strings         = {0x70, string_table},
-})
-
-local gil_item = item_struct({
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    _unknown11      = {0x07, uint8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, uint16},
-    strings         = {0x10, string_table},
-})
-
-local item_info_map = {
-    {first = 0x0000, last = 0x0FFF, base = 0x0000, en = 0x0049, ja = 0x0004, type = general_item},
-    {first = 0x1000, last = 0x1FFF, base = 0x1000, en = 0x004A, ja = 0x0005, type = usable_item},
-    {first = 0x2000, last = 0x21FF, base = 0x2000, en = 0x004D, ja = 0x0008, type = automaton_item},
-    {first = 0x2200, last = 0x27FF, base = 0x2200, en = 0xD977, ja = 0xD8FF, type = general_item},
-    {first = 0x2800, last = 0x3FFF, base = 0x2800, en = 0x004C, ja = 0x0007, type = armor_item},
-    {first = 0x4000, last = 0x59FF, base = 0x4000, en = 0x004B, ja = 0x0006, type = weapon_item},
-    {first = 0x5A00, last = 0x6FFF, base = 0x5A00, en = 0xD974, ja = 0xD8FC, type = armor_item},
-    {first = 0x7000, last = 0x703F, base = 0x7000, en = 0xD973, ja = 0xD8FB, type = maze_tabula_item},
-    {first = 0x7040, last = 0x707F, base = 0x7000, en = 0xD973, ja = 0xD8FB, type = maze_voucher_item},
-    {first = 0x7080, last = 0x727F, base = 0x7000, en = 0xD973, ja = 0xD8FB, type = maze_rune_item},
-    {first = 0x7280, last = 0x73FF, base = 0x7000, en = 0xD973, ja = 0xD8FB, type = basic_item},
-    {first = 0x7400, last = 0x77FF, base = 0x7400, en = 0xD976, ja = 0xD8FE, type = instinct_item},
-    {first = 0xF000, last = 0xF1FF, base = 0xF000, en = 0xD975, ja = 0xD8FD, type = monipulator_item},
-    {first = 0xFFFF, last = 0xFFFF, base = 0xFFFF, en = 0x005B, ja = 0x0009, type = gil_item},
-}
-
-lookup_info = function(item_id)
-    for i = 1, #item_info_map do
-        local e = item_info_map[i]
-        if item_id >= e.first and item_id <= e.last then
-            return e
+    local item_type_map = types.type_map
+    lookup_info = function(item_id)
+        for i = 1, #item_type_map do
+            local e = item_type_map[i]
+            if item_id >= e.first and item_id <= e.last then
+                return e
+            end
         end
+        return nil
     end
-    return nil
 end
 
 local data_block_size = 0x30000
@@ -347,11 +105,15 @@ local data_blocks = setmetatable({}, {
 })
 
 local item_cache = setmetatable({}, {__mode = 'v'})
-local block_map = setmetatable({}, {__mode = 'v'})
-local last_block
+
+local language_ids = {en = 0, ja = 1}
 
 get_item = function(id, language)
-    local key = id .. ':' .. language
+    if id < 0 or id > 0xFFFF then
+        return nil
+    end
+
+    local key = id + language_ids[language] * 0x10000
     local item = item_cache[key]
     if item == nil then
         local dat_info = lookup_info(id)
@@ -367,34 +129,362 @@ get_item = function(id, language)
 
         local block_id = bor(lshift(dat_info[language], 10), rshift(id - dat_info.base, 6))
         local block = data_blocks[block_id]
-        item = ffi_cast(ctype_ptr, block)[band(id - dat_info.base, 0x3F)]
+        item = {ffi_cast(ctype_ptr, block)[band(id - dat_info.base, 0x3F)], block}
 
         item_cache[key] = item
-        block_map[item] = block
-        last_block = block
     end
     return item
 end
 
 local string_entry = function(item, i)
-    if item.strings.count >= 0x40 or i >= item.strings.count then
+    if item._strings.count >= 0x40 or i >= item._strings.count then
         return nil
     end
 
-    local offset = item.strings.entries[i].offset
+    local offset = item._strings.entries[i].offset
     if offset >= 0x270 then
         return nil
     end
 
-    local base_ptr = ffi_cast(raw_data_ptr, item) + ffi.offsetof(item, 'strings')
-    local type = item.strings.entries[i].type
+    local base_ptr = ffi_cast(raw_data_ptr, item) + ffi.offsetof(item, '_strings')
+    local type = item._strings.entries[i].type
     if type == 0 then
         return (from_shift_jis(ffi_string(base_ptr + offset + 0x1C)))
     elseif type == 1 then
-        return ffi_cast(uint32_ptr, base_ptr + offset)[0]
+        return ffi_cast(int32_ptr, base_ptr + offset)[0]
     end
 
     return nil
 end
 
-return {get_item = get_item, string_entry = string_entry}
+local some = {}
+
+local definite = {}
+local indefinite = {}
+local numeric = {}
+local none = {}
+
+local wrap_log_string = function(item, log_string)
+    return function(_, ...) return log_string(_, item, ...) end
+end
+
+local en_log_string = function(_, item, count, article)
+    if type(_) ~= 'table' then
+        error('bad argument #1 to \'log_string\' (expected item; got ' .. type(count) .. ')')
+    end
+    local article_type = string_entry(item, 1)
+    if type(article_type) ~= 'number' then
+        return nil
+    end
+
+    article = article == nil and indefinite or article
+
+    if count == 1 then
+        local singular
+        if item.id == 0xFFFF then
+            singular = 'gil'
+        else
+            singular = string_entry(item, 2)
+        end
+
+        if article == indefinite then
+            if     article_type == 0 then return 'a ' .. singular
+            elseif article_type == 1 then return 'an ' .. singular
+            elseif article_type == 2 then return 'a pair of ' .. singular
+            elseif article_type == 3 then return 'a suit of ' .. singular
+            else return '<article: ' .. article_type .. '> ' .. singular
+            end
+        elseif article == definite then
+            if     article_type == 0 or article_type == 1 then return 'the ' .. singular
+            elseif article_type == 2 then return 'the pair of ' .. singular
+            elseif article_type == 3 then return 'the suit of ' .. singular
+            else return '<article: ' .. article_type .. '> ' .. singular
+            end
+        elseif article == none then
+            if     article_type == 0 or article_type == 1 then return singular
+            elseif article_type == 2 then return 'pair of ' .. singular
+            elseif article_type == 3 then return 'suit of ' .. singular
+            else return '<article: ' .. article_type .. '> ' .. singular
+            end
+        else
+            if     article_type == 0 or article_type == 1 then return singular
+            elseif article_type == 2 then return '1 pair of ' .. singular
+            elseif article_type == 3 then return '1 suit of ' .. singular
+            else return '1 <article: ' .. article_type .. '> ' .. singular
+            end
+        end
+    else
+        local plural
+        if item.id == 0xFFFF then
+            plural = 'gil'
+        else
+            plural = string_entry(item, 3)
+        end
+
+        if count == some then
+            if article == definite then
+                return 'the ' .. plural
+            elseif article == none then
+                return plural
+            else
+                return 'some ' .. plural
+            end
+        elseif type(count) == 'number' then
+            if article == definite then
+                return 'the ' .. count .. ' ' .. plural
+            elseif article == none then
+                return plural
+            else
+                return count .. ' ' .. plural
+            end
+        else
+            error('bad argument #2 to \'log_string\' (expected number; got ' .. type(count) .. ')')
+        end
+    end
+end
+
+local ja_log_string = function(_, item, count, article)
+    if type(_) ~= 'table' then
+        error('bad argument #1 to \'log_string\' (expected item; got ' .. type(count) .. ')')
+    end
+
+    if count == 1 then
+        if article == numeric then
+            return '1' .. string_entry(item, 0)
+        else
+            return string_entry(item, 0)
+        end
+    elseif count == some then
+        return string_entry(item, 0)
+    elseif type(count) == 'number' then
+        if article == none then
+            return string_entry(item, 0)
+        else
+            return count .. string_entry(item, 0)
+        end
+    else
+        error('bad argument #1 to \'log_string\' (expected number; got ' .. type(count) .. ')')
+    end
+end
+
+local wrap_strings = function(item, log_string, description_index)
+    return setmetatable({}, {
+        __index = function(_, k)
+            if k == 'name' then
+                return string_entry(item, 0)
+            elseif k == 'description' then
+                return string_entry(item, description_index)
+            elseif k == 'log_string' then
+                return wrap_log_string(item, log_string)
+            end
+        end,
+        __newindex = function() end,
+        __pairs = function(t)
+            return function(t, k)
+                local v
+                if k == nil then
+                    k = 'name'
+                    v = t.name
+                elseif k == 'name' then
+                    k = 'description'
+                    v = t.description
+                elseif k == 'description' then
+                    k = 'log_string'
+                    v = t.log_string
+                elseif k == 'log_string' then
+                    k = nil
+                end
+                return k, v
+            end, t, nil
+        end,
+    })
+end
+
+local client_language = windower.client_language
+local last_language = client_language
+
+local client_log_string = ja_log_string
+local client_description_index = 1
+if client_language == 'en' then
+    client_log_string = en_log_string
+    client_description_index = 4
+end
+
+local wrap_item = function(item, language)
+    local en, ja, client
+    if language == 'en' then
+        en = item
+    else
+        ja = item
+    end
+    if client_language == language then
+        client = item
+    end
+
+    return setmetatable({}, {
+        __index = function(t, k)
+            if k == 'name' or k == 'description' or k == 'log_string' then
+                if client == nil then
+                    last_language = client_language
+                    client = get_item(item[1].id, client_language)
+                    if client == nil then
+                        return nil
+                    end
+                    if client_language == 'en' then
+                        en = client
+                    else
+                        ja = client
+                    end
+                end
+                local result
+                if k == 'name' then
+                    if item[1].id < 0xF000 or item[1].id > 0xF1FF then
+                        result = string_entry(client[1], 0)
+                    else
+                        result = item[1].name
+                    end
+                elseif k == 'description' then
+                    if item[1].id < 0xF000 or item[1].id > 0xF1FF then
+                        if client_language == 'en' then
+                            result = string_entry(client[1], 4)
+                        else
+                            result = string_entry(client[1], 1)
+                        end
+                    else
+                        result = string_entry(client[1], 0)
+                    end
+                else
+                    result = wrap_log_string(client[1], client_log_string)
+                end
+                rawset(t, k, result)
+                return result
+            elseif k == 'en' then
+                if en == nil then
+                    last_language = 'en'
+                    en = get_item(item[1].id, 'en')
+                    if en == nil then
+                        return nil
+                    end
+                end
+                local result = wrap_strings(en[1], en_log_string, 4)
+                rawset(t, k, result)
+                return result
+            elseif k == 'ja' then
+                if ja == nil then
+                    last_language = 'ja'
+                    ja = get_item(item[1].id, 'ja')
+                    if en == nil then
+                        return nil
+                    end
+                end
+                local result = wrap_strings(ja[1], ja_log_string, 1)
+                rawset(t, k, result)
+                return result
+            end
+            return item[1][k]
+        end,
+        __newindex = function() end,
+        __pairs = function(wrapper)
+            local next, t, start = pairs(item[1])
+            return function(t, k)
+                local v
+                if k == nil then
+                    k = 'name'
+                    v = wrapper.name
+                elseif k == 'name' then
+                    k = 'description'
+                    v = wrapper.description
+                elseif k == 'description' then
+                    k = 'log_string'
+                    v = wrapper.log_string
+                elseif k == 'log_string' then
+                    k = 'en'
+                    v = wrapper.en
+                elseif k == 'en' then
+                    k = 'ja'
+                    v = wrapper.ja
+                elseif k == 'ja' then
+                    k, v = next(t, start)
+                else
+                    k, v = next(t, k)
+                end
+                return k, v
+            end, t, nil
+        end,
+    })
+end
+
+local by_name
+do
+    local item_type_map = types.type_map
+
+    local compare_name = function(name, item)
+        
+        if item._strings.count >= 0x40 or 0 >= item._strings.count then
+            return false
+        end
+    
+        local offset = item._strings.entries[0].offset
+        if offset >= 0x270 then
+            return false
+        end
+   
+        local type = item._strings.entries[0].type
+        if type ~= 0 then
+            return false
+        end
+
+        local ptr = ffi_cast(raw_data_ptr, item) + ffi.offsetof(item, '_strings') + offset + 0x1C
+        for i = 1, #name do
+            if name:byte(i) ~= ptr[i - 1] then
+                if i > 1 then
+                    print(i, name:byte(i), ptr[i - 1])
+                end
+                return false
+            end
+        end
+        return name_ptr[#name] == 0
+    end
+
+    by_name = function(_, name, language)
+        if type(name) ~= 'string' then
+            error('bad argument #2 to \'by_name\' (string expected, got ' .. type(name) .. ')')
+        end
+
+        if language == nil then
+            language = client_language
+        elseif language ~= 'en' and language ~= 'ja' then
+            error('bad argument #3 to \'by_name\' (\'en\' or \'ja\' expected, got ' .. language .. ')')
+        end
+
+        local results = {}
+        for range_index = 1, #item_type_map do
+            local range = item_type_map[range_index]
+            for id = range.first, range.last do
+                local item = get_item(id, language)
+                if item ~= nil and compare_name(name, item[1]) then
+                    results[#results + 1] = wrap_item(item, language)
+                end
+            end
+        end
+        return results
+    end
+end
+
+local items = setmetatable({
+    count = {some = some},
+    article = {definite = definite, indefinite = indefinite, numeric = numeric, none = none},
+    en = {},
+    ja = {},
+    by_name = by_name,
+}, {
+    __index = function(_, id)
+        local item = get_item(id, last_language)
+        if item == nil then
+            return nil
+        end
+        return wrap_item(item, last_language)
+    end
+})
+
+return items
