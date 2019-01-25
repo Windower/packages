@@ -1,16 +1,16 @@
 local io = require('io')
 
-local files = {}
+local file = {}
 
 local file_mt = {
-    __index = files,
+    __index = file,
 }
 
-files.create = function(path)
+file.create = function(path)
     return setmetatable({path = path}, file_mt)
 end
 
-files.exists = function(file)
+file.exists = function(file)
     local f = io.open(file.path, 'r')
     local exists = f ~= nil
 
@@ -21,20 +21,20 @@ files.exists = function(file)
     return exists
 end
 
-files.read = function(file)
+file.read = function(file)
     local f = io.open(file.path, 'r')
     local contents = f:read("*a")
     f:close()
     return contents
 end
 
-files.write = function(file, str)
+file.write = function(file, str)
     local f = io.open(file.path, 'w')
     f:write(str)
     f:close()
 end
 
-files.append = function(file, str, newline)
+file.append = function(file, str, newline)
     newline = newline ~= false
 
     local f = io.open(file.path, 'a')
@@ -45,7 +45,7 @@ files.append = function(file, str, newline)
     f:close()
 end
 
-return files
+return file
 
 --[[
 Copyright © 2018, Windower Dev Team

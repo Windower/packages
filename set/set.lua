@@ -10,14 +10,17 @@ meta.__newindex = function(s, k, v)
 end
 
 meta.__eq = function(s1, s2)
-    for el in pairs(s1) do
-        if not s2.data[el] then
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data1) do
+        if data2[el] == nil then
             return false
         end
     end
 
-    for el in pairs(s2) do
-        if not s1.data[el] then
+    for el in pairs(data2) do
+        if data1[el] == nil then
             return false
         end
     end
@@ -26,8 +29,11 @@ meta.__eq = function(s1, s2)
 end
 
 meta.__le = function(s1, s2)
-    for el in pairs(s1) do
-        if not s2.data[el] then
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data1) do
+        if data2[el] == nil then
             return false
         end
     end
@@ -36,44 +42,105 @@ meta.__le = function(s1, s2)
 end
 
 meta.__lt = function(s1, s2)
-    return s1 <= s2 and s1 ~= s2
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data1) do
+        if data2[el] == nil then
+            return false
+        end
+    end
+
+    for el in pairs(data2) do
+        if data1[el] == nil then
+            return true
+        end
+    end
+
+    return false
 end
 
 meta.__add = function(s1, s2)
-    local res = s1:copy()
-    res:union(s2)
-    return res
+    local data = {}
+
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data1) do
+        data[el] = el
+    end
+
+    for el in pairs(data2) do
+        data[el] = el
+    end
+
+    return setmetatable({ data = data }, meta)
 end
 
 meta.__mul = function(s1, s2)
-    local res = s1:copy()
-    res:intersection(s2)
-    return res
+    local data = {}
+
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data1) do
+        if data2[el] ~= nil then
+            data[el] = el
+        end
+    end
+
+    return setmetatable({ data = data }, meta)
 end
 
 meta.__sub = function(s1, s2)
-    local res = s1:copy()
-    res:difference(s2)
-    return res
+    local data = {}
+
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data1) do
+        if data2[el] == nil then
+            data[el] = el
+        end
+    end
+
+    return setmetatable({ data = data }, meta)
 end
 
 meta.__pow = function(s1, s2)
-    local res = s1:copy()
-    res:symmetric_difference(s2)
-    return res
+    local data = {}
+
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data1) do
+        if data2[el] == nil then
+            data[el] = el
+        end
+    end
+
+    for el in pairs(data2) do
+        if data1[el] == nil then
+            data[el] = el
+        end
+    end
+
+    return setmetatable({ data = data }, meta)
 end
 
 meta.__tostring = function(s)
-    local res = ''
+    local data = s.data
+    local el = next(data)
+    if el == nil then
+        return '{}'
+    end
 
-    local first = true
-    for _, el in pairs(s.data) do
-        if first then
-            first = false
-        else
-            res = res .. ', '
-        end
-        res = res .. tostring(el)
+    local res = tostring(el)
+
+    el = next(data, el)
+    while el ~= nil do
+        res = res .. ', ' .. tostring(el)
+        el = next(data, el)
     end
 
     return '{' .. res .. '}'
@@ -91,9 +158,18 @@ meta.__pairs = function(s)
     return next, s.data, nil
 end
 
-meta.__create = function(t)
+meta.__create = function(...)
     local data = {}
-    for _, el in pairs(t or {}) do
+    for i = 1, select('#', ...) do
+        local el = select(i, ...)
+        data[el] = el
+    end
+    return setmetatable({ data = data }, meta)
+end
+
+meta.__convert = function(t)
+    local data = {}
+    for _, el in pairs(t) do
         data[el] = el
     end
     return setmetatable({ data = data }, meta)
@@ -116,32 +192,40 @@ end
 -- Unique members
 
 set.union = function(s1, s2)
-    for el in pairs(s2) do
-        s1.data[el] = el
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data2) do
+        data1[el] = el
     end
 end
 
 set.intersection = function(s1, s2)
-    for el in pairs(s1) do
-        if s2.data[el] == nil then
-            s1.data[el] = nil
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data1) do
+        if data2[el] == nil then
+            data1[el] = nil
         end
     end
 end
 
 set.difference = function(s1, s2)
-    for el in pairs(s2) do
-        s1.data[el] = nil
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data2) do
+        data1[el] = nil
     end
 end
 
 set.symmetric_difference = function(s1, s2)
-    for el in pairs(s2) do
-        if s1.data[el] ~= nil then
-            s1.data[el] = nil
-        else
-            s1.data[el] = el
-        end
+    local data1 = s1.data
+    local data2 = s2.data
+
+    for el in pairs(data2) do
+        data1[el] = data1[el] == nil and el or nil
     end
 end
 

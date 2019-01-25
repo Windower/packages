@@ -1,9 +1,9 @@
 <package>
   <name>party_time</name>
-  <version>0.7.1.0</version>
+  <version>0.7.1.1</version>
   <type>addon</type>
   <dependencies>
-    <dependency>sets</dependency>
+    <dependency>set</dependency>
     <dependency>packets</dependency>
     <dependency>settings</dependency>
     <dependency>treasure</dependency>

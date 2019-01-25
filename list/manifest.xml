@@ -1,6 +1,6 @@
 <package>
-  <name>lists</name>
-  <version>1.1.0.0</version>
+  <name>list</name>
+  <version>2.0.0.0</version>
   <type>library</type>
   <dependencies>
     <dependency>enumerable</dependency>
