@@ -1,6 +1,6 @@
 local os = require('os')
 local ui = require('ui')
-local sets = require('sets')
+local set = require('set')
 local string = require('string')
 local command = require('command')
 local packets = require('packets')
@@ -17,12 +17,12 @@ local defaults = {
         decline = false, -- also ignores party requests from players on blacklists
     },
     default = 'ask',     -- sets default behavior for unhandled invites. ask user, treat as whitelist, treat as blacklist,
-    blacklist = sets({}),
-    whitelist = sets({}),
+    blacklist = {},
+    whitelist = {},
 }
 settings.settings_change:register(function(options)
-    options.blacklist = sets(options.blacklist)
-    options.whitelist = sets(options.whitelist)
+    options.blacklist = enumerable.toset(options.blacklist)
+    options.whitelist = enumerable.toset(options.whitelist)
 end)
 options = settings.load(defaults)
 
@@ -138,7 +138,7 @@ pt:register('request', request, '{name}')
 
 
 local blacklist = function(sub_cmd, ...)
-    local names = sets({...})
+    local names = set(...)
     options.blacklist[sub_cmd](options.blacklist, names)
     settings.save(options)
 end
@@ -148,7 +148,7 @@ pt:register('blacklist', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
 local whitelist = function(sub_cmd, ...)
-    local names = sets({...})
+    local names = set(...)
     options.whitelist[sub_cmd](options.whitelist, names)
     settings.save(options)
 end

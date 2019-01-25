@@ -1,6 +1,6 @@
 local bit = require('bit')
 local chat = require('chat')
-local lists = require('lists');
+local list = require('list');
 local os = require('os')
 local settings = require('settings')
 local string = require('string')
@@ -64,7 +64,7 @@ do
         end
 
         local time = os_date(format, os_time())
-        local lines = lists({})
+        local lines = list()
         for line in string_gmatch(obj.text, '[^\r\n\x07]+') do
             lines:add(line)
         end

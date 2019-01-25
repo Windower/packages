@@ -1,6 +1,6 @@
 <package>
-  <name>sets</name>
-  <version>1.0.0.2</version>
+  <name>set</name>
+  <version>2.0.0.0</version>
   <type>library</type>
   <dependencies>
     <dependency>enumerable</dependency>

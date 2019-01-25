@@ -1,28 +1,17 @@
+require('table')
+local clear = require('table.clear')
+
 local list = {}
 local meta = {}
-
-local make_key = function(l, k)
-    assert(type(k) == 'number', 'Invalid index ' .. tostring(k))
-
-    local length = l.length
-    k = k < 0 and length + k + 1 or k
-    assert(k >= 0 and k <= length, 'Invalid index ' .. tostring(k))
-
-    return k
-end
 
 -- Metatable
 
 meta.__index = function(l, k)
     if type(k) == 'string' then
         return list[k]
+    elseif type(k) == 'number' and k < 0 then
+        return rawget(l, l.length + k + 1)
     end
-
-    return rawget(l, make_key(l, k))
-end
-
-meta.__newindex = function(l, k, v)
-    rawset(l, make_key(l, k), v)
 end
 
 meta.__eq = function(l1, l2)
@@ -41,9 +30,22 @@ meta.__eq = function(l1, l2)
 end
 
 meta.__concat = function(l1, l2)
-    local res = l1:copy()
-    res:append(l2)
-    return res
+    local length1 = l1.length
+    local length2 = l2.length
+
+    local l = {}
+
+    for i = 1, length1 do
+        l[i] = rawget(l1, i)
+    end
+
+    for i = 1, length2 do
+        l[i + length1] = rawget(l2, i)
+    end
+
+    l.length = length1 + length2
+
+    return setmetatable(l, meta)
 end
 
 meta.__len = function(l)
@@ -51,13 +53,15 @@ meta.__len = function(l)
 end
 
 meta.__tostring = function(l)
-    local str = ''
+    local length = l.length
+    if length == 0 then
+        return '[]'
+    end
 
-    for key = 1, l.length do
-        if key > 1 then
-            str = str .. ', '
-        end
-        str = str .. tostring(rawget(l, key))
+    local str = tostring(rawget(l, 1))
+
+    for key = 2, length do
+        str = str .. ', ' .. tostring(rawget(l, key))
     end
 
     return '[' .. str .. ']'
@@ -70,21 +74,24 @@ meta.__metatable = false
 -- Enumerable base
 
 meta.__pairs = function(l)
-    local key = 0
     return function(l, k)
-        key = key + 1
-        if key > l.length then
-            return nil
+        k = k + 1
+        if k > l.length then
+            return nil, nil
         end
 
-        return key, rawget(l, key)
-    end, l, nil
+        return k, rawget(l, k)
+    end, l, 0
 end
 
-meta.__create = function(t)
-    local l = { length = 0 }
+meta.__create = function(...)
+    return setmetatable({ length = select('#', ...), ... }, meta)
+end
+
+meta.__convert = function(t)
+    local l = {}
     local key = 0
-    for _, el in pairs(t or {}) do
+    for _, el in pairs(t) do
         key = key + 1
         l[key] = el
     end
@@ -95,38 +102,31 @@ end
 meta.__add_element = function(l, el)
     local new_length = l.length + 1
     l.length = new_length
-    rawset(l, new_length, el)
+    l[new_length] = el
 end
 
 meta.__remove_key = function(l, i)
-    local index = make_key(l, i)
-    local el = rawget(l, index)
-
     local length = l.length
-    for key = index, length do
-        rawset(l, key, rawget(l, key + 1))
-    end
-    l.length = length - 1
+    local index = i < 0 and length + i + 1 or i
+    local element = rawget(l, index)
 
-    return el
+    local new_length = length - 1
+    for key = index,  new_length do
+        l[key] = rawget(l, key + 1)
+    end
+
+    l[length] = nil
+
+    l.length = new_length
+
+    return element
 end
 
 -- Enumerable overrides
 
 list.clear = function(l)
-    l.length = 0
-end
-
-list.first = function(l)
-    return rawget(l, 1)
-end
-
-list.last = function(l)
-    return rawget(l, l.length)
-end
-
-list.element_at = function(l, index)
-    return rawget(l, index)
+    clear(l)
+    rawset(l, 'length', 0)
 end
 
 -- Unique members
@@ -134,15 +134,16 @@ end
 list.insert = function(l, i, el)
     local length = l.length
 
-    l.length = length + 1
-    local index = make_key(l, i)
+    local index = i < 0 and length + i + 1 or i
 
     local current = el
     for key = index, length do
         local next = current
         current = rawget(l, key)
-        rawset(l, key, next)
+        l[key] = next
     end
+
+    l.length = length + 1
 end
 
 list.remove_element = function(l, el)

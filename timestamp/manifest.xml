@@ -3,7 +3,7 @@
   <version>2.0.1.0</version>
   <type>addon</type>
   <dependencies>
-    <dependency>lists</dependency>
+    <dependency>list</dependency>
     <dependency>settings</dependency>
   </dependencies>
 </package>

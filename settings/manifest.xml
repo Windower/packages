@@ -1,9 +1,9 @@
 <package>
   <name>settings</name>
-  <version>2.2.0.1</version>
+  <version>2.2.0.2</version>
   <type>library</type>
   <dependencies>
-    <dependency>files</dependency>
+    <dependency>file</dependency>
     <dependency>account</dependency>
   </dependencies>
 </package>

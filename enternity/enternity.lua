@@ -1,12 +1,12 @@
 local chat = require('chat')
-local sets = require('sets')
+local set = require('set')
 local string = require('string')
 local target = require('target')
 
-local blacklist = sets({
+local blacklist = set(
     'Paintbrush of Souls', -- Requires correct timing, should not be skipped
     'Geomantic Reservoir', -- Causes dialogue freeze for some reason
-})
+)
 
 local prompt = '\u{F800}'
 local prompt_length = #prompt

@@ -1,6 +1,6 @@
 local account = require('account')
 local event = require('event')
-local files = require('files')
+local file = require('file')
 local ffi = require('ffi')
 local string = require('string')
 local table = require('table')
@@ -34,7 +34,7 @@ do
         C.CreateDirectoryW(unicode.to_utf16(windower.settings_path), nil)
         C.CreateDirectoryW(unicode.to_utf16(dir), nil)
 
-        return files.create(dir .. path)
+        return file.create(dir .. path)
     end
 end
 

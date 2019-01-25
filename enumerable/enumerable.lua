@@ -2,26 +2,21 @@ local enumerable = {}
 
 local enumerator_cache = setmetatable({}, {__mode = 'k'})
 
-local helper = {
-    no_args = function(...)
-        return select('#', ...) == 0
-    end,
-    true_fn = function()
-        return true
-    end,
-    equal = function(v1, v2)
-        return v1 == v2
-    end,
-    add = function(x, y)
-        return x + y
-    end,
-    min = function(x, y)
-        return x < y and x or y
-    end,
-    max = function(x, y)
-        return x > y and x or y
-    end,
-}
+local true_fn = function()
+    return true
+end
+local equal_fn = function(v1, v2)
+    return v1 == v2
+end
+local add_fn = function(x, y)
+    return x + y
+end
+local min_fn = function(x, y)
+    return x < y and x or y
+end
+local max_fn = function(x, y)
+    return x > y and x or y
+end
 
 enumerable.enumerate = function(t)
     local iterator, table, key = pairs(t)
@@ -32,12 +27,16 @@ enumerable.enumerate = function(t)
 end
 
 enumerable.count = function(t, fn, ...)
-    fn = fn == nil and helper.true_fn or fn
-
     local count = 0
-    for _, v in pairs(t) do
-        if fn(v, ...) == true then
+    if not fn then
+        for _ in pairs(t) do
             count = count + 1
+        end
+    else
+        for _, v in pairs(t) do
+            if fn(v, ...) == true then
+                count = count + 1
+            end
         end
     end
 
@@ -45,11 +44,15 @@ enumerable.count = function(t, fn, ...)
 end
 
 enumerable.any = function(t, fn, ...)
-    fn = fn == nil and helper.true_fn or fn
-
-    for _, v in pairs(t) do
-        if fn(v, ...) == true then
+    if not fn then
+        for _ in pairs(t) do
             return true
+        end
+    else
+        for _, v in pairs(t) do
+            if fn(v, ...) == true then
+                return true
+            end
         end
     end
 
@@ -57,8 +60,6 @@ enumerable.any = function(t, fn, ...)
 end
 
 enumerable.all = function(t, fn, ...)
-    fn = fn == nil and helper.true_fn or fn
-
     for _, v in pairs(t) do
         if fn(v, ...) == false then
             return false
@@ -79,9 +80,13 @@ enumerable.contains = function(t, search)
 end
 
 enumerable.first = function(t, fn, ...)
-    fn = fn == nil and helper.true_fn or fn
+    if not fn then
+        for _, v in pairs(t) do
+            return v
+        end
+    end
 
-    for k, v in pairs(t) do
+    for _, v in pairs(t) do
         if fn(v, ...) == true then
             return v
         end
@@ -91,27 +96,14 @@ enumerable.first = function(t, fn, ...)
 end
 
 enumerable.last = function(t, fn, ...)
-    fn = fn == nil and helper.true_fn or fn
-
     local res
-    for k, v in pairs(t) do
-        if fn(v, ...) == true then
+    if not fn then
+        for _, v in pairs(t) do
             res = v
         end
-    end
-
-    return res
-end
-
-enumerable.single = function(t, fn, ...)
-    fn = fn == nil and helper.true_fn or fn
-
-    local res
-    for k, v in pairs(t) do
-        if fn(v, ...) == true then
-            if res ~= nil then
-                return nil
-            else
+    else
+        for _, v in pairs(t) do
+            if fn(v, ...) == true then
                 res = v
             end
         end
@@ -120,17 +112,49 @@ enumerable.single = function(t, fn, ...)
     return res
 end
 
-enumerable.sequence_equal = function(t, compare, fn, ...)
-    fn = fn == nil and helper.equal or fn
+enumerable.single = function(t, fn, ...)
+    local res
+    if not fn then
+        for _, v in pairs(t) do
+            if res ~= nil then
+                return nil
+            else
+                res = v
+            end
+        end
+    else
+        for _, v in pairs(t) do
+            if fn(v, ...) == true then
+                if res ~= nil then
+                    return nil
+                else
+                    res = v
+                end
+            end
+        end
+    end
 
+    return res
+end
+
+enumerable.sequence_equal = function(t, compare, fn, ...)
     local iterator, table, key = pairs(t)
     local value
     key, value = iterator(table, key)
-    for compare_key, compare_value in pairs(compare) do
-        if key == nil or not fn(compare_value, value, ...) then
-            return false
+    if not fn then
+        for compare_key, compare_value in pairs(compare) do
+            if key == nil or compare_value ~= value then
+                return false
+            end
+            key, value = iterator(table, key)
         end
-        key, value = iterator(table, key)
+    else
+        for compare_key, compare_value in pairs(compare) do
+            if key == nil or not fn(compare_value, value, ...) then
+                return false
+            end
+            key, value = iterator(table, key)
+        end
     end
 
     return key == nil
@@ -148,7 +172,7 @@ enumerable.element_at = function(t, index)
     return nil
 end
 
-enumerable.aggregate = function(t, initial, accumulator, selector)
+local aggregate_fn = function(t, initial, accumulator, selector)
     local initialized = accumulator ~= nil
     accumulator = initialized and accumulator or initial
 
@@ -165,23 +189,22 @@ enumerable.aggregate = function(t, initial, accumulator, selector)
     return selector ~= nil and selector(res) or res
 end
 
+enumerable.aggregate = aggregate_fn
+
 enumerable.sum = function(t, fn, ...)
-    fn = fn == nil and helper.add or fn
-    return t:aggregate(fn, ...)
+    return aggregate_fn(t, fn or add_fn, ...)
 end
 
 enumerable.min = function(t, fn, ...)
-    fn = fn == nil and helper.min or fn
-    return t:aggregate(fn, ...)
+    return aggregate_fn(t, fn or min_fn, ...)
 end
 
 enumerable.max = function(t, fn, ...)
-    fn = fn == nil and helper.max or fn
-    return t:aggregate(fn, ...)
+    return aggregate_fn(t, fn or max_fn, ...)
 end
 
 enumerable.average = function(t, fn, ...)
-    return t:sum(fn, ...) / #t
+    return aggregate_fn(t, fn or add_fn, ...) / #t
 end
 
 enumerable.totable = function(t)
@@ -434,21 +457,23 @@ local build_index_table = function(constructor, proxies)
     return index_table
 end
 
-local find_index = function(t, k, index_table, original, constructor)
-    if original == nil and index_table[k] ~= nil then
-        return index_table[k]
+local find_index = function(t, k, index_table, original, converter)
+    if type(original) == 'function' and enumerator_cache[t] ~= nil then
+        return function(_, ...)
+            return original(converter(t), ...)
+        end
     end
 
-    if original == nil and enumerator_cache[t] ~= nil then
-        return constructor(t)[k]
-    end
-
-    if type(original) ~= 'function' or enumerator_cache[t] == nil then
+    if original ~= nil then
         return original
     end
 
-    return function(_, ...)
-        return original(constructor(t), ...)
+    if index_table[k] then
+        return index_table[k]
+    end
+
+    if enumerator_cache[t] then
+        return converter(t)[k]
     end
 end
 
@@ -476,26 +501,14 @@ local operators = {
 
 local index_cache = {}
 local configure_metatable = function(meta, name)
-    -- Create default/copy constructor if none available
-    if meta.__create == nil then
-        meta.__create = function(t)
-            local res = {}
-            local key = 0
-            for _, el in pairs(t or {}) do
-                -- Cannot use __add_element here for reasons I may some day remember
-                key = key + 1
-                res[key] = el
-            end
-            return setmetatable(res, meta)
-        end
-    end
-
     -- Create default addition function
     if meta.__add_element == nil then
         meta.__add_element = function(t, v, k)
             rawset(t, k, v)
         end
     end
+
+    local add = meta.__add_element
 
     -- Create default removal function
     if meta.__remove_key == nil then
@@ -504,9 +517,29 @@ local configure_metatable = function(meta, name)
         end
     end
 
-    local constructor = meta.__create
-    local add = meta.__add_element
     local remove = meta.__remove_key
+
+    -- Create value constructor
+    if meta.__create == nil then
+        meta.__create = function(...)
+            return setmetatable({...}, meta)
+        end
+    end
+
+    local constructor = meta.__create
+
+    -- Create copy constructor
+    if meta.__convert == nil then
+        meta.__convert = function(t)
+            local res = constructor()
+            for key, el in pairs(t) do
+                add(res, el, key)
+            end
+            return res
+        end
+    end
+
+    local converter = meta.__convert
 
     local index_table = build_index_table(constructor, {
         add = add,
@@ -520,15 +553,15 @@ local configure_metatable = function(meta, name)
     --TODO: Cache find_index result? local table with __index metamethod that sets used keys?
     if index_type == 'nil' then
         meta.__index = function(t, k)
-            return find_index(t, k, index_table, nil, constructor)
+            return find_index(t, k, index_table, nil, converter)
         end
     elseif index_type == 'table' then
         meta.__index = function(t, k)
-            return find_index(t, k, index_table, original_index[k], constructor)
+            return find_index(t, k, index_table, original_index[k], converter)
         end
     elseif index_type == 'function' then
         meta.__index = function(t, k)
-            return find_index(t, k, index_table, original_index(t, k), constructor)
+            return find_index(t, k, index_table, original_index(t, k), converter)
         end
     else
         error(('Unknown index_type: %s'):format(type))
@@ -553,9 +586,9 @@ local configure_metatable = function(meta, name)
     -- Implement toX function as a constructor call
     if name ~= nil then
         local key = 'to' .. name
-        enumerable[key] = constructor
+        enumerable[key] = converter
         for _, cached_index_table in pairs(index_cache) do
-            cached_index_table[key] = constructor
+            cached_index_table[key] = converter
         end
     end
 
@@ -573,8 +606,7 @@ local configure_metatable = function(meta, name)
         local fn = meta[operator]
         if fn ~= nil and is_native(fn) then
             meta[operator] = function(t, ...)
-                t = enumerator_cache[t] ~= nil and constructor(t) or t
-                return fn(t, ...)
+                return fn(enumerator_cache[t] and converter(t) or t, ...)
             end
         end
     end
@@ -582,9 +614,7 @@ local configure_metatable = function(meta, name)
         local fn = meta[operator]
         if fn ~= nil and is_native(fn) then
             meta[operator] = function(t1, t2, ...)
-                t1 = enumerator_cache[t1] ~= nil and constructor(t1) or t1
-                t2 = enumerator_cache[t2] ~= nil and constructor(t2) or t2
-                return fn(t1, t2, ...)
+                return fn(enumerator_cache[t1] and converter(t1) or t1, enumerator_cache[t2] and converter(t2) or t2, ...)
             end
         end
     end
@@ -597,10 +627,12 @@ local configure_metatable = function(meta, name)
         end
     end
 
-    return meta.__create
+    return constructor
 end
 
-local empty_constructor = configure_metatable({})
+local empty_meta = {}
+configure_metatable(empty_meta)
+local empty_converter = empty_meta.__convert
 
 local result = {
     init_type = configure_metatable,
@@ -608,7 +640,7 @@ local result = {
         --TODO: Or just ignore existing metatable? Or copy? Or initialize fully?
         assert(getmetatable(t) == nil, 'Cannot wrap enumerable around existing metatable')
 
-        return empty_constructor(t)
+        return empty_converter(t)
     end,
 }
 
