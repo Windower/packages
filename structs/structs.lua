@@ -29,7 +29,7 @@ do
         local offset = 0
         local bit_type
         local bit_type_size
-        local unknown_count = 1
+        local unknown_count = 0
         local cdef_count = 0
 
         for _, field in ipairs(arranged) do
@@ -43,8 +43,8 @@ do
                 if diff > 0 then
                     if bit_type then
                         cdef_count = cdef_count + 1
-                        cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset) .. ';'
                         unknown_count = unknown_count + 1
+                        cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset) .. ';'
 
                         diff = diff - bit_type_size
                         index = index + bit_type_size
@@ -55,8 +55,8 @@ do
                     end
                     if diff > 0 then
                         cdef_count = cdef_count + 1
-                        cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. '];'
                         unknown_count = unknown_count + 1
+                        cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. '];'
                     end
                 end
                 index = index + diff
@@ -68,8 +68,8 @@ do
                 local bit_diff = field.offset - offset
                 if bit_diff > 0 then
                     cdef_count = cdef_count + 1
-                    cdefs[cdef_count] = (bit_type or ftype.cdef) .. ' __' .. tostring(unknown_count) .. ':' .. tostring(bit_diff) .. ';'
                     unknown_count = unknown_count + 1
+                    cdefs[cdef_count] = (bit_type or ftype.cdef) .. ' __' .. tostring(unknown_count) .. ':' .. tostring(bit_diff) .. ';'
                 end
                 offset = offset + bit_diff
             end
@@ -103,6 +103,7 @@ do
 
         if size and index < size then
             cdef_count = cdef_count + 1
+            unknown_count = unknown_count + 1
             cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(size - index) .. ']' .. ';'
         end
 
