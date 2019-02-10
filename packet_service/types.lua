@@ -1,3 +1,4 @@
+local math = require('math')
 local structs = require('structs')
 
 local struct = structs.struct
@@ -25,6 +26,25 @@ do
         ftype.types = types
 
         return ftype
+    end
+end
+
+local extract
+do
+    local floor = math.floor
+
+    extract = function(cdata, bit, length)
+        local first = floor(bit / 8)
+        local last = floor((bit + length - 1) / 8)
+
+        local acc = 0
+        local step = 0
+        for i = first, last do
+            acc = acc + 0x100^step * cdata[i]
+            step = step + 1
+        end
+
+        return floor(acc / 2^(bit % 8)) % 2^length
     end
 end
 
@@ -549,6 +569,90 @@ types.incoming[0x027] = struct({
     name_other          = {0x3C, pc_name},
 })
 
+types.incoming[0x028] = struct({
+    size                = {0x00, uint8},
+    _payload            = {0x01, uint8[0xFF]},
+    actor               = {fn = function(p) return extract(p._payload,  0, 32) end},
+    target_count        = {fn = function(p) return extract(p._payload, 32, 10) end},
+    category            = {fn = function(p) return extract(p._payload, 42,  4) end},
+    param               = {fn = function(p) return extract(p._payload, 46, 16) end},
+    recast              = {fn = function(p) return extract(p._payload, 78, 32) end},
+    targets             = {fn = function(p)
+        local payload = p._payload
+        local current = 110
+
+        local get = function(length)
+            local value = extract(payload, current, length)
+            current = current + length
+            return value
+        end
+
+        local skip = function(length)
+            current = current + length
+        end
+
+        local targets = {}
+        for i = 1, p.target_count do
+            local id = get(32)
+            local action_count = get(4)
+            local actions = {}
+
+            for i = 1, action_count do
+                local reaction = get(5)
+                local animation = get(11)
+                local effect = get(5)
+                local stagger = get(6)
+                local param = get(17)
+                local message = get(10)
+
+                skip(31) -- Message Modifier? If you get a complete (Resist!) this is set to 2 otherwise a regular Resist is 0.
+
+                local has_add_effect = get(1) == 1
+                local add_effect
+                if has_add_effect then
+                    add_effect = {
+                        animation = get(6),
+                        effect = get(4),
+                        param = get(17),
+                        message = get(10),
+                    }
+                end
+
+                local has_spike_effect = get(1) == 1
+                local spike_effect
+                if has_spike_effect then
+                    spike_effect = {
+                        animation = get(6),
+                        effect = get(4),
+                        param = get(14),
+                        message = get(10),
+                    }
+                end
+
+                actions[i] = {
+                    reaction = reaction,
+                    animation = animation,
+                    effect = effect,
+                    stagger = stagger,
+                    param = param,
+                    message = message,
+                    has_add_effect = has_add_effect,
+                    add_effect = add_effect,
+                    has_spike_effect = has_spike_effect,
+                    spike_effect = spike_effect,
+                }
+            end
+
+            targets[i] = {
+                id = id,
+                action_count = action_count,
+                actions = actions,
+            }
+        end
+        return targets
+    end},
+})
+
 -- Action Message
 types.incoming[0x029] = struct({
     actor_id            = {0x00, entity},
@@ -559,7 +663,6 @@ types.incoming[0x029] = struct({
     target_index        = {0x12, entity_index},
     message_id          = {0x14, action_message},
 })
-
 
 --[[ 0x2A can be triggered by knealing in the right areas while in the possession of a VWNM KI:
     Field1 will be lights level:
