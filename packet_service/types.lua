@@ -366,6 +366,7 @@ types.incoming[0x00D] = struct({
     linkshell_red       = {0x20, uint8},
     linkshell_green     = {0x21, uint8},
     linkshell_blue      = {0x22, uint8},
+    indi_bubble         = {0x3E, uint8},
     face_flags          = {0x3F, uint8}, -- 0, 3, 4 or 8
     face_model_id       = {0x44, uint8},
     race_id             = {0x45, race},
@@ -1435,6 +1436,13 @@ types.incoming[0x056] = multiple({ -- #BYRTH# unadjusted for the base offset
 types.incoming[0x057] = struct({
     vanadiel_time       = {0x00, time}, -- Units of minutes.
     weather_id          = {0x04, weather},
+})
+
+-- Assist response
+types.incoming[0x058] = struct({
+    player_id           = {0x00, entity},
+    target_id           = {0x04, entity},
+    player_index        = {0x08, entity_index},
 })
 
 -- Emote
