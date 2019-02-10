@@ -17,9 +17,10 @@ local ffi_sizeof = ffi.sizeof
 local shared_new = shared.new
 local structs_from_ptr = structs.from_ptr
 
-cache = {}
-
-cache.heap = ffi_gc(C.HeapCreate(0, 0, 0), C.HeapDestroy)
+local cache = {
+    heap = ffi_gc(C.HeapCreate(0, 0, 0), C.HeapDestroy),
+    servers = {},
+}
 
 local make_ptr = function(identifier)
     return C.HeapAlloc(cache.heap, 8, ffi_sizeof(identifier))
@@ -32,7 +33,7 @@ return {
         name, ftype = ftype and name or 'data', ftype or name
 
         local server = shared_new(service_name .. '_' .. name)
-        cache[name] = server
+        cache.servers[name] = server
 
         local ptr = make_ptr(ftype.cdef)
         server.data = {
