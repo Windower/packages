@@ -4,13 +4,17 @@ local clear = require('table.clear')
 local list = {}
 local meta = {}
 
+local index = function(l, i)
+    return i > 0 and i or l.length + i + 1
+end
+
 -- Metatable
 
 meta.__index = function(l, k)
     if type(k) == 'string' then
         return list[k]
-    elseif type(k) == 'number' and k < 0 then
-        return rawget(l, l.length + k + 1)
+    elseif type(k) == 'number' then
+        return rawget(l, index(l, k))
     end
 end
 
@@ -74,9 +78,10 @@ meta.__metatable = false
 -- Enumerable base
 
 meta.__pairs = function(l)
+    local max = l.length
     return function(l, k)
         k = k + 1
-        if k > l.length then
+        if k > max then
             return nil, nil
         end
 
@@ -95,7 +100,9 @@ meta.__convert = function(t)
         key = key + 1
         l[key] = el
     end
+
     l.length = key
+
     return setmetatable(l, meta)
 end
 
@@ -106,12 +113,13 @@ meta.__add_element = function(l, el)
 end
 
 meta.__remove_key = function(l, i)
+    i = index(l, i)
+
     local length = l.length
-    local index = i < 0 and length + i + 1 or i
-    local element = rawget(l, index)
+    local element = rawget(l, i)
 
     local new_length = length - 1
-    for key = index,  new_length do
+    for key = i, new_length do
         l[key] = rawget(l, key + 1)
     end
 
@@ -132,12 +140,12 @@ end
 -- Unique members
 
 list.insert = function(l, i, el)
+    i = index(l, i)
+
     local length = l.length
 
-    local index = i < 0 and length + i + 1 or i
-
     local current = el
-    for key = index, length do
+    for key = i, length do
         local next = current
         current = rawget(l, key)
         l[key] = next
