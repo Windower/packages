@@ -16,7 +16,7 @@ meta.__index = function(q, k)
     if type(k) == 'string' then
         return queue[k]
     elseif type(k) == 'number' then
-        return get(q, index(q, k))
+        return rawget(q, index(q, k))
     end
 end
 
