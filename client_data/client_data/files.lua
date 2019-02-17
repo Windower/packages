@@ -6,7 +6,7 @@ local dat_file = setmetatable({}, {
     __index = function(_, id)
         return id_map:read(id)
     end,
-    __newindex = function() error() end,
+    __newindex = error,
     __metatable = false,
 })
 

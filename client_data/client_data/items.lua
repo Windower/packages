@@ -1,6 +1,7 @@
 local bit = require('bit')
 local files = require('client_data.files')
 local ffi = require('ffi')
+local string = require('string')
 local types = require('client_data.types.items')
 local unicode = require('unicode')
 local windower = require('windower')
@@ -13,8 +14,10 @@ local lshift = bit.lshift
 local rshift = bit.rshift
 local ffi_cast = ffi.cast
 local ffi_gc = ffi.gc
+local ffi_offsetof = ffi.offsetof
 local ffi_string = ffi.string
 local ffi_typeof = ffi.typeof
+local string_byte = string.byte
 local to_utf16 = unicode.to_utf16
 local from_shift_jis = unicode.from_shift_jis
 local to_shift_jis = unicode.to_shift_jis
@@ -101,14 +104,14 @@ local data_blocks = setmetatable({}, {
         rawset(t, id, block)
         return block
     end,
-    __mode = 'v'
+    __mode = 'v',
 })
 
 local item_cache = setmetatable({}, {__mode = 'v'})
 
 local language_ids = {en = 0, ja = 1}
 
-get_item = function(id, language)
+local get_item = function(id, language)
     if id < 0 or id > 0xFFFF then
         return nil
     end
@@ -137,17 +140,20 @@ get_item = function(id, language)
 end
 
 local string_entry = function(item, i)
-    if item._strings.count >= 0x40 or i >= item._strings.count then
+    local strings = item._strings
+
+    if strings.count >= 0x40 or i >= strings.count then
         return nil
     end
 
-    local offset = item._strings.entries[i].offset
+    local entry = strings.entries[i]
+    local offset = entry.offset
     if offset >= 0x270 then
         return nil
     end
 
-    local base_ptr = ffi_cast(raw_data_ptr, item) + ffi.offsetof(item, '_strings')
-    local type = item._strings.entries[i].type
+    local base_ptr = ffi_cast(raw_data_ptr, item) + ffi_offsetof(item, '_strings')
+    local type = entry.type
     if type == 0 then
         return (from_shift_jis(ffi_string(base_ptr + offset + 0x1C)))
     elseif type == 1 then
@@ -278,7 +284,7 @@ local wrap_strings = function(item, log_string, description_index)
                 return wrap_log_string(item, log_string)
             end
         end,
-        __newindex = function() end,
+        __newindex = error,
         __pairs = function(t)
             return function(t, k)
                 local v
@@ -383,7 +389,7 @@ local wrap_item = function(item, language)
             end
             return item[1][k]
         end,
-        __newindex = function() end,
+        __newindex = error,
         __pairs = function(wrapper)
             local next, t, start = pairs(item[1])
             return function(t, k)
@@ -419,27 +425,26 @@ do
     local item_type_map = types.type_map
 
     local compare_name = function(name, item)
-        
-        if item._strings.count >= 0x40 or 0 >= item._strings.count then
+        local strings = item._strings
+
+        if strings.count >= 0x40 or 0 >= strings.count then
             return false
         end
-    
-        local offset = item._strings.entries[0].offset
+
+        local entry = strings.entries[0]
+        local offset = entry.offset
         if offset >= 0x270 then
             return false
         end
-   
-        local type = item._strings.entries[0].type
+
+        local type = entry.type
         if type ~= 0 then
             return false
         end
 
-        local ptr = ffi_cast(raw_data_ptr, item) + ffi.offsetof(item, '_strings') + offset + 0x1C
+        local ptr = ffi_cast(raw_data_ptr, item) + ffi_offsetof(item, '_strings') + offset + 0x1C
         for i = 1, #name do
-            if name:byte(i) ~= ptr[i - 1] then
-                if i > 1 then
-                    print(i, name:byte(i), ptr[i - 1])
-                end
+            if string_byte(name, i) ~= ptr[i - 1] then
                 return false
             end
         end
@@ -484,7 +489,7 @@ local items = setmetatable({
             return nil
         end
         return wrap_item(item, last_language)
-    end
+    end,
 })
 
 return items

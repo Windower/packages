@@ -45,6 +45,8 @@ do
     local bor = bit.bor
     local lshift = bit.lshift
     local rshift = bit.rshift
+    local io_open = io.open
+    local string_byte = string.byte
 
     id_map.data = setmetatable({}, {
         __index = function(_, id)
@@ -65,12 +67,12 @@ do
                 else
                     return nil
                 end
-                local f = assert(io.open(ftable, 'rb'))
+                local f = assert(io_open(ftable, 'rb'))
                 f:seek('set', id * 2)
                 local packed = f:read(2)
                 f:close()
-                dir = bor(lshift(packed:byte(2), 1), rshift(packed:byte(1), 7))
-                dat = band(packed:byte(1), 0x7F)
+                dir = bor(lshift(string_byte(packed, 2), 1), rshift(string_byte(packed, 1), 7))
+                dat = band(string_byte(packed, 1), 0x7F)
             end
 
             if rom == 1 then
@@ -79,7 +81,7 @@ do
                 return windower.client_path .. '\\ROM' .. rom .. '\\' .. dir .. '\\' .. dat .. '.DAT'
             end
         end,
-        __newindex = function() end,
+        __newindex = error,
         __metatable = false,
     })
 end

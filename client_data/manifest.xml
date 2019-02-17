@@ -1,8 +1,10 @@
 <package>
   <name>client_data</name>
-  <version>1.0</version>
+  <version>1.0.0.0</version>
   <type>library</type>
   <dependencies>
     <dependency>client_data_service</dependency>
+    <dependency>memory</dependency>
+    <dependency>structs</dependency>
   </dependencies>
 </package>
