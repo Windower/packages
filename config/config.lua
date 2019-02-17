@@ -14,7 +14,7 @@ local defaults = {
     graphics = {
         aspect_ratio = {
             auto = true,
-            value = 1.778,
+            value = 16 / 9,
         },
         gamma_adjustment = {
             red = 1.5,

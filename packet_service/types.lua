@@ -1,3 +1,4 @@
+local math = require('math')
 local structs = require('structs')
 
 local struct = structs.struct
@@ -13,16 +14,37 @@ do
 
     multiple = function(ftype)
         local types = {}
+        local cache = {cache = {ftype.key}}
         for index, definitions in pairs(ftype.lookups) do
-            types[index] = struct({cache = {ftype.key}}, update(update({}, ftype.base), definitions))
+            types[index] = struct(cache, update(update({}, ftype.base), definitions))
         end
 
-        ftype.base = struct({cache = {ftype.key}}, ftype.base)
+        ftype.info = { cache = cache }
+        ftype.base = struct(cache, ftype.base)
         ftype.lookups = nil
 
         ftype.types = types
 
         return ftype
+    end
+end
+
+local extract
+do
+    local floor = math.floor
+
+    extract = function(cdata, bit, length)
+        local first = floor(bit / 8)
+        local last = floor((bit + length - 1) / 8)
+
+        local acc = 0
+        local step = 0
+        for i = first, last do
+            acc = acc + 0x100^step * cdata[i]
+            step = step + 1
+        end
+
+        return floor(acc / 2^(bit % 8)) % 2^length
     end
 end
 
@@ -50,25 +72,25 @@ local time = structs.time
 
 local entity = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
-local zone = tag(uint16, 'zone')
+local zone = tag(uint16, 'zones')
 local weather = tag(uint8, 'weather')
-local state = tag(uint8, 'state')
-local job = tag(uint8, 'job')
-local race = tag(uint8, 'race')
+local state = tag(uint8, 'statuses')
+local job = tag(uint8, 'jobs')
+local race = tag(uint8, 'races')
 local percent = tag(uint8, 'percent')
-local bag = tag(uint8, 'bag')
-local slot = tag(uint8, 'slot')
-local item = tag(uint16, 'item')
+local bag = tag(uint8, 'bags')
+local slot = tag(uint8, 'slots')
+local item = tag(uint16, 'items')
 local item_status = tag(uint8, 'item_status')
 local flags = tag(uint32, 'flags')
-local title = tag(uint16, 'title')
+local title = tag(uint16, 'titles')
 local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
-local status_effect = tag(uint8, 'status_effect')
-local skill = tag(uint8, 'skill')
+local status_effect = tag(uint8, 'buffs')
+local skill = tag(uint8, 'skills')
 local indi = tag(uint8, 'indi')
 local ip = tag(uint32, 'ip')
 local chat = tag(uint8, 'chat')
-local ability_recast = tag(uint8, 'ability_recast')
+local ability_recast = tag(uint8, 'ability_recasts')
 local action_message = tag(uint16, 'action_messages')
 local roe_quest = tag(bit(uint32, 12), 'roe_quest')
 
@@ -192,7 +214,7 @@ local shop_item = struct({
     item_id             = {0x04, item},
     shop_slot           = {0x06, uint16},
     craft_skill         = {0x08, skill}, -- Zero on normal shops, has values that correlate to res\skills.
-    craft_rank          = {0x0A, uint16}, -- Correlates to Rank able to purchase product from GuildNPC  
+    craft_rank          = {0x0A, uint16}, -- Correlates to Rank able to purchase product from GuildNPC
 })
 
 local merit_entry = struct({
@@ -364,6 +386,7 @@ types.incoming[0x00D] = struct({
     linkshell_red       = {0x20, uint8},
     linkshell_green     = {0x21, uint8},
     linkshell_blue      = {0x22, uint8},
+    indi_bubble         = {0x3E, uint8},
     face_flags          = {0x3F, uint8}, -- 0, 3, 4 or 8
     face_model_id       = {0x44, uint8},
     race_id             = {0x45, race},
@@ -409,10 +432,8 @@ types.incoming[0x00E] = struct({
     state               = {0x1B, state},
     flags               = {0x1C, flags},
     claimer_id          = {0x28, entity},
-    face_model_id       = {0x2D, uint8},
-    race_id             = {0x2E, race},
-    model               = {0x2F, model},
-    name                = {0x30, string(0x10)},
+    model_id            = {0x2E, uint16},
+    name                = {0x30, string()},
 })
 
 -- Incoming Chat
@@ -421,7 +442,7 @@ types.incoming[0x017] = struct({
     gm                  = {0x01, bool},
     zone                = {0x02, zone},
     name                = {0x04, pc_name},
-    message             = {0x14, string(0xEC)}, -- Max of 150 characters? Is this still accurate?
+    message             = {0x14, string(0xEC)},
 })
 
 -- Job Info
@@ -436,7 +457,7 @@ types.incoming[0x01B] = struct({
     stats_base          = {0x1C, stats}, -- Altering these stat values has no impact on your equipment menu.
     hp_max              = {0x38, uint32},
     mp_max              = {0x3C, uint32},
-    job_levels          = {0x40, uint8[0x18], key_lookup='jobs'},
+    job_levels          = {0x44, uint8[0x18], key_lookup='jobs'},
     monster_level       = {0x5B, uint8},
     encumbrance_flags   = {0x5C, uint32}, -- [legs, hands, body, head, ammo, range, sub, main,] [back, right_ring, left_ring, right_ear, left_ear, waist, neck, feet] [HP, CHR, MND, INT, AGI, VIT, DEX, STR,] [X X X X X X X MP]
 })
@@ -548,6 +569,90 @@ types.incoming[0x027] = struct({
     name_other          = {0x3C, pc_name},
 })
 
+types.incoming[0x028] = struct({
+    size                = {0x00, uint8},
+    _payload            = {0x01, uint8[0xFF]},
+    actor               = {fn = function(p) return extract(p._payload,  0, 32) end},
+    target_count        = {fn = function(p) return extract(p._payload, 32, 10) end},
+    category            = {fn = function(p) return extract(p._payload, 42,  4) end},
+    param               = {fn = function(p) return extract(p._payload, 46, 16) end},
+    recast              = {fn = function(p) return extract(p._payload, 78, 32) end},
+    targets             = {fn = function(p)
+        local payload = p._payload
+        local current = 110
+
+        local get = function(length)
+            local value = extract(payload, current, length)
+            current = current + length
+            return value
+        end
+
+        local skip = function(length)
+            current = current + length
+        end
+
+        local targets = {}
+        for i = 1, p.target_count do
+            local id = get(32)
+            local action_count = get(4)
+            local actions = {}
+
+            for i = 1, action_count do
+                local reaction = get(5)
+                local animation = get(11)
+                local effect = get(5)
+                local stagger = get(6)
+                local param = get(17)
+                local message = get(10)
+
+                skip(31) -- Message Modifier? If you get a complete (Resist!) this is set to 2 otherwise a regular Resist is 0.
+
+                local has_add_effect = get(1) == 1
+                local add_effect
+                if has_add_effect then
+                    add_effect = {
+                        animation = get(6),
+                        effect = get(4),
+                        param = get(17),
+                        message = get(10),
+                    }
+                end
+
+                local has_spike_effect = get(1) == 1
+                local spike_effect
+                if has_spike_effect then
+                    spike_effect = {
+                        animation = get(6),
+                        effect = get(4),
+                        param = get(14),
+                        message = get(10),
+                    }
+                end
+
+                actions[i] = {
+                    reaction = reaction,
+                    animation = animation,
+                    effect = effect,
+                    stagger = stagger,
+                    param = param,
+                    message = message,
+                    has_add_effect = has_add_effect,
+                    add_effect = add_effect,
+                    has_spike_effect = has_spike_effect,
+                    spike_effect = spike_effect,
+                }
+            end
+
+            targets[i] = {
+                id = id,
+                action_count = action_count,
+                actions = actions,
+            }
+        end
+        return targets
+    end},
+})
+
 -- Action Message
 types.incoming[0x029] = struct({
     actor_id            = {0x00, entity},
@@ -558,7 +663,6 @@ types.incoming[0x029] = struct({
     target_index        = {0x12, entity_index},
     message_id          = {0x14, action_message},
 })
-
 
 --[[ 0x2A can be triggered by knealing in the right areas while in the possession of a VWNM KI:
     Field1 will be lights level:
@@ -665,7 +769,7 @@ types.incoming[0x030] = struct({
 -- Synth List / Synth Recipe
 --[[ This packet is used for list of recipes, but also for details of a specific recipe.
 
-   If you ask the guild NPC that provides regular Image Suppor for recipes, 
+   If you ask the guild NPC that provides regular Image Suppor for recipes,
    s/he will give you a list of recipes, fields are as follows:
    Field1-2: NPC ID
    Field3: NPC Index
@@ -675,13 +779,13 @@ types.incoming[0x030] = struct({
    Field24: Usually Item ID of the recipe on next page
 
 
-   If you ask a guild NPC for a specific recipe, fields are as follows:   
+   If you ask a guild NPC for a specific recipe, fields are as follows:
    field1: item to make (item id)
    field2,3,4: sub-crafts needed. Note that main craft will not be listed.
       1 = woodworking
       2 = smithing
       3 = goldsmithing
-      4 = clothcraft    
+      4 = clothcraft
       5 = leatherworking
       6 = bonecraft
       7 = Alchemy
@@ -690,10 +794,10 @@ types.incoming[0x030] = struct({
    field6: KeyItem needed, if any (in Big Endian)
    field7-14: material required (item id)
    field15-22: qty for each material above.
-   field23-24: Unknown   
+   field23-24: Unknown
  ]]
 --fields.incoming[0x031] = L{
---    {ctype='unsigned short[24]',    label='Field'},                             -- 04    
+--    {ctype='unsigned short[24]',    label='Field'},                             -- 04
 --}
 
 -- NPC Interaction Type 1
@@ -850,6 +954,7 @@ types.incoming[0x037] = struct({
     ballista_stuff      = {0x30, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
     time_offset_maybe   = {0x38, uint32}, -- For me, this is the number of seconds in 66 hours
     timestamp           = {0x3C, time}, -- This is 32 years off of JST at the time the packet is sent.
+    fish_hook_delay     = {0x46, uint8}, -- number of seconds between casting and hooking a fish, only set when state_id changes to 56
     status_effect_mask  = {0x48, data(8)},
     indi_status_effect  = {0x54, indi},
 })
@@ -954,12 +1059,12 @@ types.incoming[0x044] = multiple({
 
         --PUP
         [0x12] = {
-            automaton_head  = {0x04, uint8}, -- Harlequinn 1, Valoredge 2, Sharpshot 3, Stormwaker 4, Soulsoother 5, Spiritreaver 6
-            automaton_frame = {0x05, uint8}, -- Harlequinn 20, Valoredge 21, Sharpshot 22, Stormwaker 23
-            attachments     = {0x06, item[0x0C]}, -- Attachment assignments are based off their position in the equipment list. Offset is +2237, so Strobe is 01, etc.
-            available_heads = {0x14, data(4)}, -- Flags for the available heads (Position corresponds to Item ID shifted down by 8192)
-            available_bodies= {0x18, data(4)}, -- #BYRTH# Flags for the available bodies (position corresponds to the item ID shifted down by ???)
-            available_attach= {0x34, data(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments {position corresponds to the item ID shifted down by 2237)
+            automaton_head  = {0x04, uint8}, -- Harlequinn 0x01, Valoredge 0x02, Sharpshot 0x03, Stormwaker 0x04, Soulsoother 0x05, Spiritreaver 0x06 (Item ID - 0x2000)
+            automaton_frame = {0x05, uint8}, -- Harlequinn 0x20, Valoredge 0x21, Sharpshot 0x22, Stormwaker 0x23 (Item ID - 0x2000)
+            attachments     = {0x06, uint8[0x0C]}, -- Attachment assignments are based off their position in the equipment list. 0 is an empty slot, otherwise Item ID - 0x2100, so Strobe is 0x01, etc.
+            available_heads = {0x14, data(4)}, -- Flags for the available heads. Position corresponds to Item ID shifted down by 0x2000. Harlequinn & 0x02, etc.
+            available_frames= {0x18, data(4)}, -- #BYRTH# Flags for the available frames. Position corresponds to the item ID shifted down by 0x2020. Harlequinn & 0x01, etc.
+            available_attach= {0x34, data(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments. Position corresponds to the item ID shifted down by 0x2100.
             pet_name        = {0x54, string(0x10)},
             hp              = {0x64, uint16},
             hp_max          = {0x66, uint16},
@@ -1258,7 +1363,7 @@ types.incoming[0x04C] = multiple({
             item_id         = {0x24, item},
             count           = {0x26, uint8},
             ah_category     = {0x27, uint8},
-            price           = {0x28, uint32}, 
+            price           = {0x28, uint32},
             auction_state   = {0x2C, uint32}, -- 04 00 00 00 in the first packet and 00 00 00 00 when confirmed canceled.
             auction_id      = {0x30, uint32}, -- present in the first packet and blanked in the second.
             auction_start   = {0x34, time}, -- UTC time
@@ -1370,9 +1475,9 @@ types.incoming[0x055] = struct({cache = {'type'}}, { -- #BYRTH# unadjusted for t
     [0x00E8] = 'Completed Abyssea Quests',
     [0x00F0] = 'Current Adoulin Quests',
     [0x00F8] = 'Completed Adoulin Quests',
-    [0x0100] = 'Current Coalition Quests', 
-    [0x0108] = 'Completed Coalition Quests', 
-    [0xFFFF] = 'Current Missions',               
+    [0x0100] = 'Current Coalition Quests',
+    [0x0108] = 'Completed Coalition Quests',
+    [0xFFFF] = 'Current Missions',
 }]]
 
 -- There are 27 variations of this packet to populate different quest information.
@@ -1434,6 +1539,13 @@ types.incoming[0x056] = multiple({ -- #BYRTH# unadjusted for the base offset
 types.incoming[0x057] = struct({
     vanadiel_time       = {0x00, time}, -- Units of minutes.
     weather_id          = {0x04, weather},
+})
+
+-- Assist response
+types.incoming[0x058] = struct({
+    player_id           = {0x00, entity},
+    target_id           = {0x04, entity},
+    player_index        = {0x08, entity_index},
 })
 
 -- Emote
@@ -1656,8 +1768,8 @@ types.incoming[0x067] = struct({
         pet_index           = {0x02, entity_index},
         pet_id              = {0x04, entity},
         owner_index         = {0x08, entity_index},
-        current_hp_percent  = {0x0A, percent},
-        current_mp_percent  = {0x0B, percent},
+        hp_percent          = {0x0A, percent},
+        mp_percent          = {0x0B, percent},
         pet_tp              = {0x0C, uint32},
         --pet_name            = {0x10, pc_name},    -- Is variable-length and isn't always included
 })
@@ -1670,8 +1782,8 @@ types.incoming[0x068] = struct({
     owner_index         = {0x02, entity_index},
     owner_id            = {0x04, entity},
     pet_index           = {0x08, entity_index},
-    current_hp_percent  = {0x0A, percent},
-    current_mp_percent  = {0x0B, percent},
+    hp_percent          = {0x0A, percent},
+    mp_percent          = {0x0B, percent},
     pet_tp              = {0x0C, uint32},
     target_id           = {0x10, entity},
     pet_name            = {0x14, string()},
@@ -1813,7 +1925,7 @@ types.incoming[0x0B5] = struct({
 
 -- Alliance status update
 types.incoming[0x0C8] = struct({
-    -- 0x00: fields.lua implies this byte might be useful 
+    -- 0x00: fields.lua implies this byte might be useful
     alliance_members    = {0x04, alliance_member[18]},
     -- 0xDC~0xF4: fields.lua claims it might always be 0, but the fact that it is another 18 bytes is suspicious
 })
@@ -1985,7 +2097,7 @@ types.incoming[0x0F4] = struct({
     level               = {0x02, uint8},
     type                = {0x03, uint8}, -- 0: Other, 1: Friendly, 2: Enemy
     x_offset            = {0x04, uint16}, -- Offset on the map
-    y_offset            = {0x06, uint16}, 
+    y_offset            = {0x06, uint16},
     name                = {0x08, pc_name}, -- Slugged, may not extend all the way to 27. Up to 25 has been observed. This will be used if Type == 0
 })
 
@@ -2046,7 +2158,7 @@ types.incoming[0x107] = struct({
 types.incoming[0x108] = struct({
     player_id           = {0x00, entity},
     type                = {0x04, bool},
-    _known1             = {0x05, data(4), const=0}, 
+    _known1             = {0x05, data(4), const=0},
     player_index        = {0x0A, entity_index},
     player_name         = {0x0C, pc_name},
 })
@@ -2177,10 +2289,18 @@ types.incoming[0x113] = struct({
     -- Packet structure current as of 2018-07-05 update.
 })
 
--- Fish Bite Info
+-- Fishing Minigame Parameters
 types.incoming[0x115] = struct({
-    fish_bite_id        = {0x06, uint32},
-    catch_key           = {0x10, uint32}, -- This value is used in the catch key of the 0x110 packet when catching a fish
+    fish_hp             = {0x00, uint16}, -- max fish hp
+    arrow_time          = {0x02, uint16}, -- a higher value means you have more time to correctly pick the arrow direction
+    auto_regen          = {0x04, uint16}, -- bellow 128 will auto-drain fish hp, above 128 will auto-regen fish hp, 128 is neutral
+    movement            = {0x06, uint16}, -- a lower value means the fishing rod will stay in the center longer (no arrow)
+    damage              = {0x08, uint16}, -- amount of damage done when correctly picking the arrow direction
+    healing             = {0x0a, uint16}, -- amount of healing given when incorrectly picking the arrow direction
+    time_limit          = {0x0c, uint16}, -- amount of time you have to reel in the fish
+    danger_music        = {0x0e, boolbit(uint8), offset=0}, -- if true the more intense fishing music is used
+    critical_bite       = {0x0e, boolbit(uint8), offset=1}, -- if true the light bulb graphic will appear over the players head
+    gold_arrows         = {0x10, uint32}, -- percentage chance of getting a gold arrow, used in the outgoing 0x110 packet when attempting to catch
 })
 
 -- Equipset Build Response
@@ -2561,7 +2681,7 @@ types.outgoing[0x050] = struct({cache = {'slot_id'}}, {
 types.outgoing[0x051] = struct({
     count               = {0x00, uint8},
     -- Same as _unknown1 is outgoing 0x052
-    equipment           = {0x04, equipset_entry[0x01]}, -- Should be count entries instead of 0x01
+    equipment           = {0x04, equipset_entry[0x10]},
     -- There is also a bunch of junk at the end of the packet.
 })
 
@@ -2730,7 +2850,7 @@ types.outgoing[0x083] = struct({
 types.outgoing[0x084] = struct({
     count               = {0x00, uint32},
     item                = {0x04, item},
-    bag_index           = {0x06, uint8}, 
+    bag_index           = {0x06, uint8},
     -- 0x07: Always 0? Likely padding
 })
 
@@ -3036,20 +3156,13 @@ types.outgoing[0x10E] = struct({
 -- Currency Menu
 types.outgoing[0x10F] = struct({ })
 
---[[enums['fishing'] = {
-    [2] = 'Cast rod',
-    [3] = 'Release/catch',
-    [4] = 'Put away rod',
-}]]
-
--- Fishing Action
+-- Fishing Minigame Action
 types.outgoing[0x110] = struct({
     player_id           = {0x00, entity},
-    fish_hp             = {0x04, uint32}, -- Always 200 when releasing, zero when casting and putting away rod
+    fish_hp             = {0x04, uint32}, -- catch = remaining fish hp %, release = 200, release before hook = 201, time out = 300, time warning = seconds remaining, otherwise zero
     player_index        = {0x08, entity_index},
-    action_type         = {0x0A, uint8},
-    -- 0x0B: Always zero (pre-March fishing update this value would increase over time, probably zone fatigue)
-    catch_key           = {0x0C, uint32}, -- When catching this matches the catch key from the 0x115 packet, otherwise zero
+    action_type         = {0x0A, uint8}, -- hook fish = 2, catch/release/time out = 3, put away rod = 4, time warning = 5
+    gold_arrows         = {0x0C, uint32}, -- when catching this will match gold_arrows from the incoming 0x115 packet, otherwise zero
 })
 
 -- Lockstyle

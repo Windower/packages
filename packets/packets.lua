@@ -3,7 +3,7 @@ local shared = require('shared')
 local table = require('table')
 local string = require('string')
 
-local fetch = shared.get('packet_service', 'packets')
+local client = shared.get('packet_service', 'packets')
 
 local get_last = function(_, path)
     return get_last(path)
@@ -17,20 +17,17 @@ local inject = function(_, path, values)
     inject(path, values)
 end
 
+local block = function(_)
+    block()
+end
+
+local update = function(_, p)
+    update(p)
+end
+
 local registry = {}
 
 local fns = {}
-
-local make_table
-local packet_meta = {
-    __index = function(t, k)
-        if k == 'last' then
-            return fetch:call(get_last, t.path)
-        end
-
-        return make_table(t.path .. '/' .. tostring(k))
-    end,
-}
 
 local register_path = function(path, fn)
     local events = registry[path]
@@ -38,7 +35,7 @@ local register_path = function(path, fn)
         events = {}
         registry[path] = events
     end
-    local event = fetch:call(make_event, path)
+    local event = client:call(make_event, path)
     events[fn] = event
     event:register(fn)
 end
@@ -64,11 +61,13 @@ fns.register_init = function(t, init_table)
     end
 
     local lasts = {}
+    local lasts_count = 0
     for i = 1, #paths do
         local path = paths[i]
-        local last = fetch:call(get_last, path.path)
+        local last = client:call(get_last, path.path)
         if last then
-            lasts[#lasts + 1] = { packet = last, fn = path.fn, path = path }
+            lasts_count = lasts_count + 1
+            lasts[lasts_count] = { packet = last, fn = path.fn, path = path }
         end
     end
 
@@ -76,31 +75,49 @@ fns.register_init = function(t, init_table)
         return l1.packet._info.timestamp < l2.packet._info.timestamp
     end)
 
-    for _, last in ipairs(lasts) do
+    for i = 1, #lasts do
+        local last = lasts[i]
         last.fn(last.packet)
     end
 end
 
 fns.inject = function(t, values)
-    fetch:call(inject, t.path, values)
+    client:call(inject, t.path, values)
 end
 
-do
-    local string_find = string.find
-
-    make_table = function(path)
-        local id_path = string_find(path, '/', 2)
-        return setmetatable({
-            path = path,
-            register = fns.register,
-            unregister = fns.unregister,
-            register_init = fns.register_init,
-            inject = id_path and fns.inject,
-        }, packet_meta)
-    end
+local make_table = function(path, allow_injection)
+    return {
+        path = path,
+        register = fns.register,
+        unregister = fns.unregister,
+        register_init = fns.register_init,
+        inject = allow_injection and fns.inject or nil,
+    }
 end
 
-return make_table('')
+local packet_meta
+packet_meta = {
+    __index = function(t, k)
+        if k == 'last' then
+            return client:call(get_last, t.path)
+        end
+
+        return setmetatable(make_table(t.path .. '/' .. tostring(k), true), packet_meta)
+    end,
+}
+
+local packets = make_table('', false)
+
+packets.incoming = setmetatable(make_table('/incoming', false), packet_meta)
+packets.outgoing = setmetatable(make_table('/outgoing', false), packet_meta)
+packets.block = function()
+    client:call(block)
+end
+packets.update = function(p)
+    client:call(update, p)
+end
+
+return packets
 
 --[[
 Copyright © 2018, Windower Dev Team

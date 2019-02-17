@@ -1,6 +1,6 @@
 local account = require('account')
 local event = require('event')
-local files = require('files')
+local file = require('file')
 local ffi = require('ffi')
 local string = require('string')
 local table = require('table')
@@ -17,141 +17,180 @@ local info_cache = {}
 
 local settings = {}
 
-local amend
-amend = function(main, defaults)
-    for key, value in pairs(defaults) do
-        if main[key] == nil then
-            if type(value) == 'table' then
-                local new = {}
-                amend(new, value)
-                main[key] = new
-            else
-                main[key] = value
-            end
-        else
-            assert((type(value) == 'table') == (type(main[key]) == 'table'), 'Incompatible settings for key ' .. key .. '! Defaults specify a ' .. type(value) .. ', the file has a ' .. type(main[key]) .. '.')
-
-            if type(value) == 'table' then
-                amend(main[key], value)
-            end
+local get_file
+do
+    local make_account_name = function()
+        if not account.logged_in then
+            return 'logged_out'
         end
+
+        return account.name .. '_' .. (account.server and account.server.name or account.id)
     end
-end
 
-local get_file = function(path)
-    local dir = windower.settings_path .. '\\' .. account.name .. '_' .. (account.server and account.server.name or account.id) .. '\\'
+    get_file = function(path, global)
+        local dir = windower.settings_path .. '\\' .. (global and '[global]' or make_account_name()) .. '\\'
 
-    C.CreateDirectoryW(unicode.to_utf16(windower.settings_path .. '\\..'), nil)
-    C.CreateDirectoryW(unicode.to_utf16(windower.settings_path), nil)
-    C.CreateDirectoryW(unicode.to_utf16(dir), nil)
+        C.CreateDirectoryW(unicode.to_utf16(windower.settings_path .. '\\..'), nil)
+        C.CreateDirectoryW(unicode.to_utf16(windower.settings_path), nil)
+        C.CreateDirectoryW(unicode.to_utf16(dir), nil)
 
-    return files.create(dir .. path)
-end
-
-local format_value = function(value)
-    if type(value) == 'string' then
-        return '\'' .. value .. '\''
-    else
-        return tostring(value)
+        return file.create(dir .. path)
     end
 end
 
 local format_table
-format_table = function(t, nested)
-    nested = nested or 1
-
-    local indent = ('    '):rep(nested)
-
-    local res = {}
-    res[1] = '{'
-
-    for key, child in pairs(t) do
-        local formatted_key = type(key) == 'string' and key:match('^%a[%w_]+$') or '[' .. format_value(key) .. ']'
-        res[#res + 1] = indent .. formatted_key .. ' = ' .. (type(child) == 'table' and format_table(child, nested + 1) or format_value(child)) .. ','
+do
+    local format_key = function(key)
+        if type(key) == 'string' then
+            return key:match('^%a[%w_]*$') or '[\'' .. key .. '\']'
+        else
+            return '[' .. tostring(key) .. ']'
+        end
     end
 
-    res[#res + 1] = ('    '):rep(nested - 1) .. '}'
+    local format_value = function(value, nested)
+        local value_type = type(value)
+        if value_type == 'table' then
+            return format_table(value, nested + 1)
+        elseif value_type == 'string' then
+            return '\'' .. value .. '\''
+        else
+            return tostring(value)
+        end
+    end
 
-    return table.concat(res, '\n')
+    format_table = function(t, nested)
+        nested = nested or 1
+
+        local indent = ('    '):rep(nested)
+
+        local res = {}
+        res[1] = '{'
+
+        local count = 1
+        for key, child in pairs(t) do
+            count = count + 1
+            res[count] = indent .. format_key(key) .. ' = ' .. format_value(child, nested) .. ','
+        end
+
+        res[count + 1] = ('    '):rep(nested - 1) .. '}'
+
+        local joined = table.concat(res, '\n')
+        if nested > 1 then
+            return joined
+        end
+
+        return joined .. '\n'
+    end
 end
 
-settings.load = function(defaults, path)
-    path = type(defaults) == 'string' and defaults or path or 'settings.lua'
-    defaults = type(defaults) == 'table' and defaults or nil
+local parse
+do
+    local amend
+    amend = function(parsed, defaults)
+        for key, value in pairs(defaults) do
+            local parsed_child = parsed[key]
+            if type(value) == 'table' then
+                if parsed_child == nil then
+                    parsed_child = {}
+                    parsed[key] = parsed_child
+                end
 
-    local file
-    if account.logged_in then
-        file = get_file(path)
+                amend(parsed_child, value)
+
+            elseif parsed_child == nil then
+                parsed[key] = value
+            end
+        end
     end
 
-    local options
-    if file == nil then
-        options = {}
-    elseif not file:exists() then
-        file:write('return ' .. format_table(defaults))
-        options = {}
-    else
-        options = loadfile(file.path)()
+    parse = function(path, defaults, global)
+        local file = get_file(path, global)
+        local options
+        if file:exists() then
+            options = loadfile(file.path)()
+        else
+            file:write('return ' .. format_table(defaults))
+            options = {}
+        end
+
+        amend(options, defaults)
+
+        return options
+    end
+end
+
+settings.load = function(defaults, path, global)
+    if type(path) == 'boolean' then
+        path, global = global, path
     end
 
-    amend(options, defaults)
+    path = path or 'settings.lua'
+    global = global ~= nil and global
+
+    local options = parse(path, defaults, global)
 
     info_cache[options] = {
         path = path,
         defaults = defaults,
+        global = global,
     }
 
+    settings.save(options)
     settings.settings_change:trigger(options)
 
     return options
 end
 
+local save_options = function(options, info)
+    get_file(info.path, info.global):write('return ' .. format_table(options))
+end
+
 settings.save = function(options)
-    if not account.logged_in then
+    if options then
+        save_options(options, info_cache[options])
         return
     end
 
-    local info = info_cache[options]
-
-    get_file(info.path):write('return ' .. format_table(options))
+    for options, info in pairs(info_cache) do
+        save_options(options, info)
+    end
 end
 
-account.login:register(function()
-    for options, info in pairs(info_cache) do
-        for key in pairs(options) do
-            options[key] = nil
+do
+    local update
+    update = function(current, parsed)
+        if not current then
+            return parsed
         end
 
-        local file = get_file(info.path)
-
-        if not file:exists() then
-            file:write('return ' .. format_table(options))
-        else
-            local file_options = loadfile(file.path)()
-            amend(options, file_options)
+        for key, value in pairs(parsed) do
+            current[key] = type(value) == 'table' and update(current[key], value) or value
         end
 
-        amend(options, info.defaults)
-    end
-
-    for options, info in pairs(info_cache) do
-        settings.settings_change:trigger(options)
-    end
-end)
-
-account.logout:register(function()
-    for options, info in pairs(info_cache) do
-        for key in pairs(options) do
-            options[key] = nil
+        for key in pairs(current) do
+            if parsed[key] == nil then
+                current[key] = nil
+            end
         end
 
-        amend(options, info.defaults)
+        return current
     end
 
-    for options, info in pairs(info_cache) do
-        settings.settings_change:trigger(options)
+    local reparse = function()
+        for options, info in pairs(info_cache) do
+            if not info.global then
+                local parsed = parse(info.path, info.defaults)
+                update(options, parsed)
+                settings.save(options)
+                settings.settings_change:trigger(options)
+            end
+        end
     end
-end)
+
+    account.login:register(reparse)
+    account.logout:register(reparse)
+end
 
 settings.settings_change = event.slim.new()
 

@@ -29,7 +29,7 @@ do
         local offset = 0
         local bit_type
         local bit_type_size
-        local unknown_count = 1
+        local unknown_count = 0
         local cdef_count = 0
 
         for _, field in ipairs(arranged) do
@@ -43,8 +43,8 @@ do
                 if diff > 0 then
                     if bit_type then
                         cdef_count = cdef_count + 1
-                        cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset) .. ';'
                         unknown_count = unknown_count + 1
+                        cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset) .. ';'
 
                         diff = diff - bit_type_size
                         index = index + bit_type_size
@@ -55,8 +55,8 @@ do
                     end
                     if diff > 0 then
                         cdef_count = cdef_count + 1
-                        cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. '];'
                         unknown_count = unknown_count + 1
+                        cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(diff) .. '];'
                     end
                 end
                 index = index + diff
@@ -68,8 +68,8 @@ do
                 local bit_diff = field.offset - offset
                 if bit_diff > 0 then
                     cdef_count = cdef_count + 1
-                    cdefs[cdef_count] = (bit_type or ftype.cdef) .. ' __' .. tostring(unknown_count) .. ':' .. tostring(bit_diff) .. ';'
                     unknown_count = unknown_count + 1
+                    cdefs[cdef_count] = (bit_type or ftype.cdef) .. ' __' .. tostring(unknown_count) .. ':' .. tostring(bit_diff) .. ';'
                 end
                 offset = offset + bit_diff
             end
@@ -103,6 +103,7 @@ do
 
         if size and index < size then
             cdef_count = cdef_count + 1
+            unknown_count = unknown_count + 1
             cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(size - index) .. ']' .. ';'
         end
 
@@ -152,6 +153,7 @@ end
 local keywords = {
     ['auto'] = true,
     ['break'] = true,
+    ['bool'] = true,
     ['case'] = true,
     ['char'] = true,
     ['complex'] = true,
@@ -336,9 +338,7 @@ do
 end
 
 do
-    local ffi_cdef = function(def)
-        ffi.cdef(def)
-    end
+    local ffi_cdef = ffi.cdef
     local string_sub = string.sub
     local string_gsub = string.gsub
 
@@ -446,11 +446,26 @@ do
     local ffi_string = ffi.string
     local ffi_copy = ffi.copy
 
-    structs.string = function(size)
-        local ftype = structs.make_type('char')[size or '*']
-        ftype.converter = 'string'
+    local string_cache = {}
+    local data_cache = {}
 
-        return ftype
+    local make = function(size, tag, cache)
+        size = size or '*'
+
+        local cached = cache[size]
+        if not cached then
+            cached = structs.make_type('char')[size]
+            cached.converter = tag
+            cached.tag = tag
+
+            string_cache[size] = cached
+        end
+
+        return cached
+    end
+
+    structs.string = function(size)
+        return make(size, 'string', string_cache)
     end
 
     tolua.string = function(value, field)
@@ -462,10 +477,7 @@ do
     end
 
     structs.data = function(size)
-        local ftype = structs.make_type('char')[size or '*']
-        ftype.converter = 'data'
-
-        return ftype
+        return make(size, 'data', data_cache)
     end
 
     tolua.data = function(value, field)
@@ -504,13 +516,13 @@ do
     local string_sub = string.sub
     local string_byte = string.byte
 
+    local ctype = ffi_typeof('char[?]')
+
     structs.packed_string = function(size, lookup_string)
         local ftype = structs.make_type('char')[size]
         ftype.converter = 'packed_string'
 
-        local unpacked_size = math_floor(4 * size / 3 + 0.1)
-        ftype.ctype = ffi_typeof('char[' .. unpacked_size .. ']')
-        ftype.unpacked_size = unpacked_size
+        ftype.unpacked_size = math_floor(4 * size / 3)
 
         local lua_lookup = {}
         do
@@ -534,7 +546,7 @@ do
     tolua.packed_string = function(value, field)
         local ftype = field.type
         local lua_lookup = ftype.lua_lookup
-        local res = ftype.ctype()
+        local res = ctype(ftype.unpacked_size)
         local ptr = res
         for i = 1, ftype.size - 2, 3 do
             local v1 = value[0]

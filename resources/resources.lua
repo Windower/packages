@@ -13,7 +13,9 @@ local constructors = setmetatable({}, {
             return data[resource_name] ~= nil
         end, resource_name)
 
-        assert(data, 'Resource "' .. resource_name .. '" not found.')
+        if not data then
+            return nil
+        end
 
         local meta = {}
 
@@ -46,7 +48,8 @@ local constructors = setmetatable({}, {
 
 return setmetatable({}, {
     __index = function(_, resource_name)
-        return constructors[resource_name]()
+        local constructor = constructors[resource_name]
+        return constructor and constructor()
     end
 })
 

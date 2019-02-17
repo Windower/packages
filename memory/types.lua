@@ -77,7 +77,7 @@ local model = struct({
 structs.declare('entity')
 
 local display = struct({
-    pos                     = {0x34, world_coord},
+    position                = {0x34, world_coord},
     heading                 = {0x48, float},
     entity                  = {0x70, ptr('entity')},
     name_color              = {0x78, rgba},
@@ -108,7 +108,7 @@ local entity = struct({
     owner                   = {0x0E8, entity_id},
     hp_percent              = {0x0EC, percent},
     target_type             = {0x0EE, uint8}, -- 0 = PC, 1 = NPC, 2 = NPC with fixed model (including various types of books), 3 = Doors and similar objects
-    race_id                 = {0x0EF, uint16},
+    race_id                 = {0x0EF, uint8},
     face_model_id           = {0x0FC, uint16},
     model                   = {0x0FE, model},
     freeze                  = {0x11C, bool},
@@ -142,7 +142,7 @@ local entity = struct({
     -- npc_walk_mode           = {0x160, uint16},
 })
 
-local target_array_entry = struct({
+local target_array_entry = struct({size = 0x28}, {
     index                   = {0x00, entity_index},
     id                      = {0x04, entity_id},
     entity                  = {0x08, ptr(entity)},
@@ -195,6 +195,11 @@ local chat_menu_entry = struct({
     internal                = {0x0C, ptr()}, -- Pointer to a null-terminated string which will be copied to the internal buffer
     length_internal         = {0x10, uint16}, -- Length (in bytes) of the internal buffer associated with this entry
     auto_translate          = {0x14, string(0x04)}, -- Auto-translate code, 0 if the phrase is a regular string
+})
+
+local entity_string = struct({
+    name                    = {0x00, string(0x18)},
+    id                      = {0x1C, uint32},
 })
 
 local types = {}
@@ -333,6 +338,24 @@ types.follow = struct({signature = '8BCFE8????FFFF8B0D????????E8????????8BE885ED
     follow_id               = {0x24, entity_id}, -- Once set will overwrite pos with directional values
     first_person_view       = {0x28, bool},
     auto_run                = {0x29, bool},
+})
+
+types.camera = struct({signature = '89542418E8????????8B0D????????68'}, {
+    view_matrix             = {0x000, float[4][4]},
+    projection_matrix       = {0x240, float[4][4]},
+})
+
+types.string_tables = struct({signature = '8B81????0000F6C402750532C0C20400A0'}, {
+    skills                  = {0x10, ptr()},
+    elements                = {0x14, ptr()},
+    entities                = {0x18, ptr(entity_string)},
+    emotes                  = {0x1C, ptr()},
+    actions                 = {0x20, ptr()},
+    status_effects          = {0x24, ptr()},
+    gameplay                = {0x28, ptr()},
+    abilities               = {0x34, ptr()},
+    unity                   = {0x38, ptr()},
+    zone                    = {0x3C, ptr()},
 })
 
 return types

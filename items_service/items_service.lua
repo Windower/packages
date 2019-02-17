@@ -20,14 +20,14 @@ local bag_count = #resources.bags
 local bag_size = 80
 
 local items = server.new('items', structs.struct({
-    bags                = {item[bag_size][bag_count]},
+    bags                = {item[bag_size + 1][bag_count]},
     sizes               = {structs.int32[bag_count]},
     gil                 = {structs.int32},
 }))
 
 local equipment_references = {}
 
-for bag = 0, bag_count do
+for bag = 0, bag_count - 1 do
     for index = 0, bag_size do
         local item = items.bags[bag][index]
         item.bag = bag

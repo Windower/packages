@@ -1,29 +1,28 @@
-local bit = require('bit')
 local chat = require('chat')
+local set = require('set')
 local string = require('string')
+local target = require('target')
 
-function tohex(str)
-    local i = 0
-    local out = ''
-    local key = {'1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'}
-    key[0] = '0'
-    
-    while string.len(str) > i do
-        i = i + 1
-        local val = str:byte(i)
-        local lower4 = bit.band(val,15)
-        local upper4 = bit.rshift(bit.band(val,240),4)
-        out = out..key[upper4]..key[lower4]..' '
-    end
-    return out
+local blacklist = set(
+    'Paintbrush of Souls', -- Requires correct timing, should not be skipped
+    'Geomantic Reservoir', -- Causes dialogue freeze for some reason
+)
+
+local prompt = '\u{F800}'
+local prompt_length = #prompt
+
+do
+    local string_sub = string.sub
+
+    chat.text_added:register(function(obj)
+        if (obj.type == 150 or obj.type == 151) and string_sub(obj.text, -prompt_length) == prompt then
+            local current_target = target.t
+            if not (current_target and blacklist:contains(current_target.name)) then
+                obj.text = string_sub(obj.text, 1, -prompt_length - 1)
+            end
+        end
+    end)
 end
-
-chat.text_added:register(function(obj)
-    if obj.original_type == 150 or obj.original_type == 151 then
-        -- REVISIT : Might need to add exceptions for Paintbrush of Souls and Geomantic Reservoirs
-        obj.text = obj.text:gsub('\u{F800}','')
-    end
-end)
 
 --[[
 Copyright © 2018, Windower Dev Team

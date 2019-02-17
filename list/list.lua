@@ -1,13 +1,11 @@
+require('table')
+local clear = require('table.clear')
+
 local list = {}
 local meta = {}
 
-local make_key = function(l, k)
-    assert(type(k) == 'number', 'Invalid index ' .. tostring(k))
-
-    k = k < 0 and l.count + k + 1 or k
-    assert(k >= 0 and k <= l.count, 'Invalid index ' .. tostring(k))
-
-    return k
+local index = function(l, i)
+    return i > 0 and i or l.length + i + 1
 end
 
 -- Metatable
@@ -15,21 +13,18 @@ end
 meta.__index = function(l, k)
     if type(k) == 'string' then
         return list[k]
+    elseif type(k) == 'number' then
+        return rawget(l, index(l, k))
     end
-
-    return rawget(l, make_key(l, k))
-end
-
-meta.__newindex = function(l, k, v)
-    rawset(l, make_key(l, k), v)
 end
 
 meta.__eq = function(l1, l2)
-    if l1.count ~= l2.count then
+    local length1 = l1.length
+    if length1 ~= l2.length then
         return false
     end
 
-    for key = 1, l1.count do
+    for key = 1, length1 do
         if rawget(l1, key) ~= rawget(l2, key) then
             return false
         end
@@ -39,19 +34,38 @@ meta.__eq = function(l1, l2)
 end
 
 meta.__concat = function(l1, l2)
-    local res = l1:copy()
-    res:append(l2)
-    return res
+    local length1 = l1.length
+    local length2 = l2.length
+
+    local l = {}
+
+    for i = 1, length1 do
+        l[i] = rawget(l1, i)
+    end
+
+    for i = 1, length2 do
+        l[i + length1] = rawget(l2, i)
+    end
+
+    l.length = length1 + length2
+
+    return setmetatable(l, meta)
+end
+
+meta.__len = function(l)
+    return l.length
 end
 
 meta.__tostring = function(l)
-    local str = ''
+    local length = l.length
+    if length == 0 then
+        return '[]'
+    end
 
-    for key = 1, l.count do
-        if key > 1 then
-            str = str .. ', '
-        end
-        str = str .. tostring(rawget(l, key))
+    local str = tostring(rawget(l, 1))
+
+    for key = 2, length do
+        str = str .. ', ' .. tostring(rawget(l, key))
     end
 
     return '[' .. str .. ']'
@@ -64,70 +78,84 @@ meta.__metatable = false
 -- Enumerable base
 
 meta.__pairs = function(l)
-    local key = 0
+    local max = l.length
     return function(l, k)
-        key = key + 1
-        if key > l.count then
-            return nil
+        k = k + 1
+        if k > max then
+            return nil, nil
         end
 
-        return key, rawget(l, key)
-    end, l, nil
+        return k, rawget(l, k)
+    end, l, 0
 end
 
-meta.__create = function(t)
-    local l = { count = 0 }
+meta.__create = function(...)
+    return setmetatable({ length = select('#', ...), ... }, meta)
+end
+
+meta.__convert = function(t)
+    local l = {}
     local key = 0
-    for _, el in pairs(t or {}) do
+    for _, el in pairs(t) do
         key = key + 1
         l[key] = el
     end
-    l.count = key
+
+    l.length = key
+
     return setmetatable(l, meta)
 end
 
 meta.__add_element = function(l, el)
-    l.count = l.count + 1
-    rawset(l, l.count, el)
+    local new_length = l.length + 1
+    l.length = new_length
+    l[new_length] = el
 end
 
 meta.__remove_key = function(l, i)
-    local made = make_key(l, i)
-    local el = rawget(l, made)
+    i = index(l, i)
 
-    for key = made, l.count do
-        rawset(l, key, rawget(l, key + 1))
+    local length = l.length
+    local element = rawget(l, i)
+
+    local new_length = length - 1
+    for key = i, new_length do
+        l[key] = rawget(l, key + 1)
     end
-    l.count = l.count - 1
 
-    return el
+    l[length] = nil
+
+    l.length = new_length
+
+    return element
 end
 
 -- Enumerable overrides
 
-list.length = function(l)
-    return l.count
-end
-
 list.clear = function(l)
-    l.count = 0
+    clear(l)
+    rawset(l, 'length', 0)
 end
 
 -- Unique members
 
 list.insert = function(l, i, el)
-    l.count = l.count + 1
-    local made = make_key(l, i)
+    i = index(l, i)
 
-    for key = made, l.count do
-        local next = el
-        el = rawget(l, key)
-        rawset(l, key, next)
+    local length = l.length
+
+    local current = el
+    for key = i, length do
+        local next = current
+        current = rawget(l, key)
+        l[key] = next
     end
+
+    l.length = length + 1
 end
 
 list.remove_element = function(l, el)
-    for key = 1, l.count do
+    for key = 1, l.length do
         if rawget(l, key) == el then
             l:remove(key)
             break
@@ -136,11 +164,14 @@ list.remove_element = function(l, el)
 end
 
 list.append = function(l1, l2)
-    for k = 1, l2.count do
-        rawset(l1, l1.count + k, rawget(l2, k))
+    local length1 = l1.length
+    local length2 = l2.length
+
+    for k = 1, length2 do
+        rawset(l1, length1 + k, rawget(l2, k))
     end
 
-    l1.count = l1.count + l2.count
+    l1.length = length1 + length2
 end
 
 -- Invoke enumerable library
