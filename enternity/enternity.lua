@@ -5,7 +5,7 @@ local target = require('target')
 
 local blacklist = set(
     'Paintbrush of Souls', -- Requires correct timing, should not be skipped
-    'Geomantic Reservoir', -- Causes dialogue freeze for some reason
+    'Geomantic Reservoir' -- Causes dialogue freeze for some reason
 )
 
 local prompt = '\u{F800}'
