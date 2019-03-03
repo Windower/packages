@@ -104,7 +104,7 @@ do
         end
     end
 
-    parse = function(path, defaults, global)
+    parse = function(defaults, path, global)
         local file = get_file(path, global)
         local options
         if file:exists() then
@@ -122,13 +122,14 @@ end
 
 settings.load = function(defaults, path, global)
     if type(path) == 'boolean' then
-        path, global = global, path
+        global = path
+        path = nil
     end
 
     path = path or 'settings.lua'
     global = global ~= nil and global
 
-    local options = parse(path, defaults, global)
+    local options = parse(defaults, path, global)
 
     info_cache[options] = {
         path = path,
