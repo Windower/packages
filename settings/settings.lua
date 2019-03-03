@@ -181,7 +181,7 @@ do
     local reparse = function()
         for options, info in pairs(info_cache) do
             if not info.global then
-                local parsed = parse(info.path, info.defaults)
+                local parsed = parse(info.defaults, info.path)
                 update(options, parsed)
                 settings.save(options)
                 settings.settings_change:trigger(options)
