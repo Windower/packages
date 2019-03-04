@@ -101,6 +101,18 @@ do
             end
         end
 
+        if bit_type then
+            cdef_count = cdef_count + 1
+            unknown_count = unknown_count + 1
+            cdefs[cdef_count] = bit_type .. ' __' .. tostring(unknown_count) .. ':' .. tostring(8 * bit_type_size - offset) .. ';'
+
+            index = index + bit_type_size
+
+            offset = 0
+            bit_type = nil
+            bit_type_size = nil
+        end
+
         if size and index < size then
             cdef_count = cdef_count + 1
             unknown_count = unknown_count + 1
