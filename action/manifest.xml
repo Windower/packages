@@ -1,0 +1,8 @@
+<package>
+  <name>action</name>
+  <version>1.0.0.0</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>action_service</dependency>
+  </dependencies>
+</package>
