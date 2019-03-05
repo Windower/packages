@@ -14,6 +14,8 @@ ffi.cdef[[
 
 local C = ffi.C
 
+local hwnd = windower.client_hwnd
+
 local get
 local set
 local clear
@@ -25,7 +27,7 @@ do
     local char_ptr = ffi.typeof('char*')
 
     get = function()
-        C.OpenClipboard(nil)
+        C.OpenClipboard(hwnd)
 
         local hmem = C.GetClipboardData(1)
         if hmem == nil then
@@ -46,7 +48,7 @@ do
     end
 
     set = function(str)
-        C.OpenClipboard(windower.client_hwnd)
+        C.OpenClipboard(hwnd)
 
         local length = #str + 1
         local hmem = C.GlobalAlloc(2, length)
@@ -64,7 +66,7 @@ do
     end
 
     clear = function()
-        C.OpenClipboard(nil)
+        C.OpenClipboard(hwnd)
         C.EmptyClipboard()
         C.CloseClipboard()
     end
