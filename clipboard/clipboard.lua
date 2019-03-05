@@ -1,4 +1,5 @@
 local ffi = require('ffi')
+local windower = require('windower')
 
 ffi.cdef[[
     bool OpenClipboard(void* hWndNewOwner);
@@ -45,7 +46,7 @@ do
     end
 
     set = function(str)
-        C.OpenClipboard(nil)
+        C.OpenClipboard(windower.client_hwnd)
 
         local length = #str + 1
         local hmem = C.GlobalAlloc(2, length)
@@ -56,6 +57,7 @@ do
 
         C.GlobalUnlock(hmem)
 
+        C.EmptyClipboard()
         C.SetClipboardData(1, hmem)
 
         C.CloseClipboard()
