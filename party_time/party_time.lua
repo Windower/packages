@@ -1,11 +1,12 @@
-local os = require('os')
-local ui = require('ui')
-local set = require('set')
-local string = require('string')
 local command = require('command')
+local enumerable = require('enumerable')
+local os = require('os')
 local packets = require('packets')
+local set = require('set')
 local settings = require('settings')
+local string = require('string')
 local treasure = require('treasure')
+local ui = require('ui')
 
 local defaults = {
     ui = {
