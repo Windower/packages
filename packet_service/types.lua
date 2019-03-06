@@ -19,7 +19,7 @@ do
             types[index] = struct(cache, update(update({}, ftype.base), definitions))
         end
 
-        ftype.info = { cache = cache }
+        ftype.info = { cache = cache.cache }
         ftype.base = struct(cache, ftype.base)
         ftype.lookups = nil
 
@@ -958,7 +958,6 @@ types.incoming[0x037] = struct({
     status_effect_mask  = {0x48, data(8)},
     indi_status_effect  = {0x54, indi},
 })
-
 
 -- Entity Animation
 -- Most frequently used for spawning ("deru") and despawning ("kesu")
