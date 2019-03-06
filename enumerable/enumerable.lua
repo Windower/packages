@@ -499,6 +499,7 @@ local operators = {
     }
 }
 
+local result_cache = {}
 local index_cache = {}
 local configure_metatable = function(meta, name)
     -- Create default addition function
@@ -545,7 +546,7 @@ local configure_metatable = function(meta, name)
         add = add,
         remove = remove,
     })
-    index_cache[#index_cache + 1] = index_table
+    index_cache[index_table] = true
 
     -- __index
     local original_index = meta.__index
@@ -587,8 +588,11 @@ local configure_metatable = function(meta, name)
     if name ~= nil then
         local key = 'to' .. name
         enumerable[key] = converter
-        for _, cached_index_table in pairs(index_cache) do
+        for cached_index_table in pairs(index_cache) do
             cached_index_table[key] = converter
+        end
+        for cached_result in pairs(result_cache) do
+            cached_result[key] = converter
         end
     end
 
@@ -653,6 +657,8 @@ for name, fn in pairs(lazy_functions) do
         return fn(getmetatable(t).__create, t, ...)
     end
 end
+
+result_cache[result] = true
 
 return result
 
