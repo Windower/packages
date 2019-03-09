@@ -368,7 +368,7 @@ types.weather_strings = struct({signature = 'C333C9668B08518B0D', static_offsets
     d_msg                   = {0x00, ptr()},
 })
 
-types.dmsg_table = struct({signature = '85C0752B5F5EC38B0CF5'}, {
+types.d_msg_table = struct({signature = '85C0752B5F5EC38B0CF5'}, {
     str0                    = {0x00, ptr(ptr())}, -- [1] = Failed to read data. [2] = Checking the size of the files to download and
     str1                    = {0x08, ptr(ptr())}, -- [1] = Error code: FFXI-%04d [2] = Could not connect to lobby server.
     str2                    = {0x10, ptr(ptr())}, -- nullptr
