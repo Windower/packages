@@ -1,6 +1,6 @@
 local shared = require('shared')
 
-id_map = shared.get('client_data_service', 'id_map')
+local id_map = shared.get('client_data_service', 'id_map')
 
 local dat_file = setmetatable({}, {
     __index = function(_, id)
