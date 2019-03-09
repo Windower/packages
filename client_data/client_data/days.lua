@@ -1,16 +1,9 @@
-local shared = require('shared')
+local memory = require('memory')
+local d_msg = require('client_data.types.d_msg')
 
-local id_map = shared.get('client_data_service', 'id_map')
-
-local dat_file = setmetatable({}, {
-    __index = function(_, id)
-        return id_map:read(id)
-    end,
-    __newindex = error,
-    __metatable = false,
+return d_msg.new(memory.d_msg_table.days[0], {
+    name = 0,
 })
-
-return dat_file
 
 --[[
 Copyright © 2019, Windower Dev Team

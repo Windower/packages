@@ -358,6 +358,47 @@ types.string_tables = struct({signature = '8B81????0000F6C402750532C0C20400A0'},
     zone                    = {0x3C, ptr()},
 })
 
+types.action_strings = struct({signature = '7406b8????????c38b4424046a006a0050b9'}, {
+    abilities               = {0x014, ptr()},
+    mounts                  = {0x094, ptr()},
+    spells                  = {0x9B4, ptr()},
+})
+
+types.weather_strings = struct({signature = 'C333C9668B08518B0D', static_offsets = {0x148}}, {
+    d_msg                   = {0x00, ptr()},
+})
+
+types.d_msg_table = struct({signature = '85C0752B5F5EC38B0CF5'}, {
+    str0                    = {0x00, ptr(ptr())}, -- [1] = Failed to read data. [2] = Checking the size of the files to download and
+    str1                    = {0x08, ptr(ptr())}, -- [1] = Error code: FFXI-%04d [2] = Could not connect to lobby server.
+    str2                    = {0x10, ptr(ptr())}, -- nullptr
+    str3                    = {0x18, ptr(ptr())}, -- [1] = You are currently not in a party. [2] = This region is not under any country's control.
+    str4                    = {0x20, ptr(ptr())}, -- nullptr
+    str5                    = {0x28, ptr(ptr())}, -- [1] = Race [2] = Job
+    str6                    = {0x30, ptr(ptr())}, -- [1] = Shout [2] = Tell
+    str7                    = {0x38, ptr(ptr())}, -- [1] = Activate Linkshell item and participate in its chat channel. [2] = Deactivate Linkshell item and quit its chat channel.
+    str8                    = {0x40, ptr(ptr())}, -- [1] = Region Info [2] = Items
+    str9                    = {0x48, ptr(ptr())}, -- [1] = All [2] All
+    regions                 = {0x50, ptr(ptr())},
+    zones                   = {0x58, ptr(ptr())},
+    zone_autotranslates     = {0x60, ptr(ptr())},
+    servers                 = {0x68, ptr(ptr())},
+    jobs                    = {0x70, ptr(ptr())},
+    days                    = {0x78, ptr(ptr())},
+    directions              = {0x80, ptr(ptr())},
+    moon_phases             = {0x88, ptr(ptr())},
+    _dupe_jobs              = {0x90, ptr(ptr())},
+    job_abbreviations       = {0x98, ptr(ptr())},
+    _dupe_zones             = {0xA0, ptr(ptr())},
+    zone_search_names       = {0xA8, ptr(ptr())},
+    races                   = {0xB0, ptr(ptr())},
+    str23                   = {0xB8, ptr(ptr())}, -- nullptr
+    equipment_slots         = {0xC0, ptr(ptr())},
+    _dupe_equipment_slots   = {0xC8, ptr(ptr())},
+    einherjar_chambers      = {0xD0, ptr(ptr())},
+    str27                   = {0xD8, ptr(ptr())}, -- [1] = Objectives [2] = Get grinding!
+})
+
 return types
 
 --[[
