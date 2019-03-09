@@ -60,7 +60,7 @@ local build_index = function(ptr, header, lookup)
         end
 
         for name, index in pairs(lookup) do
-            res[name] = res[index]
+            res[name] = res[index + 1]
         end
 
         return res
@@ -88,7 +88,7 @@ return {
                 end, t, -1
             end,
             __ipairs = pairs,
-            __len = function(t)
+            __len = function(_)
                 return size
             end,
             __newindex = error,
