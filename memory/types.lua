@@ -45,12 +45,20 @@ local render = struct({
     aspect_ratio            = {0x2F0, float},
 })
 
-local world_coord = struct({
+local vector_3f = struct({
+    x                       = {0x0, float},
+    z                       = {0x4, float},
+    y                       = {0x8, float}, 
+})
+
+local vector_4f = struct({
     x                       = {0x0, float},
     z                       = {0x4, float},
     y                       = {0x8, float}, 
     w                       = {0xC, float},
 })
+
+local world_coord = tag(vector_4f, 'world_coord')
 
 local screen_coord = struct({
     x                       = {0x0, float},
@@ -93,13 +101,25 @@ local display = struct({
 
 local entity = struct({
     position_display        = {0x004, world_coord},
-    heading                 = {0x018, float}, -- E=0  N=+pi/2   W=+/-pi S=-pi/2
+    rotation                = {0x014, vector_4f}, -- y: E=0  N=+pi/2   W=+/-pi S=-pi/2
     position                = {0x024, world_coord},
-    _dupe_heading           = {0x038, float},
-    _dupe_position          = {0x044, world_coord},
+    _dupe_rotation          = {0x034, vector_3f},
+    _unknown_1              = {0x040, data(0x04)}, -- Sometimes a single world coordinate, sometimes a pointer...
+    _dupe_position          = {0x044, vector_3f}, -- Seems unused! w-coordinate is occasionally overwritten by pointer value...
+    _unknown_variable       = {0x050, data(0x24)}, -- Data in here varies! Sometimes the same field is a pointer, sometimes coordinates. Seems to depend on the entity
+    -- Observed constellations:
+    -- Ding Bats
+    --  ptr1    coord   coord   coord       -- small coordinates, ~0.01 range
+    --  ptr2    ptr3    ptr4    0           -- ptr2 == _unknonw_1 - 0x35C, ptr3 == ptr1 + 0xCA0, ptr4 == ptr1 + 28A6
+    --  1(float)
+    -- Wild Rabbit
+    --  0       0       0       0
+    --  0       1       0       0
+    --  1(int)
     index                   = {0x074, entity_index},
     id                      = {0x078, entity_id},
     name                    = {0x07C, npc_name},
+    _unknown_ptr_1          = {0x094, ptr()},
     movement_speed          = {0x098, float},
     movement_speed_base     = {0x09C, float},
     display                 = {0x0A0, ptr(display)},
@@ -113,6 +133,10 @@ local entity = struct({
     model                   = {0x0FE, model},
     freeze                  = {0x11C, bool},
     flags                   = {0x120, uint32[0x06]},
+    _unkonwn_ptr_2          = {0x150, ptr()}, -- Sometimes same as _unknown_1
+    _unknown_float_1        = {0x158, float}, -- Always 4?
+    _unknown_short_1        = {0x15C, uint16}, -- Flags?
+    _unknown_short_2        = {0x15E, uint16}, -- Duplicate of _unknown_short_1
     status                  = {0x168, uint32}, -- Is this type correct?
     claim_id                = {0x184, entity_id},
     animation               = {0x18C, fourcc[0x0A]},
@@ -130,6 +154,7 @@ local entity = struct({
     model_size              = {0x204, float},
     fellow_index            = {0x29C, entity_index},
     owner_index             = {0x29E, entity_index},
+    heading                 = {fn = function(data) return data.rotation.z end},
     -- TODO: Verify
     -- npc_talking             = {0x0AC, uint32},
     -- pos_move                = {0x054, world_coord}
