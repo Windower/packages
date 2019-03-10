@@ -4,6 +4,6 @@
   <type>library</type>
   <dependencies>
     <dependency>shared</dependency>
-	<dependency>key_items_service</dependency>
+	  <dependency>key_items_service</dependency>
   </dependencies>
 </package>
