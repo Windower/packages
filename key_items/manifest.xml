@@ -1,0 +1,9 @@
+<package>
+  <name>key_items</name>
+  <version>1.0.0.0</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>shared</dependency>
+	<dependency>key_items_service</dependency>
+  </dependencies>
+</package>

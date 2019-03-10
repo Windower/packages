@@ -1,0 +1,10 @@
+<package>
+  <name>key_items_service</name>
+  <version>1.0.0.0</version>
+  <type>service</type>
+  <dependencies>
+	<dependency>shared</dependency>
+    <dependency>packets</dependency>
+    <dependency>structs</dependency>
+  </dependencies>
+</package>
