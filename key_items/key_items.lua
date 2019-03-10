@@ -1,6 +1,15 @@
 local client = require('shared.client')
+local resources = require('resources')
 
-local data = client.new('key_items_service', 'key_items')
+local key_items = resources.key_items
+
+local data, ftype = client.new('key_items_service', 'key_items')
+
+ftype.base.fields.key_item = {
+    fn = function(data)
+        return key_items[data.id]
+    end,
+}
 
 return data
 
