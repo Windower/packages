@@ -126,6 +126,23 @@ packets_server.env.get_last = function(path)
 end
 
 do
+    local string_sub = string.sub
+
+    packets_server.env.get_lasts = function(start_path)
+        local res = {}
+        local res_count = 0
+        local len = #start_path
+        for path, packet in pairs(history) do
+            if start_path == string_sub(path, 1, len) then
+                res_count = res_count + 1
+                res[res_count] = packet
+            end
+        end
+        return res
+    end
+end
+
+do
     local event_new = event.new
 
     packets_server.env.make_event = function(path)

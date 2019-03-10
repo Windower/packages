@@ -9,6 +9,10 @@ local get_last = function(_, path)
     return get_last(path)
 end
 
+local get_lasts = function(_, path)
+    return get_lasts(path)
+end
+
 local make_event = function(_, path)
     return make_event(path)
 end
@@ -64,10 +68,10 @@ fns.register_init = function(t, init_table)
     local lasts_count = 0
     for i = 1, #paths do
         local path = paths[i]
-        local last = client:call(get_last, path.path)
-        if last then
+        local lasts_path = client:call(get_lasts, path.path)
+        for j = 1, #lasts_path do
             lasts_count = lasts_count + 1
-            lasts[lasts_count] = { packet = last, fn = path.fn, path = path }
+            lasts[lasts_count] = { packet = lasts_path[j], fn = path.fn, path = path }
         end
     end
 
