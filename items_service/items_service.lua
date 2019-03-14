@@ -2,7 +2,6 @@ local packets = require('packets')
 local resources = require('resources')
 local server = require('shared.server')
 local structs = require('structs')
-local string = require('string')
 
 local item = structs.struct({
     id                  = {structs.int32},

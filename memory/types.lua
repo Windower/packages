@@ -132,7 +132,10 @@ local entity = struct({
     face_model_id           = {0x0FC, uint16},
     model                   = {0x0FE, model},
     freeze                  = {0x11C, bool},
-    flags                   = {0x120, uint32[0x06]},
+    -- flags                   = {0x120, uint32[0x06]},
+    flags                   = {0x120, struct({size = 0x18}, {
+        enemy                   = {0x01, boolbit(uint8), offset=5},
+    })},
     _unkonwn_ptr_2          = {0x150, ptr()}, -- Sometimes same as _unknown_1
     _unknown_float_1        = {0x158, float}, -- Always 4?
     _unknown_short_1        = {0x15C, uint16}, -- Flags?
@@ -383,10 +386,14 @@ types.string_tables = struct({signature = '8B81????0000F6C402750532C0C20400A0'},
     zone                    = {0x3C, ptr()},
 })
 
-types.action_strings = struct({signature = '7406b8????????c38b4424046a006a0050b9'}, {
+types.action_strings = struct({signature = '7406B8????????C38B4424046A006A0050B9'}, {
     abilities               = {0x014, ptr()},
     mounts                  = {0x094, ptr()},
     spells                  = {0x9B4, ptr()},
+})
+
+types.status_effect_strings = struct({signature = '8A46055E3C0273188B0D', static_offsets = {0x00, }}, {
+    d_msg                   = {0x04, ptr()},
 })
 
 types.weather_strings = struct({signature = 'C333C9668B08518B0D', static_offsets = {0x148}}, {

@@ -54,6 +54,8 @@ do
             return ''
         elseif category == 'direction' then
             return client.directions[math_floor((target.me.heading / math_pi + 1) * 4 + 1.5)].name
+        elseif category == 'indefinite article' then
+            return 'a' -- depends on following item...
         end
 
         return '{' .. (index and index .. ':' or '') .. category .. lookup_data(category, data) .. '}'
@@ -67,25 +69,37 @@ do
 
         if category == 'ignore' then
             return ''
+        elseif category == 'raw' then
+            return tostring(value)
         elseif category == 'entity' then
             return entity.name
         elseif category == 'spell' then
             return client.spells[value].name
         elseif category == 'ability' then
             return client.abilities[value].name
-        elseif category == 'status effect' then
-            return strings.status_effects[value]:string()
+        elseif category == 'status effect name' then
+            return client.status_effects[value].name
+        elseif category == 'status effect adjective' then
+            return client.status_effects[value].adjective
         elseif category == 'skill' then
             return strings.skills[value]:string()
-        elseif category == 'item' then
-            return client.items[value]:log_string(1)
-        elseif category == 'item plural' then
+        elseif category == 'item singular definite' then
+            return client.items[value]:log_string(1, client.items.article.none)
+        elseif category == 'item singular indefinite' then
+            return client.items[value]:log_string(1, client.items.article.none)
+        elseif category == 'item plural definite' then
             return client.items[value]:log_string(0, client.items.article.none)
-        elseif category == 'key item' then
+        elseif category == 'item plural indefinite' then
+            return client.items[value]:log_string(0, client.items.article.none)
+        -- TODO key item modifiers
+        elseif category == 'key item singular definite' then
             return resources.key_items[value].name
-        -- TODO
-        elseif category == 'key item plural' then
+        elseif category == 'key item singular definite article' then
+            return 'the ' .. resources.key_items[value].name
+        elseif category == 'key item plural indefinite' then
             return resources.key_items[value].name
+        elseif category == 'key item singular indefinite article' then
+            return 'a ' .. resources.key_items[value].name
         elseif category == 'zone' then
             return client.zones[value].name
         elseif category == 'weather adjective' then
@@ -98,9 +112,11 @@ do
             return data[value]
         -- TODO
         elseif category == 'article' then
-            return data[1]
+            return entity.index < 0x400 and entity.flags.enemy and data[1] or data[2]
         elseif category == 'plurality' then
             return (entity or value == 1) and data[1] or data[2]
+        elseif category == 'unknown' then
+            return '<unknown>'
         end
 
         error('Unknown category "' .. category .. '".')
@@ -138,21 +154,33 @@ do
             [0x01] = {
                 sub = {
                     [0x10] = { category = 'entity', parameter = 2, parameter_mask = 0x0F, entity = true },
-                    [0x00] = { category = 'ignore', consume = 2 },
+                    [0x00] = { category = 'indefinite article', consume = 1 },
                 }
             },
             [0x05] = {
-                [0x03] = common0105('integer'),
-                [0x13] = common0105('status effect'),
+                [0x03] = common0105('integer'), -- Maybe irrelevant and included in next variable, followed by <010929>
+                [0x03] = common0105('integer'), -- Maybe irrelevant and included in next variable, followed by <01092A>
+                [0x13] = common0105('status effect name'),
+                [0x14] = common0105('status effect adjective'),
                 [0x17] = common0105('weather adjective'),
                 [0x18] = common0105('weather name'),
-                [0x23] = common0105('item'),
-                [0x24] = common0105('item'),
-                [0x25] = common0105('item plural'),
-                [0x33] = common0105('key item'),
-                [0x35] = common0105('key item plural'),
-                [0x36] = common0105('key item'),
+                [0x23] = common0105('item singular definite'),
+                [0x24] = common0105('item singular indefinite'),
+                [0x25] = common0105('item plural indefinite'),
+                [0x26] = common0105('item singular definite'),
+                [0x27] = common0105('item singular indefinite'),
+                [0x28] = common0105('item plural indefinite'),
+                [0x30] = common0105('unknown'),
+                [0x33] = common0105('key item singular definite'),
+                [0x35] = common0105('key item plural indefinite'),
+                [0x36] = common0105('key item singular indefinite article'),
                 [0x38] = common0105('zone'),
+                [0x40] = common0105('unknown'), -- Unity? RoE?
+                [0x41] = common0105('unknown'), -- RoE?
+                [0x42] = common0105('key item singular definite'),
+                [0x45] = common0105('key item singular definite article'),
+                [0x88] = common0105('unknown'), -- ... party chat? wat?
+                [0x8A] = common0105('unknown'), -- conditions?
             },
             -- Like 0x05 but with two params? Possible generalization from <010101>, which has no params?
             -- [0x09] = {
@@ -160,11 +188,14 @@ do
         },
         [0x05] = { category = 'skill', parameter = 1 },
         [0x0A] = { category = 'integer', parameter = 1 },
+        [0x0B] = { category = 'newline choice' },
         [0x0C] = { category = 'choice', parameter = 1, parse = parse_choices },
         [0x10] = { category = 'spell', parameter = 1 },
         [0x12] = { category = 'integer', parameter = 1 },
+        [0x1C] = { category = 'raw', parameter = 2 },
         [0x1D] = { category = 'direction' },
         [0x7F] = {
+            [0x80] = { category = 'ignore', parameter = 2 },
             [0x84] = { category = 'ignore', consume = 1 },
             [0x86] = { category = 'plurality', parameter = 2, entity = false, parse = parse_choices },
             [0x87] = { category = 'plurality', parameter = 2, entity = true, parse = parse_choices },
@@ -204,10 +235,7 @@ do
                 local byte = ptr[i + count]
                 found = found[byte]
                 count = count + 1
-            until not found or found.category or found.sub
-
-            if found then
-                local sub = found.sub
+                local sub = found and found.sub
                 if sub then
                     local byte = ptr[i + count]
                     for high, def in pairs(sub) do
@@ -217,7 +245,9 @@ do
                         end
                     end
                 end
+            until not found or found.category
 
+            if found then
                 local param
                 local index
                 local entity
@@ -265,6 +295,8 @@ do
 
                 count = count + (diff or 0)
                 start = i + count
+            else
+                count = 1
             end
 
             i = i + count
