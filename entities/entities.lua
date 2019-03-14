@@ -1,33 +1,43 @@
 local memory = require('memory')
 local bit = require('bit')
 
-local entities = {}
+local array = memory.entities
 
-local array_size = 0x900
+local by_id
+do
+    local bit_band = bit.band
 
-local mob_begin = 0x000
-local player_begin = 0x400
-local ally_begin = 0x700
+    by_id = function(id, min, max)
+        if bit_band(id, 0xFF000000) ~= 0 then
+            local sub_mask = bit_band(id, 0x7FF)
+            local index = sub_mask + (bit_band(id, 0x800) ~= 0 and 0x700 or 0)
+            if index < 0 or index > array_size then
+                return nil
+            end
 
-entities.get_by_id = function(id)
-    if bit.band(id, 0xFF000000) ~= 0 then
-        local sub_mask = bit.band(id, 0x7FF)
-        local index = sub_mask + (bit.band(id, 0x800) ~= 0 and ally_begin or 0)
-        if index < 0 or index > array_size then
-            return nil
+            local entity = array[index]
+            if entity == nil or entity.id ~= id then
+                return nil
+            end
+
+            return entity
         end
 
-        local entity = memory.entities[index]
-        if entity == nil or entity.id ~= id then
-            return nil
+        for i = min, max - 1 do
+            local entity = array[i]
+            if entity ~= nil and entity.id == id then
+                return entity
+            end
         end
 
-        return entity
+        return nil
     end
+end
 
-    for i = player_begin, ally_begin - 1 do
-        local entity = memory.entities[i]
-        if entity ~= nil and entity.id == id then
+local by_name = function(name, min, max)
+    for i = min, max - 1 do
+        local entity = array[i]
+        if entity ~= nil and entity.name == name then
             return entity
         end
     end
@@ -35,24 +45,57 @@ entities.get_by_id = function(id)
     return nil
 end
 
-entities.get_by_name = function(name)
-    for i = 0, array_size do
-        local entity = memory.entities[i]
-        if entity ~= nil and entity.name == name then
-            return entity
-        end
+local index = function(key, min, max)
+    if type(key) ~= 'number' or key < min or key > max - 1 then
+        return nil
     end
+
+    local entity = array[key]
+    return entity ~= nil and entity or nil
 end
 
-return setmetatable(entities, {
-    __index = function(_, key)
-        if type(key) ~= 'number' or key < 0 or key > array_size then
-            return nil
+local pairs = function(min, max)
+    return function(t, k)
+        k = k + 1
+        if k > max - 1 then
+            return nil, nil
         end
 
-        local entity = memory.entities[key]
-        return entity ~= nil and entity or nil
-    end,
+        local entity = t[k]
+        return k, entity ~= nil and entity or nil
+    end, array, min - 1
+end
+
+local build_table = function(min, max, t)
+    t = t or {}
+
+    if not t.by_id then
+        t.by_id = function(t, id)
+            return by_id(id, min, max)
+        end
+    end
+
+    t.by_name = function(t, name)
+        return by_name(name, min, max)
+    end
+
+    return setmetatable(t, {
+        __index = function(t, k)
+            return index(k, min, max)
+        end,
+        __pairs = function(t)
+            return pairs(min, max)
+        end,
+        __ipairs = pairs,
+        __newindex = error,
+        __metatable = false,
+    })
+end
+
+return build_table(0x000, 0x900, {
+    npcs = build_table(0x000, 0x400),
+    players = build_table(0x400, 0x700),
+    allies = build_table(0x700, 0x900),
 })
 
 --[[
