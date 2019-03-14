@@ -1,19 +1,46 @@
-local client = require('shared.client')
-local event = require('event')
 local items = require('client_data.items')
+local packets = require('packets')
+local server = require('shared.server')
+local structs = require('structs')
 
-local data, ftype = client.new('treasure_service')
+local item = structs.struct({
+    item_id             = {structs.uint16},
+    timestamp           = {structs.time},
+    player_lot          = {structs.uint32},
+    highest_lot         = {structs.uint32},
+    highest_lotter_id   = {structs.uint32},
+    highest_lotter_name = {structs.string(0x10)},
+})
 
--- ftype.base.fields.item = {
---     fn = function(data)
---         return items[data.item_id]
---     end,
--- }
+local pool = server.new(item[10])
 
-return data
+local empty = structs.make(item)
+
+packets.incoming:register_init({
+    [{0x0D2}] = function(p)
+        if p.gil > 0 then
+            return
+        end
+
+        local data = pool[p.pool_location]
+        data.item_id = p.item_id
+        data.timestamp = p.timestamp
+    end,
+    [{0x0D3}] = function(p)
+        local drop = p.drop
+        if drop == 0 then
+            local data = pool[p.pool_location]
+            data.highest_lot = p.highest_lot
+            data.highest_lotter_id = p.highest_lotter_id
+            data.highest_lotter_name = p.highest_lotter_name
+        else
+            pool[p.pool_location] = empty
+        end
+    end,
+})
 
 --[[
-Copyright © 2018, Windower Dev Team
+Copyright © 2019, Windower Dev Team
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
