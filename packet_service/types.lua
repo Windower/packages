@@ -1983,10 +1983,10 @@ types.incoming[0x0CC] = struct({cache = {'linkshell_index'}}, {
 })
 
 -- Found Item
-types.incoming[0x0D2] = struct({
+types.incoming[0x0D2] = struct({cache = {'pool_location'}}, {
     -- 0x00~0x03: Could be characters starting the line - FD 02 02 18 observed; Arcon: Only ever observed 0x00000001 for this
     dropper_id          = {0x04, entity},
-    count               = {0x08, uint32}, -- Takes values greater than 1 in the case of gil
+    gil                 = {0x08, uint32},
     item_id             = {0x0C, item},
     dropper_index       = {0x0E, entity_index},
     pool_location       = {0x10, uint8}, -- This is the internal index in memory, not the one it appears in in the menu
@@ -1998,18 +1998,18 @@ types.incoming[0x0D2] = struct({
 })
 
 -- Item lot/drop
-types.incoming[0x0D3] = struct({
+types.incoming[0x0D3] = struct({cache = {'pool_location'}}, {
     highest_lotter_id   = {0x00, entity},
-    lowest_lotter_id    = {0x04, entity},
+    lotter_id           = {0x04, entity},
     highest_lotter_index= {0x08, entity_index},
     highest_lot         = {0x0A, uint16},
-    lowest_lotter_index = {0x0C, bit(uint16, 15), offset=0}, -- Not a normal index somehow
+    lotter_index        = {0x0C, bit(uint16, 15), offset=0}, -- Not a normal index somehow
     --_known1             = {0x0C, bit(uint16, 1 ), offset=15, const=1}, -- Always seems set
-    current_lot         = {0x0E, uint16}, -- 0xFFFF if passing
+    lot                 = {0x0E, uint16}, -- 0xFFFF if passing
     pool_location       = {0x10, uint8},
     drop                = {0x11, uint8}, -- 0 if no drop, 1 if dropped to player, 3 if floored
     highest_lotter_name = {0x12, pc_name},
-    current_lotter_name = {0x22, pc_name},
+    lotter_name         = {0x22, pc_name},
     -- 0x32~0x37: Thought to be junk
 })
 

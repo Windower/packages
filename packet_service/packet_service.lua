@@ -129,13 +129,15 @@ do
     local string_sub = string.sub
 
     packets_server.env.get_lasts = function(start_path)
+        local found = {}
         local res = {}
         local res_count = 0
         local len = #start_path
         for path, packet in pairs(history) do
-            if start_path == string_sub(path, 1, len) then
+            if start_path == string_sub(path, 1, len) and not found[packet] then
                 res_count = res_count + 1
                 res[res_count] = packet
+                found[packet] = true
             end
         end
         return res
