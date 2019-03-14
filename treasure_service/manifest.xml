@@ -1,0 +1,11 @@
+<package>
+  <name>treasure_service</name>
+  <version>1.0.0.0</version>
+  <type>service</type>
+  <dependencies>
+    <dependency>packets</dependency>
+    <dependency>client_data</dependency>
+    <dependency>shared</dependency>
+    <dependency>structs</dependency>
+  </dependencies>
+</package>
