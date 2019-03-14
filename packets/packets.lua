@@ -70,13 +70,14 @@ fns.register_init = function(t, init_table)
         local path = paths[i]
         local lasts_path = client:call(get_lasts, path.path)
         for j = 1, #lasts_path do
+            local packet = lasts_path[j]
             lasts_count = lasts_count + 1
-            lasts[lasts_count] = { packet = lasts_path[j], fn = path.fn, path = path }
+            lasts[lasts_count] = { packet = packet, fn = path.fn , timestamp = packet._info.timestamp }
         end
     end
 
     table.sort(lasts, function(l1, l2)
-        return l1.packet._info.timestamp < l2.packet._info.timestamp
+        return l1.timestamp < l2.timestamp
     end)
 
     for i = 1, #lasts do
