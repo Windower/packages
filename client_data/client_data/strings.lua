@@ -259,7 +259,7 @@ do
                             param = entity_ids[index]
                             entity = entity_cache[param]
                             if not entity then
-                                entity = entities.get_by_id(param)
+                                entity = entities:by_id(param)
                                 entity_cache[param] = entity
                             end
                         else
