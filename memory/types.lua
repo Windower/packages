@@ -40,11 +40,6 @@ local chat_input_buffer = string(0x97)
 
 local ffi_cdef = ffi.cdef
 
-local render = struct({
-    framerate_divisor       = {0x030, uint32},
-    aspect_ratio            = {0x2F0, float},
-})
-
 local vector_3f = struct({
     x                       = {0x0, float},
     z                       = {0x4, float},
@@ -60,9 +55,26 @@ local vector_4f = struct({
 
 local world_coord = tag(vector_4f, 'world_coord')
 
+local matrix = float[4][4]
+
 local screen_coord = struct({
     x                       = {0x0, float},
     z                       = {0x4, float},
+})
+
+local render = struct({
+    framerate_divisor       = {0x030, uint32},
+    aspect_ratio            = {0x2F0, float},
+    zoom                    = {0x2F8, float},
+})
+
+local gamma = struct({
+    red                     = {0x7F8, float},
+    green                   = {0x7FC, float},
+    blue                    = {0x800, float},
+    _dupe_red               = {0x804, float},
+    _dupe_green             = {0x808, float},
+    _dupe_blue              = {0x80C, float},
 })
 
 local linkshell_color = struct({
@@ -232,13 +244,16 @@ local entity_string = struct({
 
 local types = {}
 
-types.misc2_graphics = struct({signature = '894E188B15????????33FF6A24893D'}, {
-    render                  = {0x000, ptr(render)},
-    footstep_effects        = {0x174, bool},
-    clipping_plane_entity   = {0x1AC, float},
-    clipping_plane_map      = {0x1BC, float},
-    aspect_ratio_option     = {0x2EC, uint32},
-    animation_framerate     = {0x304, uint32},
+types.graphics = struct({signature = '83EC205355568BF18B0D'}, {
+    gamma                   = {0x000, ptr(gamma)},
+    render                  = {0x28C, ptr(render)},
+    footstep_effects        = {0x400, bool},
+    clipping_plane_entity   = {0x438, float},
+    clipping_plane_map      = {0x448, float},
+    aspect_ratio_option     = {0x578, uint32},
+    animation_framerate     = {0x590, uint32},
+    view_matrix             = {0xBB8, matrix},
+    projection_matrix       = {0xDF8, matrix},
 })
 
 types.volumes = struct({signature = '33DBF3AB6A10881D????????C705'}, {
@@ -251,15 +266,6 @@ types.auto_disconnect = struct({signature = '6A00E8????????8B44240883C40485C0750
     last_active_time        = {0x04, uint32}, -- in ms, unknown offset
     timeout_time            = {0x08, uint32}, -- in ms
     active                  = {0x10, bool},
-})
-
-types.gamma_adjustment = struct({signature = '83EC205355568BF18B0D', static_offsets = {0x00}}, {
-    red                     = {0x7F8, float},
-    green                   = {0x7FC, float},
-    blue                    = {0x800, float},
-    _dupe_red               = {0x804, float},
-    _dupe_green             = {0x808, float},
-    _dupe_blue              = {0x80C, float},
 })
 
 types.entities = array({signature = '8B560C8B042A8B0485'}, ptr(entity), 0x900)
@@ -335,7 +341,6 @@ types.tell_history = struct({signature = '8B0D????????85C9740F8B15'}, {
 })
 
 types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D', static_offsets = {0x00}}, {
-    _prt                    = {0x0004, ptr()},
     temporary_buffer        = {0x7EDC, chat_input_buffer},
     history                 = {0x7F73, chat_input_buffer[9]},
     temporary_length        = {0x84C4, uint8},
@@ -368,11 +373,6 @@ types.follow = struct({signature = '8BCFE8????FFFF8B0D????????E8????????8BE885ED
     auto_run                = {0x29, bool},
 })
 
-types.camera = struct({signature = '89542418E8????????8B0D????????68'}, {
-    view_matrix             = {0x000, float[4][4]},
-    projection_matrix       = {0x240, float[4][4]},
-})
-
 types.string_tables = struct({signature = '8B81????0000F6C402750532C0C20400A0'}, {
     skills                  = {0x10, ptr()},
     elements                = {0x14, ptr()},
@@ -392,7 +392,7 @@ types.action_strings = struct({signature = '7406B8????????C38B4424046A006A0050B9
     spells                  = {0x9B4, ptr()},
 })
 
-types.status_effect_strings = struct({signature = '8A46055E3C0273188B0D', static_offsets = {0x00, }}, {
+types.status_effect_strings = struct({signature = '8A46055E3C0273188B0D', static_offsets = {0x00}}, {
     d_msg                   = {0x04, ptr()},
 })
 

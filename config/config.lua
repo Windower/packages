@@ -16,7 +16,7 @@ local defaults = {
             auto = true,
             value = 16 / 9,
         },
-        gamma_adjustment = {
+        gamma = {
             red = 1.5,
             green = 1.5,
             blue = 1.5,
@@ -46,37 +46,34 @@ local window_aspect_ratio = (4 / 3) / (windower.settings.client_size.width / win
 
 coroutine.schedule(function()
     while true do
-        do -- misc2_graphics
-            local struct = memory.misc2_graphics
-            local options = options.graphics
+        do -- graphics
+            local graphics = memory.graphics
+            local gamma = graphics.gamma
+            local render = graphics.render
 
-            local aspect_ratio = options.aspect_ratio
+            local graphics_options = options.graphics
+            local aspect_ratio_options = graphics_options.aspect_ratio
+            local gamma_options = graphics_options.gamma
 
-            struct.render.aspect_ratio = aspect_ratio.auto and window_aspect_ratio or ((4 / 3) / aspect_ratio.value)
-            struct.render.framerate_divisor = options.framerate == 'unlimited' and 0 or math.ceil(60 / options.framerate)
-            struct.clipping_plane_entity = options.clipping_plane
-            struct.clipping_plane_map = options.clipping_plane
+            gamma.red = gamma_options.red
+            gamma.green = gamma_options.green
+            gamma.blue = gamma_options.blue
+
+            render.aspect_ratio = aspect_ratio_options.auto and window_aspect_ratio or ((4 / 3) / aspect_ratio_options.value)
+            render.framerate_divisor = graphics_options.framerate == 'unlimited' and 0 or math.ceil(60 / graphics_options.framerate)
+
+            graphics.clipping_plane_entity = graphics_options.clipping_plane
+            graphics.clipping_plane_map = graphics_options.clipping_plane
         end
 
-        do -- auto_disconnect
-            local struct = memory.auto_disconnect
-            local options = options.system
-            
-            local auto_disconnect = options.auto_disconnect
+        do -- system
+            local auto_disconnect = memory.auto_disconnect
 
-            struct.enabled = auto_disconnect.enabled
-            struct.timeout_time = auto_disconnect.time
-        end
+            local system_options = options.system
+            local auto_disconnect_options = system_options.auto_disconnect
 
-        do -- gamma_adjustment
-            local struct = memory.gamma_adjustment
-            local options = options.graphics
-
-            local gamma_adjustment = options.gamma_adjustment
-
-            struct.red = gamma_adjustment.red
-            struct.green = gamma_adjustment.green
-            struct.blue = gamma_adjustment.blue
+            auto_disconnect.enabled = auto_disconnect_options.enabled
+            auto_disconnect.timeout_time = auto_disconnect_options.time
         end
 
         coroutine.sleep_frame()
