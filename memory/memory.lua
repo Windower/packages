@@ -1,6 +1,5 @@
 local ffi = require('ffi')
 local scanner = require('scanner')
-local string = require('string')
 local types = require('memory:types')
 
 local scan_results = {}
