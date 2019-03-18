@@ -54,7 +54,7 @@ local index = function(key, min, max)
     return entity ~= nil and entity or nil
 end
 
-local pairs = function(min, max)
+local iterator = function(min, max)
     return function(t, k)
         k = k + 1
         if k > max - 1 then
@@ -84,7 +84,7 @@ local build_table = function(min, max, t)
             return index(k, min, max)
         end,
         __pairs = function(t)
-            return pairs(min, max)
+            return iterator(min, max)
         end,
         __ipairs = pairs,
         __newindex = error,
