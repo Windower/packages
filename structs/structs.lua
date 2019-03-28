@@ -9,16 +9,6 @@ local structs = {}
 local tolua = {}
 local toc = {}
 
-local get_array_cdef_info = function(ftype)
-    local counts = ''
-    local base = ftype
-    while base.count ~= nil do
-        counts =  counts .. '[' .. (base.count == '*' and '?' or tostring(base.count)) .. ']'
-        base = base.base
-    end
-    return base.name or base.cdef, counts
-end
-
 local make_struct_cdef
 do
     local table_concat = table.concat
@@ -33,7 +23,6 @@ do
         local cdef_count = 0
 
         for _, field in ipairs(arranged) do
-            -- Can only happen with char*, should only appear at the end
             local ftype = field.type
 
             local is_bit = ftype.bits ~= nil
@@ -63,8 +52,6 @@ do
             end
 
             if is_bit then
-                assert(bit_type == nil or ftype.cdef == bit_type, 'Bit field must have the same base types for every member.')
-
                 local bit_diff = field.offset - offset
                 if bit_diff > 0 then
                     cdef_count = cdef_count + 1
@@ -88,12 +75,7 @@ do
                     bit_type_size = ftype.size
                 end
             else
-                if ftype.count == nil then
-                    cdefs[cdef_count] = (ftype.name or ftype.cdef) .. ' ' .. field.cname .. ';'
-                else
-                    local name, counts = get_array_cdef_info(ftype)
-                    cdefs[cdef_count] = name .. ' ' .. field.cname .. counts .. ';'
-                end
+                cdefs[cdef_count] = (ftype.name or ftype.cdef) .. ' ' .. field.cname .. ';'
 
                 if ftype.size ~= '*' then
                     index = index + ftype.size
@@ -132,15 +114,7 @@ do
                 return nil
             end
 
-            local ftype = structs.make_type(base.cdef)
-
-            ftype.base = base
-            ftype.count = count
-            local name, counts = get_array_cdef_info(ftype)
-            ftype.cdef = name .. counts
-            ftype.size = count == '*' and '*' or base.size * count
-
-            return ftype
+            return structs.array(base, count)
         end,
     }
 
@@ -215,21 +189,58 @@ do
             ftype.size = info.size
         end
 
+        ftype.info = info
+
         return ftype
     end
 
     structs.array = function(base, count, info)
         base, count, info = info and count or base, info or count, info and base or {}
 
+        if info.raw_array == nil then
+            info.raw_array = false
+        end
+
         local ftype = build_type(base.cdef, info)
 
         ftype.base = base
         ftype.count = count
-        local name, counts = get_array_cdef_info(ftype)
-        ftype.cdef = name .. counts
-        ftype.size = count == '*' and '*' or base.size * count
+
+        -- Cannot have VLA in a nested struct
+        local raw_array = info.raw_array
+        if count == '*' or raw_array then
+            ftype.cdef = (base.name or base.cdef) .. '[' .. (count == '*' and '?' or count) .. ']'
+            ftype.size = count == '*' and '*' or base.size * count
+
+            structs.name(ftype, info.name, raw_array)
+
+            return ftype
+        end
+
+        ftype.cdef = 'struct{ ' .. (base.name or base.cdef) .. ' _array[' .. count .. '];}'
+        ftype.size = base.size * count
 
         structs.name(ftype, info.name)
+
+        ffi_metatype(ftype.name, {
+            __index = function(cdata, key)
+                return cdata._array[key]
+            end,
+            __newindex = function(cdata, key, value)
+                cdata._array[key] = value
+            end,
+            __pairs = function(cdata)
+                return function(arr, i)
+                    i = i + 1
+                    if i == count then
+                        return nil, nil
+                    end
+
+                    return i, arr[i]
+                end, cdata._array, -1
+            end,
+            __ipairs = pairs,
+        })
 
         return ftype
     end
@@ -339,7 +350,6 @@ do
             ftype.var_key = last.label
         end
 
-        ftype.info = info
         ftype.fields = fields
         ftype.arranged = arranged
 
@@ -356,7 +366,7 @@ do
 
     local declared_cache = {}
 
-    structs.name = function(ftype, name)
+    structs.name = function(ftype, name, raw_array)
         name = name or ftype.name or '_' .. string_gsub(tostring(ftype), '%W', '')
 
         ftype.name = name
@@ -372,9 +382,10 @@ do
 
             declared_cache[name] = nil
         else
-            if ftype.count then
-                local base_name, counts = get_array_cdef_info(ftype)
-                ffi_cdef('typedef ' .. base_name .. ' ' .. name .. counts .. ';')
+            local count = ftype.count
+            if count == '*' or raw_array then
+                local base = ftype.base
+                ffi_cdef('typedef ' .. (base.name or base.cdef) .. ' ' .. name .. '[' .. (count == '*' and '?' or count) .. '];')
             else
                 ffi_cdef('typedef ' .. ftype.cdef .. ' ' .. name .. ';')
             end
@@ -425,14 +436,14 @@ do
 
     local type_cache = {}
 
-    structs.make = function(ftype, n)
+    structs.make = function(ftype, ...)
         local ctype = type_cache[ftype]
         if not ctype then
             ctype = ffi_typeof(ftype.name or ftype.cdef)
             type_cache[type] = ctype
         end
 
-        return n and ctype(n) or ctype()
+        return ctype(...)
     end
 end
 
@@ -454,6 +465,16 @@ structs.float = structs.make_type('float')
 structs.double = structs.make_type('double')
 structs.bool = structs.make_type('bool')
 
+local raw_array
+do
+    local structs_array = structs.array
+    local structs_make_type = structs.make_type
+    
+    raw_array = function(cdef, count)
+        return structs_array({ raw_array = true }, structs_make_type(cdef), count)
+    end
+end
+
 do
     local ffi_string = ffi.string
     local ffi_copy = ffi.copy
@@ -464,16 +485,16 @@ do
     local make = function(size, tag, cache)
         size = size or '*'
 
-        local cached = cache[size]
-        if not cached then
-            cached = structs.make_type('char')[size]
-            cached.converter = tag
-            cached.tag = tag
+        local ftype = cache[size]
+        if not ftype then
+            ftype = raw_array('char', size)
+            ftype.converter = tag
+            ftype.tag = tag
 
-            string_cache[size] = cached
+            string_cache[size] = ftype
         end
 
-        return cached
+        return ftype
     end
 
     structs.string = function(size)
@@ -531,7 +552,7 @@ do
     local ctype = ffi_typeof('char[?]')
 
     structs.packed_string = function(size, lookup_string)
-        local ftype = structs.make_type('char')[size]
+        local ftype = raw_array('char', size)
         ftype.converter = 'packed_string'
 
         ftype.unpacked_size = math_floor(4 * size / 3)
