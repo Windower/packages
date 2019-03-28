@@ -23,7 +23,7 @@ local setup_ftype = function(ftype)
     end
 
     if ftype.count then
-        structs.name(ftype)
+        structs.name(ftype, ftype.name, ftype.info.raw_array)
     elseif ftype.fields then
         structs.name(ftype)
         structs.metatype(ftype)
