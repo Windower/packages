@@ -46,16 +46,15 @@ service.env.block = function()
     blocked = true
 end
 
-local handle_outgoing_action = function(p)
-    if not (p._info.injected or p._info.blocked) and
+local handle_outgoing_action = function(p, info)
+    if not (info.injected or info.blocked) and
             (p.action_category == cat_out.MAGIC_CAST or
             p.action_category == cat_out.WEAPON_SKILL or
             p.action_category == cat_out.JOB_ABILITY or
             p.action_category == cat_out.RANGED_ATTACK) then
-        
+
         packet = p
         packets.block()
-        packet._info = nil
 
         blocked = false
 
@@ -79,12 +78,11 @@ local handle_outgoing_action = function(p)
     end
 end
 
-local handle_incoming_action = function(p)
+local handle_incoming_action = function(p, info)
     if  (p.category >= cat_in.RANGED_ATTACK and p.category <= cat_in.JOB_ABILITY) or
         (p.category >= cat_in.PET_WEAPON_SKILL and p.category <= cat_in.JOB_ABILITY_3) then
 
         packet = p
-        packet._info = nil
 
         coroutine.schedule(function()
             post_action_event:trigger(packet)
@@ -96,7 +94,7 @@ packets.outgoing[0x01A]:register(handle_outgoing_action)
 packets.incoming[0x028]:register(handle_incoming_action)
 
 --[[
-Copyright © 2018, Windower Dev Team
+Copyright © 2019, Windower Dev Team
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

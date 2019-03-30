@@ -122,7 +122,8 @@ end
 packets_server.env = {}
 
 packets_server.env.get_last = function(path)
-    return history[path]
+    local entry = history[path]
+    return entry.packet, entry.info
 end
 
 do
@@ -133,11 +134,11 @@ do
         local res = {}
         local res_count = 0
         local len = #start_path
-        for path, packet in pairs(history) do
-            if start_path == string_sub(path, 1, len) and not found[packet] then
+        for path, entry in pairs(history) do
+            if start_path == string_sub(path, 1, len) and not found[entry] then
                 res_count = res_count + 1
-                res[res_count] = packet
-                found[packet] = true
+                res[res_count] = entry
+                found[entry] = true
             end
         end
         return res
@@ -271,32 +272,33 @@ packets_server.env.update = function(p)
     updated = p
 end
 
-local process_packet = function(packet, path)
+local process_packet = function(packet, info, path)
     local events = registry[path]
     if events then
         for i = 1, #events do
-            events[i]:trigger(packet)
+            events[i]:trigger(packet, info)
             if blocked then
-                packet._info.blocked = blocked
+                info.blocked = blocked
                 blocked = false
             end
             if updated then
-                local info = packet._info
                 for k in pairs(packet) do
                     packet[k] = nil
                 end
                 for k, v in pairs(updated) do
                     packet[k] = v
                 end
-                packet._info = info
 
-                packet._info.modified = true
+                info.modified = true
                 updated = nil
             end
         end
     end
 
-    history[path] = packet
+    history[path] = {
+        packet = packet,
+        info = info,
+    }
 end
 
 local make_timestamp
@@ -328,7 +330,7 @@ do
         local id = raw.id
         local data = raw.data
 
-        local packet_info = {
+        local info = {
             direction = direction,
             id = id,
             data = data,
@@ -340,33 +342,29 @@ do
 
         local ftype = types[direction][id]
         local packet = parse_packet(data, ftype)
-        packet._info = packet_info
 
-        process_packet(packet, '')
+        process_packet(packet, info, '')
         local path = '/' .. direction
-        process_packet(packet, path)
+        process_packet(packet, info, path)
         path = path .. '/' .. id
-        process_packet(packet, path)
+        process_packet(packet, info, path)
 
-        local info = ftype and ftype.info
-        local cache = info and info.cache
+        local finfo = ftype and ftype.info
+        local cache = finfo and finfo.cache
         if cache then
             for i = 1, #cache do
                 path = path .. '/' .. tostring(packet[cache[i]])
-                process_packet(packet, path)
+                process_packet(packet, info, path)
             end
         end
 
-        if packet._info.blocked then
+        if info.blocked then
             raw.blocked = true
         end
 
-        if packet._info.modified then
-            local info = packet._info
-            packet._info = nil
+        if info.modified then
             local cdata, var_count = build_cdata(ftype, packet)
             amend_cdata(cdata, packet, ftype, var_count)
-            packet._info = info
 
             raw.data = ffi_string(cdata, ffi_sizeof(cdata))
         end
