@@ -1,6 +1,6 @@
 <package>
   <name>client_data</name>
-  <version>2.1.0.1</version>
+  <version>2.1.0.2</version>
   <type>library</type>
   <dependencies>
     <dependency>client_data_service</dependency>
