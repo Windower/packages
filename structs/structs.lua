@@ -194,40 +194,34 @@ do
         return ftype
     end
 
-    structs.array = function(base, count, info)
-        base, count, info = info and count or base, info or count, info and base or {}
+    local ffi_sizeof = ffi.sizeof
+    local table_sort = table.sort
 
-        if info.raw_array == nil then
-            info.raw_array = false
-        end
-
-        local ftype = build_type(base.cdef, info)
-
-        ftype.base = base
-        ftype.count = count
-
-        -- Cannot have VLA in a nested struct
-        local raw_array = info.raw_array
-        if count == '*' or raw_array then
-            ftype.cdef = (base.name or base.cdef) .. '[' .. (count == '*' and '?' or count) .. ']'
-            ftype.size = count == '*' and '*' or base.size * count
-
-            structs.name(ftype, info.name, raw_array)
-
-            return ftype
-        end
-
-        ftype.cdef = 'struct{ ' .. (base.name or base.cdef) .. ' _array[' .. count .. '];}'
-        ftype.size = base.size * count
-
-        structs.name(ftype, info.name)
+    local array_metatype = function(ftype)
+        local base = ftype.base
+        local count = ftype.count
 
         ffi_metatype(ftype.name, {
             __index = function(cdata, key)
-                return cdata._array[key]
+                assert(key >= 0 and key < count, 'Array index out of range (' .. tostring(key) .. '/' .. tostring(count) .. ').')
+
+                local converter = base.converter
+                if converter then
+                    return tolua[converter](cdata.array[key], base)
+                end
+
+                return cdata.array[key]
             end,
             __newindex = function(cdata, key, value)
-                cdata._array[key] = value
+                assert(key >= 0 and key < count, 'Array index out of range (' .. tostring(key) .. '/' .. tostring(count) .. ').')
+
+                local converter = base.converter
+                if converter then
+                    toc[converter](cdata.array, key, value, base)
+                    return
+                end
+
+                cdata.array[key] = value
             end,
             __pairs = function(cdata)
                 return function(arr, i)
@@ -237,18 +231,16 @@ do
                     end
 
                     return i, arr[i]
-                end, cdata._array, -1
+                end, cdata.array, -1
             end,
             __ipairs = pairs,
+            __len = function(_)
+                return count
+            end,
         })
-
-        return ftype
     end
 
-    local ffi_sizeof = ffi.sizeof
-    local table_sort = table.sort
-
-    structs.metatype = function(ftype)
+    local struct_metatype = function(ftype)
         local fields = ftype.fields
 
         ffi_metatype(ftype.name, {
@@ -292,13 +284,14 @@ do
                     error('Unknown field \'' .. key .. '\'.')
                 end
 
-                local converter = field.type.converter
-                if not converter then
-                    cdata[field.cname] = value
+                local ftype = field.type
+                local converter = ftype.converter
+                if converter then
+                    toc[converter](cdata, field.cname, value, ftype)
                     return
                 end
 
-                toc[converter](cdata, field.cname, value, field)
+                cdata[field.cname] = value
             end,
             __pairs = function(cdata)
                 return function(t, k)
@@ -307,6 +300,48 @@ do
                 end, fields, nil
             end,
         })
+    end
+
+    structs.metatype = function(ftype)
+        local count = ftype.count
+
+        if count == nil then
+            struct_metatype(ftype)
+        elseif count ~= '*' and not ftype.info.raw_array then
+            array_metatype(ftype)
+        end
+    end
+
+    structs.array = function(base, count, info)
+        base, count, info = info and count or base, info or count, info and base or {}
+
+        if info.raw_array == nil then
+            info.raw_array = false
+        end
+
+        local ftype = build_type(base.cdef, info)
+
+        ftype.base = base
+        ftype.count = count
+
+        -- Cannot have VLA in a nested struct
+        local raw_array = info.raw_array
+        if count == '*' or raw_array then
+            ftype.cdef = (base.name or base.cdef) .. '[' .. (count == '*' and '?' or count) .. ']'
+            ftype.size = count == '*' and '*' or base.size * count
+
+            structs.name(ftype, info.name, raw_array)
+
+            return ftype
+        end
+
+        ftype.cdef = 'struct{ ' .. (base.name or base.cdef) .. ' array[' .. count .. '];}'
+        ftype.size = base.size * count
+
+        structs.name(ftype, info.name)
+        structs.metatype(ftype)
+
+        return ftype
     end
 
     structs.struct = function(fields, info)
@@ -505,7 +540,7 @@ do
         return ffi_string(value)
     end
 
-    toc.string = function(instance, index, value, field)
+    toc.string = function(instance, index, value, ftype)
         ffi_copy(instance[index], value)
     end
 
@@ -517,8 +552,8 @@ do
         return ffi_string(value, field.type.size)
     end
 
-    toc.data = function(instance, index, value, field)
-        ffi_copy(instance[index], value, field.type.size)
+    toc.data = function(instance, index, value, ftype)
+        ffi_copy(instance[index], value, ftype.size)
     end
 end
 
@@ -532,7 +567,7 @@ do
         return value + off
     end
 
-    toc.time = function(instance, index, value, field)
+    toc.time = function(instance, index, value, ftype)
         instance[index] = value - off
     end
 end
@@ -595,8 +630,7 @@ do
         return ffi_string(res)
     end
 
-    toc.packed_string = function(instance, index, value, field)
-        local ftype = field.type
+    toc.packed_string = function(instance, index, value, ftype)
         local c_lookup = ftype.c_lookup
         for i = 1, math_min(ftype.unpacked_size - 3, #value), 4 do
             local v1, v2, v3, v4 = string_byte(value, i, i + 3)
@@ -632,7 +666,7 @@ tolua.boolbit = function(value, field)
     return value == 1
 end
 
-toc.boolbit = function(instance, index, value, field)
+toc.boolbit = function(instance, index, value, ftype)
     instance[index] = value and 1 or 0
 end
 

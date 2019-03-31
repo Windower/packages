@@ -11,9 +11,12 @@ local prepare_struct
 local prepare_array
 
 local setup_ftype = function(ftype)
-    if ftype.count then
+    local count = ftype.count
+    local fields = ftype.fields
+
+    if count then
         prepare_array(ftype)
-    elseif ftype.fields then
+    elseif fields then
         prepare_struct(ftype)
     end
 
@@ -22,10 +25,8 @@ local setup_ftype = function(ftype)
         return
     end
 
-    if ftype.count then
-        structs.name(ftype, ftype.name, ftype.info.raw_array)
-    elseif ftype.fields then
-        structs.name(ftype)
+    if count or fields then
+        structs.name(ftype, name, ftype.info.raw_array)
         structs.metatype(ftype)
     end
 
