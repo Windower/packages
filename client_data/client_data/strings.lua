@@ -192,7 +192,7 @@ do
         [0x0C] = { category = 'choice', parameter = 1, parse = parse_choices },
         [0x10] = { category = 'spell', parameter = 1 },
         [0x12] = { category = 'integer', parameter = 1 },
-        [0x1C] = { category = 'raw', parameter = 2 },
+        [0x1C] = { category = 'raw', parameter = 1 },
         [0x1D] = { category = 'direction' },
         [0x7F] = {
             [0x80] = { category = 'ignore', parameter = 2 },
