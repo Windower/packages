@@ -11,7 +11,7 @@ do
         if bit_band(id, 0xFF000000) ~= 0 then
             local sub_mask = bit_band(id, 0x7FF)
             local index = sub_mask + (bit_band(id, 0x800) ~= 0 and 0x700 or 0)
-            if index < 0 or index > array_size then
+            if index < min or index > max then
                 return nil
             end
 
@@ -69,10 +69,8 @@ end
 local build_table = function(min, max, t)
     t = t or {}
 
-    if not t.by_id then
-        t.by_id = function(t, id)
-            return by_id(id, min, max)
-        end
+    t.by_id = function(t, id)
+        return by_id(id, min, max)
     end
 
     t.by_name = function(t, name)
@@ -94,7 +92,7 @@ end
 
 return build_table(0x000, 0x900, {
     npcs = build_table(0x000, 0x400),
-    players = build_table(0x400, 0x700),
+    pcs = build_table(0x400, 0x700),
     allies = build_table(0x700, 0x900),
 })
 
