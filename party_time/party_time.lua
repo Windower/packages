@@ -201,7 +201,7 @@ local default_handlers = {
                         return
                     end
                     coroutine.sleep_frame()
-                until(#treasure == 0)
+                until(#treasure.pool == 0)
                 command.input('/join')
             end)
         end,

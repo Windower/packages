@@ -12,8 +12,8 @@ local data = server.new(structs.struct({
         solo_combat         = {structs.int32},
         party_combat        = {structs.int32},
     })},
-    zone_change         = {data=event.new()},
-    weather_change      = {data=event.new()},
+    zone_change         = {data = event.new()},
+    weather_change      = {data = event.new()},
 }))
 
 data.zone_id = -1
