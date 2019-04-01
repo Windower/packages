@@ -1983,13 +1983,13 @@ types.incoming[0x0CC] = struct({cache = {'linkshell_index'}}, {
 })
 
 -- Found Item
-types.incoming[0x0D2] = struct({cache = {'pool_location'}}, {
+types.incoming[0x0D2] = struct({cache = {'pool_index'}}, {
     -- 0x00~0x03: Could be characters starting the line - FD 02 02 18 observed; Arcon: Only ever observed 0x00000001 for this
     dropper_id          = {0x04, entity},
     gil                 = {0x08, uint32},
     item_id             = {0x0C, item},
     dropper_index       = {0x0E, entity_index},
-    pool_location       = {0x10, uint8}, -- This is the internal index in memory, not the one it appears in in the menu
+    pool_index          = {0x10, uint8}, -- This is the internal index in memory, not the one it appears in in the menu
     is_old              = {0x11, bool}, -- This is true if it was already in the pool, but appeared in the pool before you joined a party
     _known1             = {0x12, uint8, const=0},
     -- 0x17: Seemingly random, both 00 and FF observed, as well as many values in between
@@ -1998,7 +1998,7 @@ types.incoming[0x0D2] = struct({cache = {'pool_location'}}, {
 })
 
 -- Item lot/drop
-types.incoming[0x0D3] = struct({cache = {'pool_location'}}, {
+types.incoming[0x0D3] = struct({cache = {'pool_index'}}, {
     highest_lotter_id   = {0x00, entity},
     lotter_id           = {0x04, entity},
     highest_lotter_index= {0x08, entity_index},
@@ -2006,7 +2006,7 @@ types.incoming[0x0D3] = struct({cache = {'pool_location'}}, {
     lotter_index        = {0x0C, bit(uint16, 15), offset=0}, -- Not a normal index somehow
     --_known1             = {0x0C, bit(uint16, 1 ), offset=15, const=1}, -- Always seems set
     lot                 = {0x0E, uint16}, -- 0xFFFF if passing
-    pool_location       = {0x10, uint8},
+    pool_index          = {0x10, uint8},
     drop                = {0x11, uint8}, -- 0 if no drop, 1 if dropped to player, 3 if floored
     highest_lotter_name = {0x12, pc_name},
     lotter_name         = {0x22, pc_name},
@@ -2567,12 +2567,12 @@ types.outgoing[0x03D] = struct({
 
 -- Lot item
 types.outgoing[0x041] = struct({
-    pool_location       = {0x00, uint8},
+    pool_index          = {0x00, uint8},
 })
 
 -- Pass item
 types.outgoing[0x042] = struct({
-    pool_location       = {0x00, uint8},
+    pool_index          = {0x00, uint8},
 })
 
 -- Servmes

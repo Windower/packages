@@ -9,8 +9,8 @@ local data = server.new(structs.struct({
     name                = {structs.string(0x10)},
     id                  = {structs.int32},
     server_id           = {structs.int32},
-    login               = {data=event.new()},
-    logout              = {data=event.new()},
+    login               = {data = event.new()},
+    logout              = {data = event.new()},
 }))
 
 local login_event = data.login

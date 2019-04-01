@@ -1,6 +1,6 @@
 <package>
   <name>account_service</name>
-  <version>1.3.0.0</version>
+  <version>1.3.0.1</version>
   <type>service</type>
   <dependencies>
     <dependency>memory</dependency>
