@@ -2,7 +2,6 @@ local command = require('command')
 local entities = require('entities')
 local ipc = require('ipc')
 local player = require('player')
-local string = require('string')
 local target = require('target')
 
 local send_message = function(message)

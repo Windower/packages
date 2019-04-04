@@ -44,6 +44,8 @@ local options = settings.load(defaults)
 
 local window_aspect_ratio = (4 / 3) / (windower.settings.client_size.width / windower.settings.client_size.height)
 
+local math_ceil = math.ceil
+
 coroutine.schedule(function()
     while true do
         do -- graphics
@@ -60,7 +62,7 @@ coroutine.schedule(function()
             gamma.blue = gamma_options.blue
 
             render.aspect_ratio = aspect_ratio_options.auto and window_aspect_ratio or ((4 / 3) / aspect_ratio_options.value)
-            render.framerate_divisor = graphics_options.framerate == 'unlimited' and 0 or math.ceil(60 / graphics_options.framerate)
+            render.framerate_divisor = graphics_options.framerate == 'unlimited' and 0 or math_ceil(60 / graphics_options.framerate)
 
             graphics.clipping_plane_entity = graphics_options.clipping_plane
             graphics.clipping_plane_map = graphics_options.clipping_plane

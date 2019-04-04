@@ -271,6 +271,12 @@ local types = {
     outgoing = {},
 }
 
+types.incoming[0x009] = struct({
+    target_id           = {0x00, entity},
+    target_index        = {0x04, entity_index},
+    message_id          = {0x06, uint16},
+})
+
 -- Zone update
 types.incoming[0x00A] = struct({
     player_id           = {0x00, entity},

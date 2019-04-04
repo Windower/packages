@@ -14,15 +14,15 @@ local get_log = function()
 
     log_date = os.date('*t')
     local file_timestamp = string.format('%.4u.%.2u.%.2u.log', log_date.year, log_date.month, log_date.day)
-    
+
     log_file = file.create(dir .. file_timestamp)
 end
 
 account.login:register(get_log)
 
-account.logout:register(function ()
+account.logout:register(function()
     log_file = nil
-    log_timestamp = nil
+    log_date = nil
 end)
 
 chat.text_added:register(function(obj)

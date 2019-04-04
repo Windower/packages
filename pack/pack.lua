@@ -163,7 +163,7 @@ string.unpack = function(data, format, index, offset)
             offset = 0
         end
 
-        count = count_str ~= '' and tonumber(count_str) or 1
+        local count = count_str ~= '' and tonumber(count_str) or 1
 
         assert(index + info.size * count <= #data + 1, 'Data to unpack too small for the provided format')
 

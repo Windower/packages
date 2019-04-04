@@ -18,7 +18,6 @@ string.split = function(str, delim)
     local split_count = 0
 
     local start = 1
-    local length = #str
     repeat
         local from, to = string_find(str, delim, start)
         split_count = split_count + 1

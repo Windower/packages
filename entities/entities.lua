@@ -69,19 +69,19 @@ end
 local build_table = function(min, max, t)
     t = t or {}
 
-    t.by_id = function(t, id)
+    t.by_id = function(_, id)
         return by_id(id, min, max)
     end
 
-    t.by_name = function(t, name)
+    t.by_name = function(_, name)
         return by_name(name, min, max)
     end
 
     return setmetatable(t, {
-        __index = function(t, k)
+        __index = function(_, k)
             return index(k, min, max)
         end,
-        __pairs = function(t)
+        __pairs = function(_)
             return iterator(min, max)
         end,
         __ipairs = pairs,

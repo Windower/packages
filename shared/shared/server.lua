@@ -1,3 +1,4 @@
+local event = require('event') -- Required for the serializer
 local ffi = require('ffi')
 local shared = require('shared')
 local windower = require('windower')
@@ -11,7 +12,6 @@ ffi.cdef[[
 
 local C = ffi.C
 local ffi_cast = ffi.cast
-local ffi_cdef = ffi.cdef
 local ffi_gc = ffi.gc
 local ffi_sizeof = ffi.sizeof
 local shared_new = shared.new

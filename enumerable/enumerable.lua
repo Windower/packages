@@ -2,12 +2,6 @@ local enumerable = {}
 
 local enumerator_cache = setmetatable({}, {__mode = 'k'})
 
-local true_fn = function()
-    return true
-end
-local equal_fn = function(v1, v2)
-    return v1 == v2
-end
 local add_fn = function(x, y)
     return x + y
 end
@@ -346,7 +340,7 @@ local lazy_functions = {
 
         return res
     end,
-    skip_while = function(constructor, original, count)
+    skip_while = function(constructor, original, condition)
         local res = constructor()
 
         enumerator_cache[res] = function(res)

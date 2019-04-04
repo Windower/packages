@@ -1,6 +1,6 @@
 <package>
   <name>logger</name>
-  <version>1.0.0.1</version>
+  <version>1.0.0.2</version>
   <type>addon</type>
   <dependencies>
     <dependency>file</dependency>

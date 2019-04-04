@@ -1,10 +1,8 @@
 <package>
   <name>status_effects_service</name>
-  <version>0.1.1.0</version>
+  <version>0.1.1.1</version>
   <type>service</type>
   <dependencies>
-    <dependency>pack</dependency>	
-    <dependency>packets</dependency>		
-    <dependency>resources</dependency>	
+    <dependency>packets</dependency>
   </dependencies>
 </package>

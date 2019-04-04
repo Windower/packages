@@ -53,7 +53,7 @@ local handle_outgoing_action = function(p, info)
             p.action_category == cat_out.JOB_ABILITY or
             p.action_category == cat_out.RANGED_ATTACK) then
 
-        packet = p
+        local packet = p
         packets.block()
 
         blocked = false
@@ -78,11 +78,11 @@ local handle_outgoing_action = function(p, info)
     end
 end
 
-local handle_incoming_action = function(p, info)
+local handle_incoming_action = function(p)
     if  (p.category >= cat_in.RANGED_ATTACK and p.category <= cat_in.JOB_ABILITY) or
         (p.category >= cat_in.PET_WEAPON_SKILL and p.category <= cat_in.JOB_ABILITY_3) then
 
-        packet = p
+        local packet = p
 
         coroutine.schedule(function()
             post_action_event:trigger(packet)

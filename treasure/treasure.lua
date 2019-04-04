@@ -1,5 +1,4 @@
 local client = require('shared.client')
-local event = require('event')
 local items = require('client_data.items')
 
 local data, ftype = client.new('treasure_service')

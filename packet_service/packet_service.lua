@@ -4,7 +4,6 @@ local packet = require('packet')
 local shared = require('shared')
 local string = require('string')
 local math = require('math')
-local table = require('table')
 local os = require('os')
 local windower = require('windower')
 

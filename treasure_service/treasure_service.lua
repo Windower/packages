@@ -1,10 +1,9 @@
 local event = require('event')
-local items = require('client_data.items')
 local packets = require('packets')
 local server = require('shared.server')
 local structs = require('structs')
 
-local item = structs.struct({
+local item_type = structs.struct({
     item_id             = {structs.uint16},
     timestamp           = {structs.time},
     player_lot          = {structs.uint32},
@@ -15,7 +14,7 @@ local item = structs.struct({
 })
 
 local data = server.new(structs.struct({
-    pool                = {item[10]},
+    pool                = {item_type[10]},
     item_found          = {data = event.new()},
     item_lotted         = {data = event.new()},
     item_dropped        = {data = event.new()},
@@ -26,7 +25,7 @@ local item_found = data.item_found
 local item_lotted = data.item_lotted
 local item_dropped = data.item_dropped
 
-local empty = structs.make(item)
+local empty = structs.make(item_type)
 
 local drop_types = {
     [0] = 'lot',
