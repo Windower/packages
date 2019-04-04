@@ -1,4 +1,3 @@
-local ffi = require('ffi')
 local structs = require('structs')
 
 local struct = structs.struct
@@ -37,8 +36,6 @@ local pc_name = string(0x10)
 local npc_name = string(0x18)
 local fourcc = string(0x04)
 local chat_input_buffer = string(0x97)
-
-local ffi_cdef = ffi.cdef
 
 local vector_3f = struct({
     x                       = {0x0, float},

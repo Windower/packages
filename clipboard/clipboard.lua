@@ -75,5 +75,5 @@ end
 return {
     get = get,
     set = set,
-    clear = clear
+    clear = clear,
 }

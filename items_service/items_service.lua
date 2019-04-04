@@ -3,7 +3,7 @@ local resources = require('resources')
 local server = require('shared.server')
 local structs = require('structs')
 
-local item = structs.struct({
+local item_type = structs.struct({
     id                  = {structs.int32},
     bag                 = {structs.int32},
     index               = {structs.int32},
@@ -13,13 +13,13 @@ local item = structs.struct({
     extdata             = {structs.data(0x18)},
 })
 
-local equipment = server.new('equipment', item[16])
+local equipment = server.new('equipment', item_type[16])
 
 local bag_count = #resources.bags
 local bag_size = 80
 
 local items = server.new('items', structs.struct({
-    bags                = {item[bag_size + 1][bag_count]},
+    bags                = {item_type[bag_size + 1][bag_count]},
     sizes               = {structs.int32[bag_count]},
     gil                 = {structs.int32},
 }))
@@ -36,7 +36,7 @@ for bag = 0, bag_count - 1 do
     equipment_references[bag] = {}
 end
 
-local empty_item = structs.make(item)
+local empty_item = structs.make(item_type)
 
 local update_item = function(bag, index, count, status, id, bazaar, extdata)
     if bag == 0 and index == 0 then
@@ -55,8 +55,8 @@ local update_item = function(bag, index, count, status, id, bazaar, extdata)
         return
     end
 
-    if id then 
-        item.id = id 
+    if id then
+        item.id = id
     end
     if bazaar then
         item.bazaar = bazaar

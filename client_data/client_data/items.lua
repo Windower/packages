@@ -20,8 +20,6 @@ local ffi_typeof = ffi.typeof
 local string_byte = string.byte
 local to_utf16 = unicode.to_utf16
 local from_shift_jis = unicode.from_shift_jis
-local to_shift_jis = unicode.to_shift_jis
-local unpack = unpack
 
 local size_type = ffi.typeof('unsigned long[1]')
 local raw_data_ptr = ffi.typeof('uint8_t*')
@@ -448,7 +446,7 @@ do
                 return false
             end
         end
-        return name_ptr[#name] == 0
+        return ptr[#name] == 0
     end
 
     by_name = function(_, name, language)

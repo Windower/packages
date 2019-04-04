@@ -10,39 +10,39 @@ file.create = function(path)
     return setmetatable({path = path}, file_mt)
 end
 
-file.exists = function(file)
-    local f = io.open(file.path, 'r')
-    local exists = f ~= nil
+file.exists = function(f)
+    local handle = io.open(f.path, 'r')
+    local exists = handle ~= nil
 
     if exists then
-        f:close()
+        handle:close()
     end
 
     return exists
 end
 
-file.read = function(file)
-    local f = io.open(file.path, 'r')
-    local contents = f:read("*a")
-    f:close()
+file.read = function(f)
+    local handle = io.open(f.path, 'r')
+    local contents = handle:read("*a")
+    handle:close()
     return contents
 end
 
-file.write = function(file, str)
-    local f = io.open(file.path, 'w')
-    f:write(str)
-    f:close()
+file.write = function(f, str)
+    local handle = io.open(f.path, 'w')
+    handle:write(str)
+    handle:close()
 end
 
-file.append = function(file, str, newline)
+file.append = function(f, str, newline)
     newline = newline ~= false
 
-    local f = io.open(file.path, 'a')
-    f:write(str)
+    local handle = io.open(f.path, 'a')
+    handle:write(str)
     if newline then
-        f:write('\n')
+        handle:write('\n')
     end
-    f:close()
+    handle:close()
 end
 
 return file

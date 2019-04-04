@@ -1,7 +1,5 @@
-local event = require('event')
 local shared = require('shared')
 local table = require('table')
-local string = require('string')
 
 local client = shared.get('packet_service', 'packets')
 

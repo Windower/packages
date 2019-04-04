@@ -6,7 +6,7 @@ ffi.cdef[[
     bool TerminateProcess(void* hProcess, uint32_t uExitCode);
 ]]
 
-command.new('terminate'):register(function() 
+command.new('terminate'):register(function()
     ffi.C.TerminateProcess(ffi.cast('void*', ffi.C.GetCurrentProcess()), 0)
 end)
 

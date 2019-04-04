@@ -475,7 +475,7 @@ do
         local ctype = type_cache[ftype]
         if not ctype then
             ctype = ffi_typeof(ftype.name or ftype.cdef)
-            type_cache[type] = ctype
+            type_cache[ftype] = ctype
         end
 
         return ctype(...)

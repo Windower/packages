@@ -1,9 +1,5 @@
-local ffi = require('ffi');
 local shared = require('shared')
 local structs = require('structs')
-
-local ffi_cast = ffi.cast
-local ffi_cdef = ffi.cdef
 
 local prepared = {}
 
@@ -34,7 +30,7 @@ local setup_ftype = function(ftype)
 end
 
 prepare_struct = function(struct)
-    for label, field in pairs(struct.fields) do
+    for _, field in pairs(struct.fields) do
         local ftype = field.type
         if ftype then
             setup_ftype(ftype)

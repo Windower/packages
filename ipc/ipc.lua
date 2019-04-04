@@ -61,7 +61,7 @@ do
 
     do
         local handle = c.CreateMutexW(nil, 0, name)
-        if handle == nil or mutex_handle == invalid_handle then
+        if handle == nil or handle == invalid_handle then
             error('error creating ipc mutex [error code: ' .. c.GetLastError() .. ']')
         end
         mutex = ffi.gc(handle, c.CloseHandle)

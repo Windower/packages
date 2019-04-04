@@ -13,8 +13,9 @@ local config_state = {
     height = 48,
     color = ui.color.black,
 }
-function round(num)
-    return math.floor((num + 0.5))
+
+local round = function(num)
+    return math.floor(num + 0.5)
 end
 
 ui.display(function()

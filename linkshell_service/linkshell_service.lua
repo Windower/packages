@@ -18,24 +18,21 @@ local ls_struct = structs.struct({
     bag_index           = {structs.uint8},
 })
 
-local data, events = server.new(structs.struct({
+local data = server.new(structs.struct({
     [1]                 = {ls_struct},
     [2]                 = {ls_struct},
 }))
 
-local handle_0CC = function(p)
-    local ls_data = data[p.linkshell_index + 1]
-
-    ls_data.name = p.linkshell_name
-    ls_data.permissions = p.permissions
-    ls_data.lsmes.message = p.message
-    ls_data.lsmes.timestamp = p.timestamp
-    ls_data.lsmes.player_name = p.player_name
-end
-
 packets.incoming:register_init({
-    [{0x0CC, 0}] = handle_0CC,
-    [{0x0CC, 1}] = handle_0CC,
+    [{0x0CC}] = function(p)
+        local ls_data = data[p.linkshell_index + 1]
+
+        ls_data.name = p.linkshell_name
+        ls_data.permissions = p.permissions
+        ls_data.lsmes.message = p.message
+        ls_data.lsmes.timestamp = p.timestamp
+        ls_data.lsmes.player_name = p.player_name
+    end,
     [{0x037}] = function(p)
         local ls_data = data[1]
 

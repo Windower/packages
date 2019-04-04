@@ -32,7 +32,6 @@ do
     local math_floor = math.floor
     local math_pi = math.pi
     local string_byte = string.byte
-    local string_char = string.char
     local string_format = string.format
     local string_gsub = string.gsub
     local table_concat = table.concat
@@ -323,13 +322,13 @@ do
                     local ptr = ffi_cast(byte_ptr, table) + table[id]
                     return {
                         id = id,
-                        debug = function(t)
+                        debug = function(_)
                             return evaluate('debug', ptr)
                         end,
-                        raw = function(t)
+                        raw = function(_)
                             return evaluate('raw', ptr)
                         end,
-                        string = function(t, actor, target, ...)
+                        string = function(_, actor, target, ...)
                             return evaluate('full', ptr, {actor, target}, {...})
                         end,
                     }

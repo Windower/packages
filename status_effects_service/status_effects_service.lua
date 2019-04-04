@@ -1,6 +1,6 @@
 local bit = require('bit')
+local event = require('event')
 local os = require('os')
-local pack   = require('pack')
 local packets = require('packets')
 local shared = require('shared')
 
@@ -33,7 +33,7 @@ packets.incoming:register_init({
     [{0x076}] = function(p)
         local data = status_effects.data.party
         for i = 0, 4 do
-            v = p.party_members[i]
+            local v = p.party_members[i]
             if v.id ~= 0 then
                 data[i + 1] = {}
                 for pos = 0, 0x1F do

@@ -20,7 +20,7 @@ ui.display(function()
             if config_state.color ~= 'ui.color.black' then
                 config_state['color'] = ui.color.black
             end
- 
+
             ui.location(2, 1)
             ui.text(string.format('%.2f', (math.sqrt(entity.distance))))
         else
