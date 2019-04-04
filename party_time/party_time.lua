@@ -25,7 +25,7 @@ settings.settings_change:register(function(options)
     options.blacklist = enumerable.toset(options.blacklist)
     options.whitelist = enumerable.toset(options.whitelist)
 end)
-options = settings.load(defaults)
+local options = settings.load(defaults)
 
 local invite_dialog = {}
 local invite_dialog_state = {
@@ -87,7 +87,7 @@ command.arg.register_type('lookup_boolean', {
             return bool
         end
 
-        error('Expected one of \'' .. table.concat(args_lookups.bool, ',') .. '\', received \'' .. str .. '\'.')
+        error('Expected one of \'' .. table.concat(arg_lookups.bool, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
 
@@ -98,7 +98,7 @@ command.arg.register_type('lookup_add_remove', {
             return op
         end
 
-        error('Expected one of \'' .. table.concat(args_lookups.addremove, ',') .. '\', received \'' .. str .. '\'.')
+        error('Expected one of \'' .. table.concat(arg_lookups.addremove, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
 command.arg.register_type('lookup_option', {
@@ -108,7 +108,7 @@ command.arg.register_type('lookup_option', {
             return option
         end
 
-        error('Expected one of \'' .. table.concat(args_lookups.option, ',') .. '\', received \'' .. str .. '\'.')
+        error('Expected one of \'' .. table.concat(arg_lookups.option, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
 
