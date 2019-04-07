@@ -108,7 +108,7 @@ do
         elseif category == 'integer' then
             return tostring(value)
         elseif category == 'choice' then
-            return data[value]
+            return data[value + 1]
         -- TODO
         elseif category == 'article' then
             return entity.index < 0x400 and entity.flags.enemy and data[1] or data[2]
@@ -236,9 +236,9 @@ do
                 count = count + 1
                 local sub = found and found.sub
                 if sub then
-                    local byte = ptr[i + count]
+                    local sub_byte = ptr[i + count]
                     for high, def in pairs(sub) do
-                        if bit_and(byte, 0xFC) == high then
+                        if bit_and(sub_byte, 0xFC) == high then
                             found = def
                             break
                         end
