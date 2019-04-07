@@ -40,15 +40,19 @@ packets.incoming:register_init({
             return
         end
 
-        local data = pool[p.pool_index]
-        data.item_id = p.item_id
-        data.timestamp = p.timestamp
+        if p.item_id == 0 then
+            pool[p.pool_index] = empty
+        else
+            local data = pool[p.pool_index]
+            data.item_id = p.item_id
+            data.timestamp = p.timestamp
 
-        item_found:trigger({
-            pool_index = p.pool_index,
-            dropper_id = p.dropper_id,
-            is_old = p.is_old,
-        })
+            item_found:trigger({
+                pool_index = p.pool_index,
+                dropper_id = p.dropper_id,
+                is_old = p.is_old,
+            })
+        end
     end,
     [{0x0D3}] = function(p)
         local drop = p.drop
