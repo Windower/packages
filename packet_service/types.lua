@@ -445,7 +445,8 @@ types.incoming[0x00E] = struct({
 -- Incoming Chat
 types.incoming[0x017] = struct({
     chat                = {0x00, chat},
-    gm                  = {0x01, bool},
+    gm                  = {0x01, boolbit(uint8), offset=0},
+    formatted           = {0x01, boolbit(uint8), offset=3},
     zone                = {0x02, zone},
     name                = {0x04, pc_name},
     message             = {0x14, string(0xEC)},
