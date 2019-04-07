@@ -150,8 +150,6 @@ meta.__ipairs = function(s)
     error('ipairs not defined for sets.')
 end
 
-meta.__metatable = false
-
 -- Enumerable base
 
 meta.__pairs = function(s)

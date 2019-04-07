@@ -83,8 +83,6 @@ end
 
 meta.__ipairs = pairs
 
-meta.__metatable = false
-
 -- Enumerable base
 
 meta.__pairs = function(q)

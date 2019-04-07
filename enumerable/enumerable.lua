@@ -493,6 +493,8 @@ local operators = {
     }
 }
 
+local meta_cache = {}
+
 local result_cache = {}
 local index_cache = {}
 local configure_metatable = function(meta, name)
@@ -625,6 +627,8 @@ local configure_metatable = function(meta, name)
         end
     end
 
+    meta_cache[meta] = true
+
     return constructor
 end
 
@@ -639,6 +643,10 @@ local result = {
         assert(getmetatable(t) == nil, 'Cannot wrap enumerable around existing metatable')
 
         return empty_converter(t)
+    end,
+    is_enumerable = function(t)
+        local meta = getmetatable(t)
+        return meta ~= nil and meta_cache[meta]
     end,
 }
 
