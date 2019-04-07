@@ -1,4 +1,5 @@
 local account = require('account')
+local enumerable = require('enumerable')
 local event = require('event')
 local file = require('file')
 local ffi = require('ffi')
@@ -12,37 +13,58 @@ ffi.cdef[[
 ]]
 
 local C = ffi.C
+local getmetatable = getmetatable
+local pairs = pairs
+local tostring = tostring
+local type = type
+local account_login = account.login
+local account_logout = account.logout
+local windower_settings_path = windower.settings_path
 
 local info_cache = {}
 
 local settings = {}
 
+local get_enumerable_meta = function(t)
+    return enumerable.is_enumerable(t) and getmetatable(t) or nil
+end
+
 local get_file
 do
-    local make_account_name = function()
+    local file_create = file.create
+
+    local make_account_name = function(global)
+        if global then
+            return '[global]'
+        end
+
         if not account.logged_in then
-            return 'logged_out'
+            return '[logged_out]'
         end
 
         return account.name .. '_' .. (account.server and account.server.name or account.id)
     end
 
     get_file = function(path, global)
-        local dir = windower.settings_path .. '\\' .. (global and '[global]' or make_account_name()) .. '\\'
+        local dir = windower_settings_path .. '\\' .. make_account_name(global) .. '\\'
 
-        C.CreateDirectoryW(unicode.to_utf16(windower.settings_path .. '\\..'), nil)
-        C.CreateDirectoryW(unicode.to_utf16(windower.settings_path), nil)
+        C.CreateDirectoryW(unicode.to_utf16(windower_settings_path .. '\\..'), nil)
+        C.CreateDirectoryW(unicode.to_utf16(windower_settings_path), nil)
         C.CreateDirectoryW(unicode.to_utf16(dir), nil)
 
-        return file.create(dir .. path)
+        return file_create(dir .. path)
     end
 end
 
 local format_table
 do
+    local string_match = string.match
+    local string_rep = string.rep
+    local table_concat = table.concat
+
     local format_key = function(key)
         if type(key) == 'string' then
-            return key:match('^%a[%w_]*$') or '[\'' .. key .. '\']'
+            return string_match(key, '^%a[%w_]*$') or '[\'' .. key .. '\']'
         else
             return '[' .. tostring(key) .. ']'
         end
@@ -62,20 +84,29 @@ do
     format_table = function(t, nested)
         nested = nested or 1
 
-        local indent = ('    '):rep(nested)
+        local indent = string_rep('    ', nested)
 
         local res = {}
         res[1] = '{'
 
         local count = 1
-        for key, child in pairs(t) do
-            count = count + 1
-            res[count] = indent .. format_key(key) .. ' = ' .. format_value(child, nested) .. ','
+
+        local meta = get_enumerable_meta(t)
+        if meta ~= nil then
+            for _, value in pairs(t) do
+                count = count + 1
+                res[count] = indent .. format_value(value, nested) .. ','
+            end
+        else
+            for key, child in pairs(t) do
+                count = count + 1
+                res[count] = indent .. format_key(key) .. ' = ' .. format_value(child, nested) .. ','
+            end
         end
 
-        res[count + 1] = ('    '):rep(nested - 1) .. '}'
+        res[count + 1] = string_rep('    ', nested - 1) .. '}'
 
-        local joined = table.concat(res, '\n')
+        local joined = table_concat(res, '\n')
         if nested > 1 then
             return joined
         end
@@ -86,18 +117,25 @@ end
 
 local parse
 do
+    local file_exists = file.exists
+    local file_write = file.write
+
     local amend
     amend = function(parsed, defaults)
         for key, value in pairs(defaults) do
             local parsed_child = parsed[key]
             if type(value) == 'table' then
-                if parsed_child == nil then
-                    parsed_child = {}
-                    parsed[key] = parsed_child
+                local meta = get_enumerable_meta(value)
+                if meta ~= nil then
+                    parsed[key] = meta.__convert(parsed_child == nil and value or parsed_child)
+                else
+                    if parsed_child == nil then
+                        parsed_child = {}
+                        parsed[key] = parsed_child
+                    end
+
+                    amend(parsed_child, value)
                 end
-
-                amend(parsed_child, value)
-
             elseif parsed_child == nil then
                 parsed[key] = value
             end
@@ -105,12 +143,12 @@ do
     end
 
     parse = function(defaults, path, global)
-        local file = get_file(path, global)
+        local options_file = get_file(path, global)
         local options
-        if file:exists() then
-            options = loadfile(file.path)()
+        if file_exists(options_file) then
+            options = loadfile(options_file.path)()
         else
-            file:write('return ' .. format_table(defaults))
+            file_write(options_file, 'return ' .. format_table(defaults))
             options = {}
         end
 
@@ -143,8 +181,13 @@ settings.load = function(defaults, path, global)
     return options
 end
 
-local save_options = function(options, info)
-    get_file(info.path, info.global):write('return ' .. format_table(options))
+local save_options
+do
+    local file_write = file.write
+
+    save_options = function(options, info)
+        file_write(get_file(info.path, info.global), 'return ' .. format_table(options))
+    end
 end
 
 settings.save = function(options)
@@ -166,7 +209,20 @@ do
         end
 
         for key, value in pairs(parsed) do
-            current[key] = type(value) == 'table' and update(current[key], value) or value
+            if type(value) == 'table' then
+                local current_table = current[key]
+                local meta = get_enumerable_meta(current_table)
+                if meta ~= nil then
+                    current_table:clear()
+                    for k, v in pairs(value) do
+                        current_table:add(v, k)
+                    end
+                else
+                    current[key] = update(current[key], value)
+                end
+            else
+                current[key] = value
+            end
         end
 
         for key in pairs(current) do
@@ -189,8 +245,8 @@ do
         end
     end
 
-    account.login:register(reparse)
-    account.logout:register(reparse)
+    account_login:register(reparse)
+    account_logout:register(reparse)
 end
 
 settings.settings_change = event.slim.new()
