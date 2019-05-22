@@ -5,6 +5,13 @@ local os = require('os')
 local math = require('math')
 local table = require('table')
 
+local assert = assert
+local error = error
+local pairs = pairs
+local setmetatable = setmetatable
+local tostring = tostring
+local type = type
+
 local structs = {}
 local tolua = {}
 local toc = {}
@@ -22,7 +29,8 @@ do
         local unknown_count = 0
         local cdef_count = 0
 
-        for _, field in ipairs(arranged) do
+        for i = 1, #arranged do
+            local field = arranged[i]
             local ftype = field.type
 
             local is_bit = ftype.bits ~= nil
@@ -176,6 +184,7 @@ local keywords = {
 do
     local ffi_metatype = ffi.metatype
     local ffi_sizeof = ffi.sizeof
+    local table_sort = table.sort
 
     local build_type = function(cdef, info)
         local ftype = structs.make_type(cdef, info)
@@ -194,16 +203,13 @@ do
         return ftype
     end
 
-    local ffi_sizeof = ffi.sizeof
-    local table_sort = table.sort
-
     local array_metatype = function(ftype)
         local base = ftype.base
         local count = ftype.count
 
         ffi_metatype(ftype.name, {
             __index = function(cdata, key)
-                assert(key >= 0 and key < count, 'Array index out of range (' .. tostring(key) .. '/' .. tostring(count) .. ').')
+                assert(key >= 0 and key < count, 'Array index out of range (' .. tostring(key) .. '/' .. tostring(count - 1) .. ').')
 
                 local converter = base.converter
                 if converter then
@@ -213,7 +219,7 @@ do
                 return cdata.array[key]
             end,
             __newindex = function(cdata, key, value)
-                assert(key >= 0 and key < count, 'Array index out of range (' .. tostring(key) .. '/' .. tostring(count) .. ').')
+                assert(key >= 0 and key < count, 'Array index out of range (' .. tostring(key) .. '/' .. tostring(count - 1) .. ').')
 
                 local converter = base.converter
                 if converter then
@@ -260,10 +266,11 @@ do
 
                 local data
                 do
-                    local converter = field.type.converter
+                    local child_ftype = field.type
+                    local converter = child_ftype.converter
                     data = cdata[field.cname]
                     if converter then
-                        data = tolua[converter](data, field)
+                        data = tolua[converter](data, child_ftype)
                     end
                 end
 
@@ -347,7 +354,6 @@ do
     structs.struct = function(fields, info)
         fields, info = info or fields, info and fields or {}
 
-        local typedef_count = 0
         local arranged = {}
         local arranged_index = 0
         for label, field in pairs(fields) do
@@ -504,7 +510,7 @@ local raw_array
 do
     local structs_array = structs.array
     local structs_make_type = structs.make_type
-    
+
     raw_array = function(cdef, count)
         return structs_array({ raw_array = true }, structs_make_type(cdef), count)
     end
@@ -513,6 +519,7 @@ end
 do
     local ffi_string = ffi.string
     local ffi_copy = ffi.copy
+    local string_sub = string.sub
 
     local string_cache = {}
     local data_cache = {}
@@ -536,20 +543,35 @@ do
         return make(size, 'string', string_cache)
     end
 
-    tolua.string = function(value, field)
-        return ffi_string(value)
+    tolua.string = function(value, ftype)
+        if ftype.size == '*' then
+            return ffi_string(value)
+        end
+
+        for i = 0, ftype.size - 1 do
+            if value[i] == 0 then
+                return ffi_string(value, i)
+            end
+        end
+
+        return ffi_string(value, ftype.size)
     end
 
     toc.string = function(instance, index, value, ftype)
-        ffi_copy(instance[index], value)
+        if ftype.size == '*' then
+            ffi_copy(instance[index], value)
+            return
+        end
+
+        ffi_copy(instance[index], string_sub(value, 1, ftype.size) .. '\x00')
     end
 
     structs.data = function(size)
         return make(size, 'data', data_cache)
     end
 
-    tolua.data = function(value, field)
-        return ffi_string(value, field.type.size)
+    tolua.data = function(value, ftype)
+        return ffi_string(value, ftype.size)
     end
 
     toc.data = function(instance, index, value, ftype)
@@ -563,7 +585,7 @@ do
     local now = os.time()
     local off = os.difftime(now, os.time(os.date('!*t', now)))
 
-    tolua.time = function(value, field)
+    tolua.time = function(value, ftype)
         return value + off
     end
 
@@ -611,8 +633,7 @@ do
         return ftype
     end
 
-    tolua.packed_string = function(value, field)
-        local ftype = field.type
+    tolua.packed_string = function(value, ftype)
         local lua_lookup = ftype.lua_lookup
         local res = ctype(ftype.unpacked_size)
         local ptr = res
@@ -662,7 +683,7 @@ structs.boolbit = function(base)
     return ftype
 end
 
-tolua.boolbit = function(value, field)
+tolua.boolbit = function(value, ftype)
     return value == 1
 end
 
