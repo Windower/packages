@@ -16,7 +16,7 @@ do
         local types = {}
         local cache = {cache = {ftype.key}}
         for index, definitions in pairs(ftype.lookups) do
-            types[index] = struct(cache, update(update({}, ftype.base), definitions))
+            types[index] = struct(update({}, cache), update(update({}, ftype.base), definitions))
         end
 
         ftype.info = { cache = cache.cache }
