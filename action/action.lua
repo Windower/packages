@@ -1,5 +1,7 @@
-local shared = require('shared')
+local bit = require('bit')
 local event = require('event')
+local packets = require('packets')
+local shared = require('shared')
 
 local service = shared.get('action_service', 'service')
 
@@ -11,7 +13,7 @@ local get_event = function(name)
     return slim_event
 end
 
-return {
+local action = {
     filter_action   = get_event('filter_action'),
     pre_action      = get_event('pre_action'),
     mid_action      = get_event('mid_action'),
@@ -20,6 +22,29 @@ return {
         service:call(function() block() end)
     end,
 }
+
+do
+    local band = bit.band
+    local rshift = bit.rshift
+
+    local get_flag = function(str,index)
+        return band(rshift(str:byte(rshift(index, 3) + 1), band(index, 7)), 1) == 1
+    end
+
+    local fn_index = function(t,k)
+        if type(k) == 'number' and k>0 and k<1024 then
+            return get_flag(packets.incoming[0x0AA].last.spells_known,k)
+        else
+            return nil
+        end
+    end
+
+    action.spells_known = setmetatable({},{
+        __index = fn_index
+    })
+end
+
+return action
 
 --[[
 Copyright © 2018, Windower Dev Team
