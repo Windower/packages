@@ -1922,7 +1922,13 @@ types.incoming[0x0A0] = struct({
     y                   = {0x10, float},
 })
 
---0x0AA, 0x0AC, and 0x0AE are all bitfields where the lsb indicates whether you have index 0 of the related resource.
+-- Spells Known
+-- A bitfield indicating the player's known spells, songs, summons, ninjitus, and trusts.
+types.incoming[0x0AA] = struct({
+    spells_known        = {0x00, data(128)}
+})
+
+-- 0x0AC, and 0x0AE are all bitfields where the lsb indicates whether you have index 0 of the related resource.
 
 -- Help Desk submenu open
 types.incoming[0x0B5] = struct({
