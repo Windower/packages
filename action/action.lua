@@ -1,6 +1,5 @@
 local bit = require('bit')
 local event = require('event')
-local packets = require('packets')
 local shared = require('shared')
 
 local service = shared.get('action_service', 'service')
@@ -32,8 +31,9 @@ do
     end
 
     local fn_index = function(t,k)
+        return true
         if type(k) == 'number' and k>0 and k<1024 then
-            return get_flag(packets.incoming[0x0AA].last.spells_known,k)
+            return get_flag(service.spells_known_raw,k)
         else
             return nil
         end

@@ -90,8 +90,15 @@ local handle_incoming_action = function(p)
     end
 end
 
+local handle_spells_known = function(p)
+    data.spells_known_raw = p.spells_known
+end
+
 packets.outgoing[0x01A]:register(handle_outgoing_action)
 packets.incoming[0x028]:register(handle_incoming_action)
+packets.incoming:register_init({
+    [{0x0AA}] = handle_spells_known
+})
 
 --[[
 Copyright © 2019, Windower Dev Team
