@@ -4,6 +4,7 @@ local string = require('string')
 local os = require('os')
 local math = require('math')
 local table = require('table')
+local windower = require('windower')
 
 local assert = assert
 local error = error
@@ -406,9 +407,15 @@ do
     local string_gsub = string.gsub
 
     local declared_cache = {}
+    local named_count = 0
+    local package_identifier = string_gsub(windower.package_path, '%W', '')
 
     structs.name = function(ftype, name, raw_array)
-        name = name or ftype.name or '_' .. string_gsub(tostring(ftype), '%W', '')
+        named_count = named_count + 1
+        name = name or ftype.name
+        if not name then
+            name = '_gensym_' .. package_identifier .. '_' .. tostring(named_count)
+        end
 
         ftype.name = name
 
