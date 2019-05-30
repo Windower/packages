@@ -42,7 +42,7 @@ do
 
     local lookup_data = function(category, data)
         if category == 'article' or category == 'plurality' or category == 'choice' then
-            return '<' .. table_concat(data, '|') .. '>'
+            return '<' .. (data and table_concat(data, '|') or '...') .. '>'
         end
 
         return ''
@@ -121,27 +121,33 @@ do
         error('Unknown category "' .. category .. '".')
     end
 
-    local parse_choices = function(ptr, origin)
-        local choices = {}
-        local count = 0
+    local parse_choices
+    do
+        local close_bracket = string.byte(']')
+        local slash = string.byte('/')
 
-        local i = origin + 1
-        local start = origin + 1
-        while ptr[i] ~= 0x5D do
-            if ptr[i] ~= 0x2F then
-                i = i + 1
-            else
-                count = count + 1
-                choices[count] = ffi_string(ptr + start, i - start)
+        local parse_choices = function(ptr, origin)
+            local choices = {}
+            local count = 0
 
-                i = i + 1
-                start = i
+            local i = origin + 1
+            local start = origin + 1
+            while ptr[i] ~= close_bracket do
+                if ptr[i] ~= slash then
+                    i = i + 1
+                else
+                    count = count + 1
+                    choices[count] = ffi_string(ptr + start, i - start)
+
+                    i = i + 1
+                    start = i
+                end
             end
+
+            choices[count + 1] = ffi_string(ptr + start, i - start)
+
+            return choices, i + 1 - origin
         end
-
-        choices[count + 1] = ffi_string(ptr + start, i - start)
-
-        return choices, i + 1 - origin
     end
 
     local common0105 = function(category)
