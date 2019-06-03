@@ -114,7 +114,7 @@ string.pack = function(format, ...)
         end
     end
 
-    assert(index >= args, 'Bad argument #' .. tostring(index + 2) .. ' to \'pack\' (no value expected, got ' .. type(select(index + 2, ...)) .. ')')
+    assert(index >= args, 'Bad argument #' .. tostring(index + 2) .. ' to \'pack\' (no value expected, got ' .. type(select(index + 1, ...) or nil) .. ')')
 
     if offset > 0 then
         res[#res + 1] = convert_number(current, offset, 0)
