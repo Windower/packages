@@ -71,10 +71,10 @@ string.pack = function(format, ...)
 
         while count > 0 do
             index = index + 1
-            assert(index <= args, 'Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got no value)')
+            assert(index <= args, 'Bad argument #' .. tostring(index + 1) .. ' to \'pack\' (' .. info.type .. ' expected, got no value)')
 
             local value = select(index, ...)
-            assert(type(value) == info.type, 'Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got ' .. type(value) .. ')')
+            assert(type(value) == info.type, 'Bad argument #' .. tostring(index + 1) .. ' to \'pack\' (' .. info.type .. ' expected, got ' .. type(value) .. ')')
 
             if offset >= 8 then
                 res[#res + 1], offset, current = convert_number(current, offset, 7)
