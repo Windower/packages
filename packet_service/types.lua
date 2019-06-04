@@ -2499,7 +2499,7 @@ types.outgoing[0x029] = struct({
     current_bag_id      = {0x04, bag},
     target_bag_id       = {0x05, bag},
     current_bag_index   = {0x06, uint8},
-    target_bag_id       = {0x07, uint8}, -- This byte is normally 0x52 (max index + 1) when moving items between bags, but setting it specifically works. It takes other values when manually sorting.
+    target_bag_index    = {0x07, uint8}, -- This byte is normally 0x52 (max index + 1) when moving items between bags, but setting it specifically works. It takes other values when manually sorting.
 })
 
 -- Translate
