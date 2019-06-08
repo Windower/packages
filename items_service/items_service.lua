@@ -13,7 +13,12 @@ local item_type = structs.struct({
     extdata             = {structs.data(0x18)},
 })
 
-local equipment = server.new('equipment', item_type[16])
+local equipment_type = structs.struct({
+    slot                = {structs.int32},
+    item                = {item_type},
+})
+
+local equipment = server.new('equipment', equipment_type[16])
 
 local bag_count = #resources.bags
 local bag_size = 80
@@ -36,6 +41,10 @@ for bag = 0, bag_count - 1 do
     equipment_references[bag] = {}
 end
 
+for i = 0, 15 do
+    equipment[i].slot = i
+end
+
 local empty_item = structs.make(item_type)
 
 local update_item = function(bag, index, count, status, id, bazaar, extdata)
@@ -52,27 +61,32 @@ local update_item = function(bag, index, count, status, id, bazaar, extdata)
         item.id = 0
         item.bazaar = 0
         item.extdata = empty_item.extdata
-        return
-    end
 
-    if id then
-        item.id = id
-    end
-    if bazaar then
-        item.bazaar = bazaar
-    end
-    if extdata then
-        item.extdata = extdata
+        item = empty_item
+    else
+        if id then
+            item.id = id
+        end
+        if bazaar then
+            item.bazaar = bazaar
+        end
+        if extdata then
+            item.extdata = extdata
+        end
     end
 
     local slot = equipment_references[bag][index]
     if slot then
-        equipment[slot] = item
+        equipment[slot].item = item
+
+        if count == 0 then
+            equipment_references[bag][index] = nil
+        end
     end
 end
 
 packets.incoming:register_init({
-    [{0x01C}] = function(p)
+    [{0x01C}] = function(p, info)
         for bag = 0, bag_count - 1 do
             items.sizes[bag] = p.size[bag] - 1
         end
@@ -95,14 +109,13 @@ packets.incoming:register_init({
         local bag = p.bag_id
         local index = p.bag_index
 
-        local old = equipment[slot]
-        equipment_references[old.bag][old.index] = nil
-
         if index == 0 then
-            equipment[slot] = empty_item
+            local old = equipment[slot].item
+            equipment_references[old.bag][old.index] = nil
+            equipment[slot].item = empty_item
         else
             local new = items.bags[bag][index]
-            equipment[slot] = new
+            equipment[slot].item = new
             equipment_references[new.bag][new.index] = slot
         end
     end,
