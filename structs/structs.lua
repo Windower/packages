@@ -292,10 +292,10 @@ do
                     error('Unknown field \'' .. key .. '\'.')
                 end
 
-                local ftype = field.type
-                local converter = ftype.converter
+                local child_ftype = field.type
+                local converter = child_ftype.converter
                 if converter then
-                    toc[converter](cdata, field.cname, value, ftype)
+                    toc[converter](cdata, field.cname, value, child_ftype)
                     return
                 end
 
@@ -303,7 +303,7 @@ do
             end,
             __pairs = function(cdata)
                 return function(t, k)
-                    local label, field = next(t, k)
+                    local label = next(t, k)
                     return label, label and cdata[label]
                 end, fields, nil
             end,
@@ -408,7 +408,7 @@ do
 
     local declared_cache = {}
     local named_count = 0
-    local package_identifier = string_gsub(windower.package_path, '%W', '')
+    local package_identifier = string_gsub(windower.package_path or '_script', '%W', '')
 
     structs.name = function(ftype, name, raw_array)
         named_count = named_count + 1
