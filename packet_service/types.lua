@@ -1924,7 +1924,7 @@ types.incoming[0x0A0] = struct({
 
 -- Player spells known
 types.incoming[0x0AA] = struct({
-    spells_known        = {0x00,data(128)} -- 0 indexed bit field where nth bit indicates if that spell_id is known. I.E. bit 1 is Cure, bit 2 is Cure II, etc.
+    spells              = {0x00, data(128)} -- 0 indexed bit field where nth bit indicates if that spell_id is known. I.E. bit 1 is Cure, bit 2 is Cure II, etc.
 })
 
 -- 0x0AC, and 0x0AE are bitfields where the lsb indicates whether you have index 0 of the related resource.
