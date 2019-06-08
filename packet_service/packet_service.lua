@@ -10,14 +10,14 @@ local windower = require('windower')
 packets_server = shared.new('packets')
 types_server = shared.new('types')
 
-local types
+local packet_types
 local parse_types = function()
-    types = dofile(windower.package_path .. '\\types.lua')
+    packet_types = dofile(windower.package_path .. '\\types.lua')
 end
 
 parse_types()
 
-types_server.data = types
+types_server.data = packet_types
 
 local registry = {}
 local history = {}
@@ -132,9 +132,8 @@ do
         local found = {}
         local res = {}
         local res_count = 0
-        local len = #start_path
         for path, entry in pairs(history) do
-            if start_path == string_sub(path, 1, len) and not found[entry] then
+            if start_path == path or start_path .. '/' == string_sub(path, 1, #start_path + 1) and not found[entry] then
                 res_count = res_count + 1
                 res[res_count] = entry
                 found[entry] = true
@@ -177,17 +176,17 @@ do
         local next_slash_index = string_find(path, '/', 11)
         local id = tonumber(string_sub(path, 11, next_slash_index and next_slash_index - 1))
 
-        local base_type = types[direction][id]
+        local base_type = packet_types[direction][id]
         local ftype
-        local types = base_type.types
-        if not types then
+        local base_types = base_type.types
+        if not base_types then
             ftype = base_type
         else
             if not next_slash_index then
                 ftype = base_type.base
             else
                 local key = string_sub(path, next_slash_index + 1)
-                ftype = types[tonumber(key) or key] or base_type.base
+                ftype = base_types[tonumber(key) or key] or base_type.base
             end
         end
 
@@ -339,7 +338,7 @@ do
             timestamp = make_timestamp(),
         }
 
-        local ftype = types[direction][id]
+        local ftype = packet_types[direction][id]
         local packet = parse_packet(data, ftype)
 
         process_packet(packet, info, '')
