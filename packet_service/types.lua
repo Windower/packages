@@ -14,13 +14,13 @@ do
 
     multiple = function(ftype)
         local types = {}
-        local cache = {cache = {ftype.key}}
+        local base_info = {cache = {ftype.key}}
         for index, definitions in pairs(ftype.lookups) do
-            types[index] = struct(update({}, cache), update(update({}, ftype.base), definitions))
+            types[index] = struct(update({}, base_info), update(update({}, ftype.base), definitions))
         end
 
-        ftype.info = { cache = cache.cache }
-        ftype.base = struct(cache, ftype.base)
+        ftype.info = { cache = base_info.cache }
+        ftype.base = struct(base_info, ftype.base)
         ftype.lookups = nil
 
         ftype.types = types
@@ -29,22 +29,44 @@ do
     end
 end
 
-local extract
+local bit_get
+local bit_set
 do
     local floor = math.floor
+    local band = bit.band
+    local bnot = bit.bnot
 
-    extract = function(cdata, bit, length)
+    bit_get = function(cdata, bit, length)
         local first = floor(bit / 8)
         local last = floor((bit + length - 1) / 8)
 
         local acc = 0
         local step = 0
         for i = first, last do
-            acc = acc + 0x100^step * cdata[i]
+            acc = acc + 0x100 ^ step * cdata[i]
             step = step + 1
         end
 
-        return floor(acc / 2^(bit % 8)) % 2^length
+        return floor(acc / 2 ^ (bit % 8)) % 2 ^ length
+    end
+
+    bit_set = function(cdata, bit, length, value)
+        local first = floor(bit / 8)
+        local last = floor((bit + length - 1) / 8)
+
+        local low_mask = 2 ^ (bit % 8)
+        local high_mask = 2 ^ ((bit + length - 1) % 8)
+
+        local shifted = value * low_mask
+
+        local step = 0
+        for i = first, last do
+            local current = cdata[i]
+            local prefix = i == first and current % low_mask or 0
+            local suffix = i == last and floor(current / high_mask) * high_mask or 0
+            cdata[i] = prefix + floor(shifted / 0x100 ^ step) % 0x100 + suffix
+            step = step + 1
+        end
     end
 end
 
@@ -579,85 +601,105 @@ types.incoming[0x027] = struct({
 types.incoming[0x028] = struct({
     size                = {0x00, uint8},
     _payload            = {0x01, uint8[0xFF]},
-    actor               = {fn = function(p) return extract(p._payload,  0, 32) end},
-    target_count        = {fn = function(p) return extract(p._payload, 32, 10) end},
-    category            = {fn = function(p) return extract(p._payload, 42,  4) end},
-    param               = {fn = function(p) return extract(p._payload, 46, 16) end},
-    recast              = {fn = function(p) return extract(p._payload, 78, 32) end},
-    targets             = {fn = function(p)
-        local payload = p._payload
-        local current = 110
+    actor               = {
+        get = function(p) return bit_get(p._payload,  0, 32) end,
+        set = function(p, value) bit_set(p._payload,  0, 32, value) end,
+    },
+    target_count        = {
+        get = function(p) return bit_get(p._payload, 32, 10) end,
+        set = function(p, value) bit_set(p._payload, 32, 10, value) end,
+    },
+    category            = {
+        get = function(p) return bit_get(p._payload, 42,  4) end,
+        set = function(p, value) bit_set(p._payload, 42,  4, value) end,
+    },
+    param               = {
+        get = function(p) return bit_get(p._payload, 46, 16) end,
+        set = function(p, value) bit_set(p._payload, 46, 16, value) end,
+    },
+    recast              = {
+        get = function(p) return bit_get(p._payload, 78, 32) end,
+        set = function(p, value) bit_set(p._payload, 78, 32, value) end,
+    },
+    targets             = {
+        get = function(p)
+            local payload = p._payload
+            local current = 110
 
-        local get = function(length)
-            local value = extract(payload, current, length)
-            current = current + length
-            return value
-        end
-
-        local skip = function(length)
-            current = current + length
-        end
-
-        local targets = {}
-        for i = 1, p.target_count do
-            local id = get(32)
-            local action_count = get(4)
-            local actions = {}
-
-            for i = 1, action_count do
-                local reaction = get(5)
-                local animation = get(11)
-                local effect = get(5)
-                local stagger = get(6)
-                local param = get(17)
-                local message = get(10)
-
-                skip(31) -- Message Modifier? If you get a complete (Resist!) this is set to 2 otherwise a regular Resist is 0.
-
-                local has_add_effect = get(1) == 1
-                local add_effect
-                if has_add_effect then
-                    add_effect = {
-                        animation = get(6),
-                        effect = get(4),
-                        param = get(17),
-                        message = get(10),
-                    }
-                end
-
-                local has_spike_effect = get(1) == 1
-                local spike_effect
-                if has_spike_effect then
-                    spike_effect = {
-                        animation = get(6),
-                        effect = get(4),
-                        param = get(14),
-                        message = get(10),
-                    }
-                end
-
-                actions[i] = {
-                    reaction = reaction,
-                    animation = animation,
-                    effect = effect,
-                    stagger = stagger,
-                    param = param,
-                    message = message,
-                    has_add_effect = has_add_effect,
-                    add_effect = add_effect,
-                    has_spike_effect = has_spike_effect,
-                    spike_effect = spike_effect,
-                }
+            local get = function(length)
+                local value = extract(payload, current, length)
+                current = current + length
+                return value
             end
 
-            targets[i] = {
-                id = id,
-                action_count = action_count,
-                actions = actions,
-            }
-        end
-        return targets
-    end},
+            local skip = function(length)
+                current = current + length
+            end
+
+            local targets = {}
+            for i = 1, p.target_count do
+                local id = get(32)
+                local action_count = get(4)
+                local actions = {}
+
+                for i = 1, action_count do
+                    local reaction = get(5)
+                    local animation = get(11)
+                    local effect = get(5)
+                    local stagger = get(6)
+                    local param = get(17)
+                    local message = get(10)
+
+                    skip(31) -- Message Modifier? If you get a complete (Resist!) this is set to 2 otherwise a regular Resist is 0.
+
+                    local has_add_effect = get(1) == 1
+                    local add_effect
+                    if has_add_effect then
+                        add_effect = {
+                            animation = get(6),
+                            effect = get(4),
+                            param = get(17),
+                            message = get(10),
+                        }
+                    end
+
+                    local has_spike_effect = get(1) == 1
+                    local spike_effect
+                    if has_spike_effect then
+                        spike_effect = {
+                            animation = get(6),
+                            effect = get(4),
+                            param = get(14),
+                            message = get(10),
+                        }
+                    end
+
+                    actions[i] = {
+                        reaction = reaction,
+                        animation = animation,
+                        effect = effect,
+                        stagger = stagger,
+                        param = param,
+                        message = message,
+                        has_add_effect = has_add_effect,
+                        add_effect = add_effect,
+                        has_spike_effect = has_spike_effect,
+                        spike_effect = spike_effect,
+                    }
+                end
+
+                targets[i] = {
+                    id = id,
+                    action_count = action_count,
+                    actions = actions,
+                }
+            end
+            return targets
+        end,
+        set = function(p)
+            error('todo...')
+        end,
+    },
 })
 
 -- Action Message

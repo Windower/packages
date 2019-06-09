@@ -257,8 +257,8 @@ do
                     error('Unknown field \'' .. key .. '\'.')
                 end
 
-                if field.fn then
-                    return field.fn(cdata)
+                if field.get then
+                    return field.get(cdata)
                 end
 
                 if field.data then
@@ -290,6 +290,11 @@ do
                 local field = fields[key]
                 if not field then
                     error('Unknown field \'' .. key .. '\'.')
+                end
+
+                if field.set then
+                    field.set(cdata, value)
+                    return
                 end
 
                 local child_ftype = field.type
