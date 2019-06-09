@@ -3,7 +3,7 @@ local resources = require('resources')
 
 local data, ftype = client.new('items_service', 'equipment')
 
-ftype.base.fields.item = {
+ftype.base.fields.item.type.fields.item = {
     fn = function(data)
         return resources.items[data.id]
     end,
