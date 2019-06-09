@@ -1,5 +1,6 @@
 local client = require('shared.client')
 local resources = require('resources')
+local packets = require('packets')
 
 local data, ftype = client.new('items_service', 'equipment')
 
@@ -9,7 +10,70 @@ ftype.base.fields.item.type.fields.item = {
     end,
 }
 
-return data
+ftype.base.fields.equip = {
+    data = function(equipment_slot, item)
+        local bag = item.bag
+        local index = item.index
+        assert(resources.bags[bag].equippable, "Can not equip from this bag (bag = " .. bag .. ")")
+        assert(item.id ~= 0, "Can not equip from an empty bag slot (bag = " .. bag .. ", index = " .. index .. ")")
+
+        packets.outgoing[0x050]:inject({bag_index = index, slot_id = equipment_slot.slot, bag_id = bag})
+    end,
+}
+
+ftype.base.fields.unequip = {
+    data = function(equipment_slot)
+        packets.outgoing[0x050]:inject({bag_index = 0, slot_id = equipment_slot.slot, bag_id = 0})
+    end,
+}
+
+local equipment = {}
+
+equipment.equip = function(slot_items)
+    local count = 0
+    local items = {}
+    for slot, item in pairs(slot_items) do
+        if slot >= 0 and slot <= 15 then
+            local bag = item and item.bag or 0
+            local index = item and item.index or 0
+            assert(resources.bags[bag].equippable, "Can not equip from this bag (bag = " .. bag .. ")")
+            assert(not item or item.id ~= 0, "Can not equip from an empty bag slot (bag = " .. bag .. ", index = " .. index .. ")")
+            items[count] = {bag_index = index, slot_id = slot, bag_id = bag}
+            count = count + 1
+        end
+    end
+
+    packets.outgoing[0x051]:inject({count = count, equipment = items})
+end
+
+local slot_names = {
+    main = 0, sub = 1, range = 2, ammo = 3,
+    head = 4, neck = 9, ear1 = 11, ear2 = 12,
+    body = 5, hands = 6, ring1 = 13, ring2 = 14,
+    back = 15, waist = 10, legs = 7, feet = 8,
+}
+
+local equipment_mt = {
+    __index = function(t, k)
+        local index = slot_names[k] or k
+        return data[index]
+    end,
+    __newindex = function(t, k, v)
+        local index = slot_names[k] or k
+        data[index] = v
+    end,
+    __pairs = function(t)
+        return pairs(data)
+    end,
+    __ipairs = function(t)
+        return ipairs(data)
+    end,
+    __len = function(t)
+        return #data
+    end
+}
+
+return setmetatable(equipment, equipment_mt)
 
 --[[
 Copyright © 2018, Windower Dev Team
