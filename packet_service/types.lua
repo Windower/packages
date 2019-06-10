@@ -33,8 +33,6 @@ local bit_get
 local bit_set
 do
     local floor = math.floor
-    local band = bit.band
-    local bnot = bit.bnot
 
     bit_get = function(cdata, bit, length)
         local first = floor(bit / 8)
