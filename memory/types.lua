@@ -166,7 +166,10 @@ local entity = struct({
     model_size              = {0x204, float},
     fellow_index            = {0x29C, entity_index},
     owner_index             = {0x29E, entity_index},
-    heading                 = {fn = function(data) return data.rotation.z end},
+    heading                 = {
+        get = function(data) return data.rotation.z end,
+        set = function(data, value) data.rotation.z = value end,
+    },
     -- TODO: Verify
     -- npc_talking             = {0x0AC, uint32},
     -- pos_move                = {0x054, world_coord}
