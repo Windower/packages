@@ -625,7 +625,7 @@ types.incoming[0x028] = struct({
             local current = 110
 
             local get = function(length)
-                local value = extract(payload, current, length)
+                local value = bit_get(payload, current, length)
                 current = current + length
                 return value
             end
