@@ -1,6 +1,6 @@
 <package>
   <name>items</name>
-  <version>1.2.0.0</version>
+  <version>1.2.0.1</version>
   <type>library</type>
   <dependencies>
     <dependency>items_service</dependency>
