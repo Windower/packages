@@ -1,3 +1,4 @@
+local event = require('event')
 local packets = require('packets')
 local server = require('shared.server')
 local structs = require('structs')
@@ -50,11 +51,13 @@ local data = server.new(structs.struct({
         sub_id              = {structs.int32},
         range_id            = {structs.int32},
     })},
+    state_change        = {data = event.new()},
 }))
 
 local model = data.model
 local skills = data.skills
 local job_levels = data.job_levels
+local state_change_event = data.state_change
 
 packets.incoming:register_init({
     [{0x00D}] = function(p)
@@ -67,6 +70,7 @@ packets.incoming:register_init({
             data.animation_speed = p.animation_speed / 8
         end
 
+        local old_state_id = data.state_id
         if p.update_vitals then
             data.hp_percent = p.hp_percent
             data.state_id = p.state_id
@@ -89,6 +93,11 @@ packets.incoming:register_init({
             model.main_id = m.main_model_id
             model.sub_id = m.sub_model_id
             model.range_id = m.range_model_id
+        end
+
+        local new_state_id = data.state_id
+        if new_state_id ~= old_state_id then
+            state_change_event:trigger(new_state_id, old_state_id)
         end
     end,
 
@@ -115,10 +124,17 @@ packets.incoming:register_init({
     end,
 
     [{0x037}] = function(p)
+        local old_state_id = data.state_id
+        local new_state_id = p.state_id
+
         data.id = p.player_id
         data.hp_percent = p.hp_percent
-        data.state_id = p.state_id
+        data.state_id = new_state_id
         data.pet_index = p.pet_index
+
+        if new_state_id ~= old_state_id then
+            state_change_event:trigger(new_state_id, old_state_id)
+        end
     end,
 
     [{0x061}] = function(p)
