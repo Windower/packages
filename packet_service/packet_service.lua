@@ -94,15 +94,12 @@ do
         local var_key = ftype.var_key
         local var_data = var_key and values[var_key]
         if not var_data then
-            return ffi_new(ftype.name)
+            return ffi_new(ftype.name), 0
         end
 
         if type(var_data) == 'string' then
-            if ftype.converter == 'string' then
-                return ffi_new(ftype.name, #var_data + 1)
-            end
-
-            return ffi_new(ftype.name, #var_data)
+            local size = ftype.converter == 'string' and #var_data + 1 or #var_data
+            return ffi_new(ftype.name, size), size
         end
 
         local max_key = 0
@@ -153,18 +150,21 @@ do
             registry[path] = events
         end
 
-        local event = event_new()
-        events[#events + 1] = event
+        local new_event = event_new()
+        events[#events + 1] = new_event
 
-        return event
+        return new_event
     end
+end
+
+local get_real_size = function(ftype, var_count)
+    return var_count > 0 and ftype.size + ftype.var_size * var_count or ftype.size
 end
 
 do
     local string_find = string.find
     local string_sub = string.sub
     local ffi_copy = ffi.copy
-    local ffi_sizeof = ffi.sizeof
     local ffi_string = ffi.string
     local packet_new = packet.new
     local packet_inject_incoming = packet.inject_incoming
@@ -193,13 +193,14 @@ do
         local cdata, var_count = build_cdata(ftype, values)
 
         amend_cdata(cdata, values, ftype, var_count)
-        return cdata, ftype, direction, id
+        return cdata, direction, id, ftype, var_count
     end
 
     packets_server.env.inject = function(path, values)
-        local cdata, _, direction, id = build_packet(path, values)
+        local cdata, direction, id, ftype, var_count = build_packet(path, values)
 
-        local size = ffi_sizeof(cdata)
+        local size = get_real_size(ftype, var_count)
+
         local buffer = buffer_type(size)
         ffi_copy(buffer, cdata, size)
 
@@ -215,26 +216,27 @@ end
 local parse_packet
 do
     local math_floor = math.floor
+    local math_min = math.min
     local ffi_copy = ffi.copy
     local ffi_new = ffi.new
 
     local parse_single = function(data, ftype, packet)
         packet = packet or {}
 
-        local size = #data
-        local offset = ftype.size
+        local data_size = #data
+        local type_size = ftype.size
         local var_size = ftype.var_size
 
         local cdata
         local var_count
         if var_size then
-            var_count = math_floor((size - offset) / var_size)
-            offset = offset + var_count * var_size
+            var_count = math_floor((data_size - type_size) / var_size)
+            type_size = type_size + var_count * var_size
             cdata = ffi_new(ftype.name, var_count)
         else
             cdata = ffi_new(ftype.name)
         end
-        ffi_copy(cdata, data, offset)
+        ffi_copy(cdata, data, math_min(type_size, data_size))
 
         return amend_packet(packet, cdata, ftype, var_count)
     end
@@ -322,7 +324,6 @@ end
 local handle_packet
 do
     local ffi_string = ffi.string
-    local ffi_sizeof = ffi.sizeof
 
     handle_packet =  function(direction, raw)
         local id = raw.id
@@ -364,7 +365,7 @@ do
             local cdata, var_count = build_cdata(ftype, packet)
             amend_cdata(cdata, packet, ftype, var_count)
 
-            raw.data = ffi_string(cdata, ffi_sizeof(cdata))
+            raw.data = ffi_string(cdata, get_real_size(ftype, var_count))
         end
     end
 end
