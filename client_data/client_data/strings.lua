@@ -126,7 +126,7 @@ do
         local close_bracket = string.byte(']')
         local slash = string.byte('/')
 
-        local parse_choices = function(ptr, origin)
+        parse_choices = function(ptr, origin)
             local choices = {}
             local count = 0
 
@@ -321,11 +321,11 @@ do
         end
 
         for _, name in ipairs(keys) do
-            local table = ffi_cast(int_ptr, memory.string_tables[name]) + 1
-            local size = table[0] / 4
+            local string_table = ffi_cast(int_ptr, memory.string_tables[name]) + 1
+            local size = string_table[0] / 4
             strings[name] = setmetatable({}, {
                 __index = function(_, id)
-                    local ptr = ffi_cast(byte_ptr, table) + table[id]
+                    local ptr = ffi_cast(byte_ptr, string_table) + string_table[id]
                     return {
                         id = id,
                         debug = function(_)
