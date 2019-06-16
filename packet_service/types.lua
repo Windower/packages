@@ -2241,7 +2241,7 @@ types.incoming[0x10B] = struct({
 
 -- Sparks update packet
 types.incoming[0x110] = struct({
-    sparks_total        = {0x00, uint16},
+    sparks_total        = {0x00, uint32},
     -- 0x02~0x03: Sparks are currently capped at 50,000
     shared_unity        = {0x04, uint8}, -- Unity (Shared) designator (0=A, 1=B, 2=C, etc.)
     person_unity        = {0x05, uint8}, -- The game does not distinguish these
