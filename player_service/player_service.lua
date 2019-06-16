@@ -29,6 +29,12 @@ local data = server.new(structs.struct({
     item_level          = {structs.int32},
     exp                 = {structs.int32},
     exp_required        = {structs.int32},
+    merit_points        = {structs.int32},
+    merit_points_max    = {structs.int32},
+    merit_switch        = {structs.bool},
+    level_capped        = {structs.bool},
+    merits_unlocked     = {structs.bool},
+    limit_points        = {structs.int32},
     movement_speed      = {structs.double},
     animation_speed     = {structs.double},
     title_id            = {structs.int32},
@@ -114,6 +120,18 @@ packets.incoming:register_init({
         end
     end,
 
+    [{0x02D}] = function(p)
+        if p.message_id == 371 or p.message_id == 372 then
+            data.limit_points = data.limit_points + p.param_1
+            while data.limit_points >= 10000 do
+                data.limit_points = data.limit_points - 10000
+            end
+        end
+        if p.message_id == 50 then
+            data.merit_points = p.param_1
+        end
+    end,
+
     [{0x037}] = function(p)
         data.id = p.player_id
         data.hp_percent = p.hp_percent
@@ -153,6 +171,15 @@ packets.incoming:register_init({
             skill.rank_id = s.rank_id
             skill.capped = s.capped
         end
+    end,
+
+    [{0x063,0x02}] = function(p)
+        data.limit_points = p.limit_points
+        data.merit_points = p.merit_points
+        data.merit_points_max = p.merit_points_max
+        data.merit_switch = p.merit_switch
+        data.level_capped = p.level_capped
+        data.merits_unlocked = p.merits_unlocked
     end,
 
     [{0x0DF}] = function(p)
