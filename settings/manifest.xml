@@ -1,10 +1,13 @@
 <package>
   <name>settings</name>
-  <version>2.3.0.0</version>
+  <version>3.0.0.0</version>
   <type>library</type>
   <dependencies>
     <dependency>account</dependency>
-    <dependency>file</dependency>
     <dependency>enumerable</dependency>
+    <dependency>file</dependency>
+    <dependency>shared</dependency>
+    <dependency>settings_service</dependency>
+    <dependency>string</dependency>
   </dependencies>
 </package>

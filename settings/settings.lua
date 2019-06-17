@@ -1,9 +1,15 @@
+if package.name == nil then
+    error('Cannot load the settings library in the script environment.')
+end
+
 local account = require('account')
+local client = require('shared.client')
 local enumerable = require('enumerable')
 local event = require('event')
 local file = require('file')
 local ffi = require('ffi')
-local string = require('string')
+local shared = require('shared')
+local string = require('string.ext')
 local table = require('table')
 local unicode = require('unicode')
 local windower = require('windower')
@@ -22,6 +28,7 @@ local account_logout = account.logout
 local windower_settings_path = windower.settings_path
 
 local info_cache = {}
+local name_cache = {}
 
 local settings = {}
 
@@ -45,14 +52,14 @@ do
         return account.name .. '_' .. (account.server and account.server.name or account.id)
     end
 
-    get_file = function(path, global)
+    get_file = function(name, global)
         local dir = windower_settings_path .. '\\' .. make_account_name(global) .. '\\'
 
         C.CreateDirectoryW(unicode.to_utf16(windower_settings_path .. '\\..'), nil)
         C.CreateDirectoryW(unicode.to_utf16(windower_settings_path), nil)
         C.CreateDirectoryW(unicode.to_utf16(dir), nil)
 
-        return file_create(dir .. path)
+        return file_create(dir .. name .. '.lua')
     end
 end
 
@@ -142,8 +149,8 @@ do
         end
     end
 
-    parse = function(defaults, path, global)
-        local options_file = get_file(path, global)
+    parse = function(defaults, name, global)
+        local options_file = get_file(name, global)
         local options
         if file_exists(options_file) then
             options = loadfile(options_file.path)()
@@ -158,22 +165,24 @@ do
     end
 end
 
-settings.load = function(defaults, path, global)
-    if type(path) == 'boolean' then
-        global = path
-        path = nil
+settings.load = function(defaults, name, global)
+    if type(name) == 'boolean' then
+        global = name
+        name = nil
     end
 
-    path = path or 'settings.lua'
+    name = name or 'settings'
     global = global ~= nil and global
 
-    local options = parse(defaults, path, global)
+    local options = parse(defaults, name, global)
 
     info_cache[options] = {
-        path = path,
+        name = name,
         defaults = defaults,
         global = global,
     }
+
+    name_cache[name] = options
 
     settings.save(options)
     settings.settings_change:trigger(options)
@@ -186,7 +195,7 @@ do
     local file_write = file.write
 
     save_options = function(options, info)
-        file_write(get_file(info.path, info.global), 'return ' .. format_table(options))
+        file_write(get_file(info.name, info.global), 'return ' .. format_table(options))
     end
 end
 
@@ -237,7 +246,7 @@ do
     local reparse = function()
         for options, info in pairs(info_cache) do
             if not info.global then
-                local parsed = parse(info.defaults, info.path)
+                local parsed = parse(info.defaults, info.name)
                 update(options, parsed)
                 settings.save(options)
                 settings.settings_change:trigger(options)
@@ -250,6 +259,87 @@ do
 end
 
 settings.settings_change = event.slim.new()
+
+settings.get = function(path, options)
+    local setting = name_cache[options or 'settings']
+
+    local tokens = path:split('%.')
+    for i = 1, #tokens do
+        setting = setting[tokens[i]]
+    end
+
+    return setting
+end
+
+do
+    local string_sub = string.sub
+
+    local parse_value = function(value)
+        if value == 'true' then
+            return true
+        elseif value == 'false' then
+            return false
+        elseif value == 'nil' then
+            return nil
+        end
+
+        local quote = string_sub(value, 1, 1)
+        if (quote == '\'' or quote == '"') and quote == string_sub(value, -1, -1) then
+            return string_sub(value, 2, -2)
+        end
+
+        local number = tonumber(value)
+        if number then
+            return number
+        end
+
+        error('Unknown parameter')
+    end
+
+    settings.set = function(path, value, options)
+        local setting_container = name_cache[options or 'settings']
+
+        local tokens = path:split('%.')
+        local length = #tokens
+        for i = 1, length - 1 do
+            setting_container = setting_container[tokens[i]]
+        end
+
+        local setting = parse_value(value)
+        setting_container[tokens[length]] = setting
+
+        return setting
+    end
+end
+
+do
+    local data = client.new('settings_service')
+    local query_client = shared.get('settings_service', 'query')
+
+    local query_response = function(_, path, setting)
+        query_response(path, setting)
+    end
+
+    data.get:register(function(addon, path, options)
+        if addon ~= package.name then
+            return
+        end
+
+        local setting = settings.get(path, options)
+
+        query_client:call(query_response, path, setting)
+    end)
+
+    data.set:register(function(addon, path, value, options)
+        if addon ~= package.name then
+            return
+        end
+
+        local setting = settings.set(path, value, options)
+
+        query_client:call(query_response, path, setting)
+    end)
+end
 
 return settings
 
