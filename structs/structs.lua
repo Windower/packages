@@ -648,17 +648,17 @@ do
     tolua.packed_string = function(value, ftype)
         local lua_lookup = ftype.lua_lookup
         local res = ctype(ftype.unpacked_size)
-        local ptr = res
         for i = 1, ftype.size - 2, 3 do
-            local v1 = value[0]
-            local v2 = value[1]
-            local v3 = value[2]
-            ptr[0] = lua_lookup[rshift(band(v1, 0xFC), 2)];
-            ptr[1] = lua_lookup[bor(lshift(band(v1, 0x03), 4), rshift(band(v2, 0xF0), 4))];
-            ptr[2] = lua_lookup[bor(lshift(band(v2, 0x0F), 2), rshift(band(v3, 0xC0), 6))];
-            ptr[3] = lua_lookup[band(v3, 0x3F)];
-            value = value + 3
-            ptr = ptr + 4
+            local unpacked = res + (i - 1) * 4
+            local packed = value + (i - 1) * 3
+
+            local v1 = packed[0]
+            local v2 = packed[1]
+            local v3 = packed[2]
+            unpacked[0] = lua_lookup[rshift(band(v1, 0xFC), 2)];
+            unpacked[1] = lua_lookup[bor(lshift(band(v1, 0x03), 4), rshift(band(v2, 0xF0), 4))];
+            unpacked[2] = lua_lookup[bor(lshift(band(v2, 0x0F), 2), rshift(band(v3, 0xC0), 6))];
+            unpacked[3] = lua_lookup[band(v3, 0x3F)];
         end
         return ffi_string(res)
     end
@@ -666,15 +666,16 @@ do
     toc.packed_string = function(instance, index, value, ftype)
         local c_lookup = ftype.c_lookup
         for i = 1, math_min(ftype.unpacked_size - 3, #value), 4 do
-            local v1, v2, v3, v4 = string_byte(value, i, i + 3)
-            v1 = c_lookup[v1]
-            v2 = c_lookup[v2]
-            v3 = c_lookup[v3]
-            v4 = c_lookup[v4]
-            instance[0] = bor(lshift(v1, 2), rshift(v2, 6))
-            instance[1] = bor(lshift(v2, 4), rshift(v3, 4))
-            instance[2] = bor(lshift(v3, 6), rshift(v4, 2))
-            instance = instance + 3
+            local packed = instance + (i - 1) * 3
+
+            local i1, i2, i3, i4 = string_byte(value, i, i + 3)
+            local v1 = c_lookup[i1]
+            local v2 = c_lookup[i2]
+            local v3 = c_lookup[i3]
+            local v4 = c_lookup[i4]
+            packed[0] = bor(lshift(v1, 2), rshift(v2, 6))
+            packed[1] = bor(lshift(v2, 4), rshift(v3, 4))
+            packed[2] = bor(lshift(v3, 6), rshift(v4, 2))
         end
     end
 end
@@ -701,6 +702,75 @@ end
 
 toc.boolbit = function(instance, index, value, ftype)
     instance[index] = value and 1 or 0
+end
+
+do
+    local math_floor = math.floor
+    local band = bit.band
+    local bor = bit.bor
+    local bnot = bit.bnot
+    local lshift = bit.lshift
+
+    local flag_mt = {
+        __index = function(t, k)
+            local cdata = t._cdata
+            local index = math_floor(k / 8)
+            local current = cdata[index]
+            local mask = lshift(1, k % 8)
+            return band(current, mask) ~= 0
+        end,
+        __newindex = function(t, k, v)
+            local cdata = t._cdata
+            local index = math_floor(k / 8)
+            local current = cdata[index]
+            local mask = lshift(1, k % 8)
+            cdata[index] = v and bor(current, mask) or band(current, bnot(mask))
+        end,
+        __pairs = function(t)
+            return function(t, k)
+                local key = k + 1
+                if key >= t._bits then
+                    return nil, nil
+                end
+                return key, t[key]
+            end, t, -1
+        end,
+        __ipairs = pairs,
+        __len = function(t)
+            return t._bits
+        end,
+    }
+
+    structs.bits = function(bytes)
+        local ftype = structs.data(bytes)
+
+        ftype.converter = 'bits'
+
+        return ftype
+    end
+
+    tolua.bits = function(value, ftype)
+        return setmetatable({
+            _cdata = value,
+            _bits = 8 * ftype.size
+        }, flag_mt)
+    end
+
+    toc.bits = function(instance, index, value, ftype)
+        local ptr = instance[index]
+        for byte_index = 0, ftype.size - 1 do
+            local byte = 0
+            local current = 1
+            for bit_index = 0, 7 do
+                if value[8 * byte_index + bit_index] then
+                    byte = byte + current
+                end
+                current = current * 2
+            end
+
+            ptr[byte_index] = byte
+        end
+    end
 end
 
 return structs
