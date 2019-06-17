@@ -711,7 +711,7 @@ do
     local bnot = bit.bnot
     local lshift = bit.lshift
 
-    local flag_mt = {
+    local bits_mt = {
         __index = function(t, k)
             local cdata = t._cdata
             local index = math_floor(k / 8)
@@ -753,7 +753,7 @@ do
         return setmetatable({
             _cdata = value,
             _bits = 8 * ftype.size
-        }, flag_mt)
+        }, bits_mt)
     end
 
     toc.bits = function(instance, index, value, ftype)
