@@ -627,6 +627,18 @@ local configure_metatable = function(meta, name)
         end
     end
 
+    if meta.__serialize_as == nil then
+        meta.__serialize_as = function(t)
+            local enumerated = {}
+            local count = 0
+            for _, value in pairs(t) do
+                count = count + 1
+                enumerated[count] = value
+            end
+            return enumerated
+        end
+    end
+
     meta_cache[meta] = true
 
     return constructor
