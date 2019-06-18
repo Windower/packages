@@ -1,4 +1,4 @@
-local event = require('event') -- Required for the serializer
+require('event') -- Required for the serializer
 local ffi = require('ffi')
 local shared = require('shared')
 local windower = require('windower')
