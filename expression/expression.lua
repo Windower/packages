@@ -12,6 +12,12 @@ expression.eq = function(eq)
     end
 end
 
+expression.neq = function(neq)
+    return function(value)
+        return value ~= neq
+    end
+end
+
 expression.min = function(min)
     return function(value)
         return value >= min
