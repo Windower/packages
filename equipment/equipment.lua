@@ -10,12 +10,14 @@ ftype.base.fields.item.type.fields.item = {
     end,
 }
 
+local equippable = {[0] = true, [8] = true, [10] = true, [11] = true, [12] = true}
+
 ftype.base.fields.equip = {
     data = function(equipment_slot, item)
         local bag = item.bag
         local index = item.index
-        assert(resources.bags[bag].equippable, "Can not equip from this bag (bag = " .. bag .. ")")
-        assert(item.id ~= 0, "Can not equip from an empty bag slot (bag = " .. bag .. ", index = " .. index .. ")")
+        assert(equippable[bag], 'Cannot equip from this bag (bag = ' .. bag .. ')')
+        assert(item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
 
         packets.outgoing[0x050]:inject({bag_index = index, slot_id = equipment_slot.slot, bag_id = bag})
     end,
@@ -29,15 +31,15 @@ ftype.base.fields.unequip = {
 
 local equipment = {}
 
-equipment.equip = function(slot_items)
+equipment.equip = function(_, slot_items)
     local count = 0
     local items = {}
     for slot, item in pairs(slot_items) do
         if slot >= 0 and slot <= 15 then
             local bag = item and item.bag or 0
             local index = item and item.index or 0
-            assert(resources.bags[bag].equippable, "Can not equip from this bag (bag = " .. bag .. ")")
-            assert(not item or item.id ~= 0, "Can not equip from an empty bag slot (bag = " .. bag .. ", index = " .. index .. ")")
+            assert(equippable[bag], 'Cannot equip from this bag (bag = ' .. bag .. ')')
+            assert(not item or item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
             items[count] = {bag_index = index, slot_id = slot, bag_id = bag}
             count = count + 1
         end
@@ -54,21 +56,21 @@ local slot_names = {
 }
 
 local equipment_mt = {
-    __index = function(t, k)
+    __index = function(_, k)
         local index = slot_names[k] or k
         return data[index]
     end,
-    __newindex = function(t, k, v)
+    __newindex = function(_, k, v)
         local index = slot_names[k] or k
         data[index] = v
     end,
-    __pairs = function(t)
+    __pairs = function(_)
         return pairs(data)
     end,
-    __ipairs = function(t)
+    __ipairs = function(_)
         return ipairs(data)
     end,
-    __len = function(t)
+    __len = function(_)
         return #data
     end
 }
