@@ -1,3 +1,4 @@
+require('event') -- Required for the serializer
 local shared = require('shared')
 local structs = require('structs')
 
