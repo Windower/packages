@@ -34,13 +34,14 @@ local equipment = {}
 equipment.equip = function(_, slot_items)
     local count = 0
     local items = {}
-    for slot, item in pairs(slot_items) do
-        if slot >= 0 and slot <= 15 then
-            local bag = item and item.bag or 0
-            local index = item and item.index or 0
+    for i = 0, 15 do
+        local item = slot_items[i]
+        if item then
+            local bag = item.bag
+            local index = item.index
             assert(equippable[bag], 'Cannot equip from this bag (bag = ' .. bag .. ')')
-            assert(not item or item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
-            items[count] = {bag_index = index, slot_id = slot, bag_id = bag}
+            assert(bag == 0 and index == 0 or item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
+            items[count] = {bag_index = index, slot_id = i, bag_id = bag}
             count = count + 1
         end
     end
