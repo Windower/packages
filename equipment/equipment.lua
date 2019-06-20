@@ -1,5 +1,6 @@
 local client = require('shared.client')
 local resources = require('resources')
+local bit = require('bit')
 local packets = require('packets')
 
 local data, ftype = client.new('items_service', 'equipment')
@@ -16,22 +17,41 @@ ftype.base.fields.equip = {
     data = function(equipment_slot, item)
         local bag = item.bag
         local index = item.index
-        assert(equippable[bag], 'Cannot equip from this bag (bag = ' .. bag .. ')')
-        assert(item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
+        if equipment_slot.item.bag ~= bag or equipment_slot.item.index ~= index then
+            local slot = equipment_slot.slot
+            assert(equippable[bag], 'Cannot equip from this bag (bag = ' .. bag .. ')')
+            assert(item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
+            assert(item.status == 0, 'Cannot equip an item with this status (status = ' .. item.status .. ')')
+            assert(bit.band(bit.lshift(1, slot), item.item.slots) ~= 0, 'Cannot equip that item in this slot (slot = ' .. slot .. 'item.id = ' .. item.id .. ')')
 
-        packets.outgoing[0x050]:inject({bag_index = index, slot_id = equipment_slot.slot, bag_id = bag})
+            packets.outgoing[0x050]:inject({bag_index = index, slot_id = slot, bag_id = bag})
+        end
     end,
 }
 
 ftype.base.fields.unequip = {
     data = function(equipment_slot)
-        packets.outgoing[0x050]:inject({bag_index = 0, slot_id = equipment_slot.slot, bag_id = 0})
+        if equipment_slot.item.bag ~= 0 or equipment_slot.item.index ~= 0 then
+            packets.outgoing[0x050]:inject({bag_index = 0, slot_id = equipment_slot.slot, bag_id = 0})
+        end
     end,
 }
 
 local equipment = {}
 
 equipment.equip = function(_, slot_items)
+    local ear1 = slot_items[11]
+    local ear2 = slot_items[12]
+    if ear1 and ear2 and ear1.index == ear2.index and ear1.id == ear2.id then
+        slot_items[11] = nil
+    end
+
+    local ring1 = slot_items[13]
+    local ring2 = slot_items[14]
+    if ring1 and ring2 and ring1.index == ring2.index and ring1.id == ring2.id then
+        slot_items[13] = nil
+    end
+
     local count = 0
     local items = {}
     for i = 0, 15 do
@@ -39,14 +59,19 @@ equipment.equip = function(_, slot_items)
         if item then
             local bag = item.bag
             local index = item.index
-            assert(equippable[bag], 'Cannot equip from this bag (bag = ' .. bag .. ')')
-            assert(bag == 0 and index == 0 or item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
+            if bag ~= 0 or index ~= 0 then
+                assert(equippable[bag], 'Cannot equip from this bag (bag = ' .. bag .. ')')
+                assert(item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
+                assert(bit.band(bit.lshift(1, i), item.item.slots) ~= 0, 'Cannot equip that item in this slot (slot = ' .. i .. 'item.id = ' .. item.id .. ')')
+            end
             items[count] = {bag_index = index, slot_id = i, bag_id = bag}
             count = count + 1
         end
     end
 
-    packets.outgoing[0x051]:inject({count = count, equipment = items})
+    if count > 0 then
+        packets.outgoing[0x051]:inject({count = count, equipment = items})
+    end
 end
 
 equipment.slot = {
