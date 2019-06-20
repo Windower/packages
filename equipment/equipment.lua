@@ -22,7 +22,7 @@ ftype.base.fields.equip = {
             assert(equippable[bag], 'Cannot equip from this bag (bag = ' .. bag .. ')')
             assert(item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
             assert(item.status == 0, 'Cannot equip an item with this status (status = ' .. item.status .. ')')
-            assert(bit.band(bit.lshift(1, slot), item.item.slots) ~= 0, 'Cannot equip that item in this slot (slot = ' .. slot .. 'item.id = ' .. item.id .. ')')
+            assert(bit.band(bit.lshift(1, slot), item.item.slots) ~= 0, 'Cannot equip that item in this slot (slot = ' .. slot .. ', item.id = ' .. item.id .. ')')
 
             packets.outgoing[0x050]:inject({bag_index = index, slot_id = slot, bag_id = bag})
         end
@@ -62,7 +62,7 @@ equipment.equip = function(_, slot_items)
             if bag ~= 0 or index ~= 0 then
                 assert(equippable[bag], 'Cannot equip from this bag (bag = ' .. bag .. ')')
                 assert(item.id ~= 0, 'Cannot equip from an empty bag slot (bag = ' .. bag .. ', index = ' .. index .. ')')
-                assert(bit.band(bit.lshift(1, i), item.item.slots) ~= 0, 'Cannot equip that item in this slot (slot = ' .. i .. 'item.id = ' .. item.id .. ')')
+                assert(bit.band(bit.lshift(1, i), item.item.slots) ~= 0, 'Cannot equip that item in this slot (slot = ' .. i .. ', item.id = ' .. item.id .. ')')
             end
             items[count] = {bag_index = index, slot_id = i, bag_id = bag}
             count = count + 1
