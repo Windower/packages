@@ -49,7 +49,7 @@ equipment.equip = function(_, slot_items)
     packets.outgoing[0x051]:inject({count = count, equipment = items})
 end
 
-local slot_names = {
+equipment.slot = {
     main = 0, sub = 1, range = 2, ammo = 3,
     head = 4, neck = 9, ear1 = 11, ear2 = 12,
     body = 5, hands = 6, ring1 = 13, ring2 = 14,
@@ -58,12 +58,10 @@ local slot_names = {
 
 local equipment_mt = {
     __index = function(_, k)
-        local index = slot_names[k] or k
-        return data[index]
+        return data[k]
     end,
     __newindex = function(_, k, v)
-        local index = slot_names[k] or k
-        data[index] = v
+        data[k] = v
     end,
     __pairs = function(_)
         return pairs(data)
