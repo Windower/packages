@@ -11,6 +11,7 @@ local data = server.new(structs.struct({
         night               = {structs.int32},
         solo_combat         = {structs.int32},
         party_combat        = {structs.int32},
+        mount               = {structs.int32},
     })},
     zone_change         = {data = event.new()},
     weather_change      = {data = event.new()},
@@ -32,6 +33,7 @@ packets.incoming:register_init({
         music.night = p.night_music
         music.solo_combat = p.solo_combat_music
         music.party_combat = p.party_combat_music
+        music.mount = p.mount_music
 
         zone_change_event:trigger()
         weather_change_event:trigger()
@@ -48,6 +50,7 @@ packets.incoming:register_init({
         music.night = 0
         music.solo_combat = 0
         music.party_combat = 0
+        music.mount = 0
     end,
 })
 
