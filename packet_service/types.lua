@@ -322,6 +322,7 @@ types.incoming[0x00A] = struct({
     night_music         = {0x54, uint16},
     solo_combat_music   = {0x56, uint16},
     party_combat_music  = {0x58, uint16},
+    mount_music         = {0x5A, uint16},
     menu_zone           = {0x5E, uint16},
     menu_id             = {0x60, uint16},
     weather_id          = {0x64, weather},
