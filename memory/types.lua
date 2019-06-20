@@ -431,6 +431,17 @@ types.d_msg_table = struct({signature = '85C0752B5F5EC38B0CF5'}, {
     str27                   = {0xD8, ptr(ptr())}, -- [1] = Objectives [2] = Get grinding!
 })
 
+types.music = structs.struct({signature = '668B490625FFFF000066C705????????FFFF66890C45'}, {
+    day                     = {0x0, structs.uint16},
+    night                   = {0x2, structs.uint16},
+    solo_combat             = {0x4, structs.uint16},
+    party_combat            = {0x6, structs.uint16},
+    mount                   = {0x8, structs.uint16},
+    knockout                = {0xA, structs.uint16},
+    mog_house               = {0xC, structs.uint16},
+    fishing                 = {0xE, structs.uint16},
+})
+
 return types
 
 --[[
