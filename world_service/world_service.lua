@@ -12,6 +12,9 @@ local data = server.new(structs.struct({
         solo_combat         = {structs.int32},
         party_combat        = {structs.int32},
         mount               = {structs.int32},
+        knockout            = {structs.int32},
+        mog_house           = {structs.int32},
+        fishing             = {structs.int32},
     })},
     zone_change         = {data = event.new()},
     weather_change      = {data = event.new()},
@@ -21,6 +24,17 @@ data.zone_id = -1
 data.weather_id = -1
 
 local music = data.music
+
+local music_type_to_field = {
+    [0] = 'day',
+    [1] = 'night',
+    [2] = 'solo_combat',
+    [3] = 'party_combat',
+    [4] = 'mount',
+    [5] = 'knockout',
+    [6] = 'mog_house',
+    [7] = 'fishing',
+}
 
 local zone_change_event = data.zone_change
 local weather_change_event = data.weather_change
@@ -42,6 +56,9 @@ packets.incoming:register_init({
         data.weather_id = p.weather_id
 
         weather_change_event:trigger()
+    end,
+    [{0x05F}] = function(p)
+        music[music_type_to_field[p.music_type]] = p.song_id
     end,
     [{0x00B}] = function(p)
         data.zone_id = -1
