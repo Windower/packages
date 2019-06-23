@@ -1,7 +1,17 @@
 local math = require('math')
 local structs = require('structs')
 
-local struct = structs.struct
+local struct = function(info, fields)
+    info, fields = fields and info or {}, fields or info
+    for _, field in pairs(fields) do
+        local ftype = field[2]
+        if ftype and ftype.count == '*' then
+            info.size = 0x100
+            break
+        end
+    end
+    return structs.struct(info, fields)
+end
 
 local multiple
 do
