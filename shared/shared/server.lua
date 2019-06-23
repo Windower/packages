@@ -17,13 +17,11 @@ local ffi_sizeof = ffi.sizeof
 local shared_new = shared.new
 local structs_from_ptr = structs.from_ptr
 
-local cache = {
-    heap = ffi_gc(C.HeapCreate(0, 0, 0), C.HeapDestroy),
-    servers = {},
-}
+local heap = ffi_gc(C.HeapCreate(0, 0, 0), C.HeapDestroy)
+local servers = {}
 
 local make_ptr = function(identifier)
-    return C.HeapAlloc(cache.heap, 8, ffi_sizeof(identifier))
+    return C.HeapAlloc(heap, 8, ffi_sizeof(identifier))
 end
 
 local service_name = windower.package_path:gsub('(.+\\)', '')
@@ -33,7 +31,7 @@ return {
         name, ftype = ftype and name or 'data', ftype or name
 
         local server = shared_new(service_name .. '_' .. name)
-        cache.servers[name] = server
+        servers[name] = server
 
         local ptr = make_ptr(ftype.cdef)
         server.data = {

@@ -1,11 +1,18 @@
+local core = {
+    packet = require('packet'),
+}
 local event = require('event')
 local ffi = require('ffi')
-local packet = require('packet')
 local shared = require('shared')
 local string = require('string')
 local math = require('math')
 local os = require('os')
 local windower = require('windower')
+
+local pairs = pairs
+local type = type
+local tonumber = tonumber
+local tostring = tostring
 
 packets_server = shared.new('packets')
 types_server = shared.new('types')
@@ -21,35 +28,6 @@ types_server.data = packet_types
 
 local registry = {}
 local history = {}
-
-local amend_packet
-amend_packet = function(packet, cdata, ftype, var_count)
-    local count = ftype.count
-    if count then
-        local limit = (count ~= '*' and count or var_count) - 1
-        local base = ftype.base
-        if base.fields then
-            for i = 0, limit do
-                packet[i] = amend_packet(packet[i] or {}, cdata[i], base, var_count)
-            end
-        else
-            for i = 0, limit do
-                packet[i] = cdata[i]
-            end
-        end
-    else
-        local fields = ftype.fields
-        for key, value in pairs(cdata) do
-            if type(value) == 'cdata' then
-                packet[key] = amend_packet(packet[key] or {}, value, fields[key].type, var_count)
-            else
-                packet[key] = value
-            end
-        end
-    end
-
-    return packet
-end
 
 local amend_cdata
 amend_cdata = function(cdata, packet, ftype, var_count)
@@ -166,9 +144,9 @@ do
     local string_sub = string.sub
     local ffi_copy = ffi.copy
     local ffi_string = ffi.string
-    local packet_new = packet.new
-    local packet_inject_incoming = packet.inject_incoming
-    local packet_inject_outgoing = packet.inject_outgoing
+    local packet_new = core.packet.new
+    local packet_inject_incoming = core.packet.inject_incoming
+    local packet_inject_outgoing = core.packet.inject_outgoing
     local buffer_type = ffi.typeof('char[?]')
 
     local build_packet = function(path, values)
@@ -219,6 +197,35 @@ do
     local math_min = math.min
     local ffi_copy = ffi.copy
     local ffi_new = ffi.new
+
+    local amend_packet
+    amend_packet = function(packet, cdata, ftype, var_count)
+        local count = ftype.count
+        if count then
+            local limit = (count ~= '*' and count or var_count) - 1
+            local base = ftype.base
+            if base.fields then
+                for i = 0, limit do
+                    packet[i] = amend_packet(packet[i] or {}, cdata[i], base, var_count)
+                end
+            else
+                for i = 0, limit do
+                    packet[i] = cdata[i]
+                end
+            end
+        else
+            local fields = ftype.fields
+            for key, value in pairs(cdata) do
+                if type(value) == 'cdata' then
+                    packet[key] = amend_packet(packet[key] or {}, value, fields[key].type, var_count)
+                else
+                    packet[key] = value
+                end
+            end
+        end
+
+        return packet
+    end
 
     local parse_single = function(data, ftype, packet)
         packet = packet or {}
@@ -370,11 +377,11 @@ do
     end
 end
 
-packet.incoming:register(function(raw)
+core.packet.incoming:register(function(raw)
     handle_packet('incoming', raw)
 end)
 
-packet.outgoing:register(function(raw)
+core.packet.outgoing:register(function(raw)
     handle_packet('outgoing', raw)
 end)
 
