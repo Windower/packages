@@ -127,9 +127,9 @@ local roe_quest = tag(bit(uint32, 12), 'roe_quest')
 local pc_name = string(0x10)
 local fourcc = string(0x04)
 
-local ls_name = packed_string(0x0F, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+local ls_name = packed_string(0x0F, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 local item_inscription = packed_string(0x0C, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
-local ls_name_extdata = packed_string(0x0C, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+local ls_name_extdata = packed_string(0x0C, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
 local stats = struct({
     str                 = {0x00, int16},
