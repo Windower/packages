@@ -623,18 +623,23 @@ do
     local bor = bit.bor
     local rshift = bit.rshift
     local lshift = bit.lshift
-    local math_min = math.min
     local math_floor = math.floor
+    local ffi_cast = ffi.cast
     local ffi_string = ffi.string
     local ffi_typeof = ffi.typeof
-    local string_sub = string.sub
     local string_byte = string.byte
+    local string_find = string.find
+    local string_sub = string.sub
 
     local ctype = ffi_typeof('char[?]')
 
     structs.packed_string = function(size, lookup_string)
         local ftype = structs.array(structs.make_type('char'), size)
         ftype.converter = 'packed_string'
+
+        do
+            ftype.fill_value = string_find(lookup_string, '\x00', 1, true) - 1
+        end
 
         ftype.unpacked_size = math_floor(4 * size / 3)
 
@@ -656,36 +661,41 @@ do
     end
 
     tolua.packed_string = function(value, ftype)
+        local ptr = ffi_cast('uint8_t*', value)
         local lua_lookup = ftype.lua_lookup
         local res = ctype(ftype.unpacked_size)
-        for i = 1, ftype.size - 2, 3 do
+        for i = 1, ftype.size / 3 do
             local unpacked = res + (i - 1) * 4
-            local packed = value + (i - 1) * 3
+            local packed = ptr + (i - 1) * 3
 
             local v1 = packed[0]
             local v2 = packed[1]
             local v3 = packed[2]
-            unpacked[0] = lua_lookup[rshift(band(v1, 0xFC), 2)];
+            unpacked[0] = lua_lookup[rshift(v1, 2)];
             unpacked[1] = lua_lookup[bor(lshift(band(v1, 0x03), 4), rshift(band(v2, 0xF0), 4))];
             unpacked[2] = lua_lookup[bor(lshift(band(v2, 0x0F), 2), rshift(band(v3, 0xC0), 6))];
             unpacked[3] = lua_lookup[band(v3, 0x3F)];
         end
+
         return ffi_string(res)
     end
 
     toc.packed_string = function(instance, index, value, ftype)
+        local ptr = ffi_cast('uint8_t*', instance[index])
         local c_lookup = ftype.c_lookup
-        for i = 1, math_min(ftype.unpacked_size - 3, #value), 4 do
-            local packed = instance + (i - 1) * 3
+        local fill_value = ftype.fill_value
+        for i = 1, ftype.size / 3 do
+            local packed = ptr + (i - 1) * 3
+            local start = 1 + (i - 1) * 4
 
-            local i1, i2, i3, i4 = string_byte(value, i, i + 3)
-            local v1 = c_lookup[i1]
-            local v2 = c_lookup[i2]
-            local v3 = c_lookup[i3]
-            local v4 = c_lookup[i4]
-            packed[0] = bor(lshift(v1, 2), rshift(v2, 6))
-            packed[1] = bor(lshift(v2, 4), rshift(v3, 4))
-            packed[2] = bor(lshift(v3, 6), rshift(v4, 2))
+            local i1, i2, i3, i4 = string_byte(value, start, start + 3)
+            local v1 = c_lookup[i1] or fill_value
+            local v2 = c_lookup[i2] or fill_value
+            local v3 = c_lookup[i3] or fill_value
+            local v4 = c_lookup[i4] or fill_value
+            packed[0] = bor(lshift(v1, 2), rshift(v2, 4))
+            packed[1] = bor(lshift(v2, 4), rshift(v3, 2))
+            packed[2] = bor(lshift(v3, 6), rshift(v4, 0))
         end
     end
 end
