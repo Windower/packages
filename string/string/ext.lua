@@ -1,9 +1,13 @@
 local string = require('string')
+local table = require('table')
 
+local pairs = pairs
+local tostring = tostring
 local string_find = string.find
 local string_match = string.match
 local string_rep = string.rep
 local string_sub = string.sub
+local table_concat = table.concat
 
 string.starts_with = function(str, sub)
     return string_sub(str, 1, #sub) == sub
@@ -54,6 +58,17 @@ end
 
 string.index_of = function(str, sub)
     return (string_find(str, sub, 1, true))
+end
+
+string.join = function(str, enumerable)
+    local values = {}
+    local count = 0
+    for _, value in pairs(enumerable) do
+        count = count + 1
+        values[count] = tostring(value)
+    end
+
+    return table_concat(values, str)
 end
 
 return string
