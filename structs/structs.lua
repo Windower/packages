@@ -793,6 +793,18 @@ do
     end
 end
 
+do
+    local ffi_copy = ffi.copy
+    local ffi_sizeof = ffi.sizeof
+    local ffi_typeof = ffi.typeof
+
+    structs.copy = function(cdata)
+        local copy = ffi_typeof(cdata)()
+        ffi_copy(copy, cdata, ffi_sizeof(cdata))
+        return copy
+    end
+end
+
 return structs
 
 --[[
