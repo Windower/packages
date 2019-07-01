@@ -2,15 +2,15 @@ local bit = require('bit')
 local packets = require('packets')
 local server = require('shared.server')
 local string = require('string')
-local structs = require('structs')
+local struct = require('struct')
 
 local type_size = 0x200
 local type_count = 8
 
-local key_item = structs.struct({
-    id                  = {structs.uint32},
-    available           = {structs.bool},
-    examined            = {structs.bool},
+local key_item = struct.struct({
+    id                  = {struct.uint32},
+    available           = {struct.bool},
+    examined            = {struct.bool},
 })
 
 local key_items = server.new('key_items', key_item[type_count * type_size])

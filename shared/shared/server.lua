@@ -2,7 +2,7 @@ require('event') -- Required for the serializer
 local ffi = require('ffi')
 local shared = require('shared')
 local windower = require('windower')
-local structs = require('structs')
+local struct = require('struct')
 
 ffi.cdef[[
     void* HeapAlloc(void*, uint32_t, size_t);
@@ -15,7 +15,7 @@ local ffi_cast = ffi.cast
 local ffi_gc = ffi.gc
 local ffi_sizeof = ffi.sizeof
 local shared_new = shared.new
-local structs_from_ptr = structs.from_ptr
+local structs_from_ptr = struct.from_ptr
 
 local heap = ffi_gc(C.HeapCreate(0, 0, 0), C.HeapDestroy)
 local servers = {}

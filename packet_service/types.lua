@@ -1,43 +1,5 @@
 local math = require('math')
-local structs = require('structs')
-
-local struct = function(info, fields)
-    info, fields = fields and info or {}, fields or info
-    for _, field in pairs(fields) do
-        local ftype = field[2]
-        if ftype and ftype.count == '*' then
-            info.size = 0x100
-            break
-        end
-    end
-    return structs.struct(info, fields)
-end
-
-local multiple
-do
-    local update = function(base, update)
-        for key, value in pairs(update) do
-            base[key] = value
-        end
-        return base
-    end
-
-    multiple = function(ftype)
-        local types = {}
-        local base_info = {cache = {ftype.key}}
-        for index, definitions in pairs(ftype.lookups) do
-            types[index] = struct(update({}, base_info), update(update({}, ftype.base), definitions))
-        end
-
-        ftype.info = { cache = base_info.cache }
-        ftype.base = struct(base_info, ftype.base)
-        ftype.lookups = nil
-
-        ftype.types = types
-
-        return ftype
-    end
-end
+local struct = require('struct')
 
 local bit_get
 local bit_set
@@ -78,27 +40,65 @@ do
     end
 end
 
-local tag = structs.tag
-local string = structs.string
-local data = structs.data
-local packed_string = structs.packed_string
+local tag = struct.tag
+local string = struct.string
+local data = struct.data
+local packed_string = struct.packed_string
 
-local int8 = structs.int8
-local int16 = structs.int16
-local int32 = structs.int32
-local int64 = structs.int64
-local uint8 = structs.uint8
-local uint16 = structs.uint16
-local uint32 = structs.uint32
-local uint64 = structs.uint64
-local float = structs.float
-local double = structs.double
-local bool = structs.bool
+local int8 = struct.int8
+local int16 = struct.int16
+local int32 = struct.int32
+local int64 = struct.int64
+local uint8 = struct.uint8
+local uint16 = struct.uint16
+local uint32 = struct.uint32
+local uint64 = struct.uint64
+local float = struct.float
+local double = struct.double
+local bool = struct.bool
 
-local bit = structs.bit
-local boolbit = structs.boolbit
+local bit = struct.bit
+local boolbit = struct.boolbit
 
-local time = structs.time
+local time = struct.time
+
+local struct = function(info, fields)
+    info, fields = fields and info or {}, fields or info
+    for _, field in pairs(fields) do
+        local ftype = field[2]
+        if ftype and ftype.count == '*' then
+            info.size = 0x100
+            break
+        end
+    end
+    return struct.struct(info, fields)
+end
+
+local multiple
+do
+    local update = function(base, update)
+        for key, value in pairs(update) do
+            base[key] = value
+        end
+        return base
+    end
+
+    multiple = function(ftype)
+        local types = {}
+        local base_info = {cache = {ftype.key}}
+        for index, definitions in pairs(ftype.lookups) do
+            types[index] = struct(update({}, base_info), update(update({}, ftype.base), definitions))
+        end
+
+        ftype.info = { cache = base_info.cache }
+        ftype.base = struct(base_info, ftype.base)
+        ftype.lookups = nil
+
+        ftype.types = types
+
+        return ftype
+    end
+end
 
 local entity = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
@@ -253,7 +253,7 @@ local merit_entry = struct({
     value               = {0x03, uint8},
 })
 
-local job_point_entry =struct({
+local job_point_entry = struct({
     job_point_id        = {0x00, uint16},
     _known1             = {0x02, bit(uint16,10), offset=0},
     value               = {0x02, bit(uint16, 6), offset=10},
@@ -2393,7 +2393,7 @@ types.incoming[0x118] = struct({
     pulchridopt_wings       = {0x0E, uint16},
     mweya_plasm             = {0x10, int32},
     ghastly_stones          = {0x14, uint8},
-    ghastly_stones_1        = {0x15, uint8}, -- #BYRTH# Should revisit if structs.lua becomes compatible with + in keys
+    ghastly_stones_1        = {0x15, uint8}, -- #BYRTH# Should revisit if struct.lua becomes compatible with + in keys
     ghastly_stones_2        = {0x16, uint8},
     verdigris_stones        = {0x17, uint8},
     verdigris_stones_1      = {0x18, uint8},

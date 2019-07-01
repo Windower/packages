@@ -1,20 +1,20 @@
 local packets = require('packets')
 local resources = require('resources')
 local server = require('shared.server')
-local structs = require('structs')
+local struct = require('struct')
 
-local item_type = structs.struct({
-    id                  = {structs.int32},
-    bag                 = {structs.int32},
-    index               = {structs.int32},
-    count               = {structs.int32},
-    status              = {structs.int32},
-    bazaar              = {structs.int32},
-    extdata             = {structs.data(0x18)},
+local item_type = struct.struct({
+    id                  = {struct.int32},
+    bag                 = {struct.int32},
+    index               = {struct.int32},
+    count               = {struct.int32},
+    status              = {struct.int32},
+    bazaar              = {struct.int32},
+    extdata             = {struct.data(0x18)},
 })
 
-local equipment_type = structs.struct({
-    slot                = {structs.int32},
+local equipment_type = struct.struct({
+    slot                = {struct.int32},
     item                = {item_type},
 })
 
@@ -23,10 +23,10 @@ local equipment = server.new('equipment', equipment_type[16])
 local bag_count = #resources.bags
 local bag_size = 80
 
-local items = server.new('items', structs.struct({
+local items = server.new('items', struct.struct({
     bags                = {item_type[bag_size + 1][bag_count]},
-    sizes               = {structs.int32[bag_count]},
-    gil                 = {structs.int32},
+    sizes               = {struct.int32[bag_count]},
+    gil                 = {struct.int32},
 }))
 
 local equipment_references = {}
@@ -45,7 +45,7 @@ for i = 0, 15 do
     equipment[i].slot = i
 end
 
-local empty_item = structs.make(item_type)
+local empty_item = struct.new(item_type)
 
 local update_item = function(bag, index, count, status, id, bazaar, extdata)
     if bag == 0 and index == 0 then
