@@ -1,21 +1,21 @@
-local structs = require('structs')
+local struct = require('struct')
 
-local int8 = structs.int8
-local int16 = structs.int16
-local int32 = structs.int32
-local int64 = structs.int64
-local uint8 = structs.uint8
-local uint16 = structs.uint16
-local uint32 = structs.uint32
-local uint64 = structs.uint64
-local float = structs.float
-local double = structs.double
-local bool = structs.bool
-local bit = structs.bit
+local int8 = struct.int8
+local int16 = struct.int16
+local int32 = struct.int32
+local int64 = struct.int64
+local uint8 = struct.uint8
+local uint16 = struct.uint16
+local uint32 = struct.uint32
+local uint64 = struct.uint64
+local float = struct.float
+local double = struct.double
+local bool = struct.bool
+local bit = struct.bit
 
-local string = structs.string
+local string = struct.string
 
-local struct = structs.struct
+local struct = struct.struct
 
 local string_table = struct({
     count           = {0x00, uint32},

@@ -1,29 +1,32 @@
-local structs = require('structs')
+local struct = setmetatable(require('struct'), {
+    __call = function(t, ...)
+        return t.struct(...)
+    end,
+})
 
-local struct = structs.struct
-local array = structs.array
+local array = struct.array
 
-local tag = structs.tag
-local string = structs.string
-local data = structs.data
-local packed_string = structs.packed_string
+local tag = struct.tag
+local string = struct.string
+local data = struct.data
+local packed_string = struct.packed_string
 
-local int8 = structs.int8
-local int16 = structs.int16
-local int32 = structs.int32
-local int64 = structs.int64
-local uint8 = structs.uint8
-local uint16 = structs.uint16
-local uint32 = structs.uint32
-local uint64 = structs.uint64
-local float = structs.float
-local double = structs.double
-local bool = structs.bool
+local int8 = struct.int8
+local int16 = struct.int16
+local int32 = struct.int32
+local int64 = struct.int64
+local uint8 = struct.uint8
+local uint16 = struct.uint16
+local uint32 = struct.uint32
+local uint64 = struct.uint64
+local float = struct.float
+local double = struct.double
+local bool = struct.bool
 
-local bit = structs.bit
-local boolbit = structs.boolbit
+local bit = struct.bit
+local boolbit = struct.boolbit
 
-local ptr = structs.ptr
+local ptr = struct.ptr
 
 local entity_id = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
@@ -91,7 +94,7 @@ local model = struct({
     range_model_id          = {0xE, uint16},
 })
 
-structs.declare('entity')
+struct.declare('entity')
 
 local display = struct({
     position                = {0x34, world_coord},
@@ -431,15 +434,15 @@ types.d_msg_table = struct({signature = '85C0752B5F5EC38B0CF5'}, {
     str27                   = {0xD8, ptr(ptr())}, -- [1] = Objectives [2] = Get grinding!
 })
 
-types.music = structs.struct({signature = '668B490625FFFF000066C705????????FFFF66890C45'}, {
-    day                     = {0x0, structs.uint16},
-    night                   = {0x2, structs.uint16},
-    solo_combat             = {0x4, structs.uint16},
-    party_combat            = {0x6, structs.uint16},
-    mount                   = {0x8, structs.uint16},
-    knockout                = {0xA, structs.uint16},
-    mog_house               = {0xC, structs.uint16},
-    fishing                 = {0xE, structs.uint16},
+types.music = struct.struct({signature = '668B490625FFFF000066C705????????FFFF66890C45'}, {
+    day                     = {0x0, uint16},
+    night                   = {0x2, uint16},
+    solo_combat             = {0x4, uint16},
+    party_combat            = {0x6, uint16},
+    mount                   = {0x8, uint16},
+    knockout                = {0xA, uint16},
+    mog_house               = {0xC, uint16},
+    fishing                 = {0xE, uint16},
 })
 
 return types

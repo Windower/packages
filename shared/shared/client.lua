@@ -1,6 +1,6 @@
 require('event') -- Required for the serializer
 local shared = require('shared')
-local structs = require('structs')
+local struct = require('struct')
 
 local prepared = {}
 
@@ -23,8 +23,8 @@ local setup_ftype = function(ftype)
     end
 
     if count or fields then
-        structs.name(ftype, name)
-        structs.metatype(ftype)
+        struct.name(ftype, name)
+        struct.metatype(ftype)
     end
 
     prepared[name] = true
@@ -61,7 +61,7 @@ return {
         local ftype = data.ftype
         setup_ftype(ftype)
 
-        return structs.from_ptr(ftype, data.ptr), ftype
+        return struct.from_ptr(ftype, data.ptr), ftype
     end,
 }
 

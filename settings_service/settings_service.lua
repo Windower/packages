@@ -5,7 +5,7 @@ local math = require('math')
 local shared = require('shared')
 local server = require('shared.server')
 local string = require('string')
-local structs = require('structs')
+local struct = require('struct')
 local table = require('table')
 
 query_server = shared.new('query')
@@ -18,7 +18,7 @@ query_server.env.query_response = function(path, setting)
     query_result.setting = setting
 end
 
-local data = server.new(structs.struct({
+local data = server.new(struct.struct({
     get                 = {data = event.new()},
     set                 = {data = event.new()},
 }))

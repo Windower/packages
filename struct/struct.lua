@@ -11,7 +11,7 @@ local setmetatable = setmetatable
 local tostring = tostring
 local type = type
 
-local structs = {}
+local struct = {}
 local tolua = {}
 local toc = {}
 
@@ -121,11 +121,11 @@ do
                 return nil
             end
 
-            return structs.array(base, count)
+            return struct.array(base, count)
         end,
     }
 
-    structs.make_type = function(cdef, info)
+    struct.make_type = function(cdef, info)
         return setmetatable({
             cdef = cdef,
             size = info and info.size or ffi_sizeof(cdef),
@@ -133,8 +133,8 @@ do
     end
 end
 
-structs.copy_type = function(base)
-    local ftype = structs.make_type(base.cdef)
+struct.copy_type = function(base)
+    local ftype = struct.make_type(base.cdef)
 
     for key, value in pairs(base) do
         ftype[key] = value
@@ -186,7 +186,7 @@ do
     local table_sort = table.sort
 
     local build_type = function(cdef, info)
-        local ftype = structs.make_type(cdef, info)
+        local ftype = struct.make_type(cdef, info)
         if info.signature then
             ftype.signature = info.signature
             ftype.offsets = info.offsets or {}
@@ -317,7 +317,7 @@ do
         })
     end
 
-    structs.metatype = function(ftype)
+    struct.metatype = function(ftype)
         if ftype.count == nil then
             struct_metatype(ftype)
         else
@@ -325,7 +325,7 @@ do
         end
     end
 
-    structs.array = function(info, base, count)
+    struct.array = function(info, base, count)
         info, base, count = count and info or {}, count and base or info, count or base
 
         local ftype = build_type(base.cdef, info)
@@ -340,13 +340,13 @@ do
         ftype.cdef = 'struct{ ' .. (base.name or base.cdef) .. ' array[' .. count .. '];}'
         ftype.size = base.size * count
 
-        structs.name(ftype, info.name)
-        structs.metatype(ftype)
+        struct.name(ftype, info.name)
+        struct.metatype(ftype)
 
         return ftype
     end
 
-    structs.struct = function(info, fields)
+    struct.struct = function(info, fields)
         info, fields = fields and info or {}, fields or info
 
         local arranged = {}
@@ -363,7 +363,7 @@ do
                 local size = info.size
                 if ftype.count == '*' and size then
                     local base = ftype.base
-                    local fixed_ftype = structs.array(base, math_floor((size - position) / base.size))
+                    local fixed_ftype = struct.array(base, math_floor((size - position) / base.size))
                     ftype.base = nil
                     ftype.cdef = nil
                     ftype.count = nil
@@ -393,7 +393,7 @@ do
         info.size = size
         local ftype = build_type(cdef, info)
 
-        structs.name(ftype, info.name)
+        struct.name(ftype, info.name)
 
         for key, value in pairs(vla) do
             ftype[key] = value
@@ -402,7 +402,7 @@ do
         ftype.fields = fields
         ftype.arranged = arranged
 
-        structs.metatype(ftype)
+        struct.metatype(ftype)
 
         return ftype
     end
@@ -419,7 +419,7 @@ do
 
     local typedefs = {}
 
-    structs.name = function(ftype, name)
+    struct.name = function(ftype, name)
         named_count = named_count + 1
         name = name or ftype.name
         if not name then
@@ -446,7 +446,7 @@ do
         end
     end
 
-    structs.declare = function(name)
+    struct.declare = function(name)
         local tag = name .. '_tag'
         ffi_cdef('struct ' .. tag .. ';')
         ffi_cdef('typedef struct ' .. tag .. ' ' .. name .. ';')
@@ -458,11 +458,11 @@ do
         }
     end
 
-    structs.ptr = function(base)
+    struct.ptr = function(base)
         local is_tag = type(base) == 'string'
 
         local base_def = not base and 'void' or is_tag and base or base.name or base.cdef
-        local ftype = structs.make_type(base_def .. '*')
+        local ftype = struct.make_type(base_def .. '*')
 
         ftype.ptr = true
 
@@ -492,14 +492,14 @@ do
         __metatable = false,
     }
 
-    structs.typedefs = setmetatable({}, typedefs_mt)
+    struct.typedefs = setmetatable({}, typedefs_mt)
 end
 
 do
     local ffi_cast = ffi.cast
 
-    structs.from_ptr = function(ftype, ptr)
-        structs.name(ftype)
+    struct.from_ptr = function(ftype, ptr)
+        struct.name(ftype)
         return ffi_cast(ftype.name .. '*', ptr)[0]
     end
 end
@@ -509,7 +509,7 @@ do
 
     local type_cache = {}
 
-    structs.make = function(ftype, ...)
+    struct.new = function(ftype, ...)
         local ctype = type_cache[ftype]
         if not ctype then
             ctype = ffi_typeof(ftype.name or ftype.cdef)
@@ -520,23 +520,23 @@ do
     end
 end
 
-structs.tag = function(base, tag)
-    local ftype = structs.copy_type(base)
+struct.tag = function(base, tag)
+    local ftype = struct.copy_type(base)
     ftype.tag = tag
     return ftype
 end
 
-structs.uint8 = structs.make_type('uint8_t')
-structs.uint16 = structs.make_type('uint16_t')
-structs.uint32 = structs.make_type('uint32_t')
-structs.uint64 = structs.make_type('uint64_t')
-structs.int8 = structs.make_type('int8_t')
-structs.int16 = structs.make_type('int16_t')
-structs.int32 = structs.make_type('int32_t')
-structs.int64 = structs.make_type('int64_t')
-structs.float = structs.make_type('float')
-structs.double = structs.make_type('double')
-structs.bool = structs.make_type('bool')
+struct.uint8 = struct.make_type('uint8_t')
+struct.uint16 = struct.make_type('uint16_t')
+struct.uint32 = struct.make_type('uint32_t')
+struct.uint64 = struct.make_type('uint64_t')
+struct.int8 = struct.make_type('int8_t')
+struct.int16 = struct.make_type('int16_t')
+struct.int32 = struct.make_type('int32_t')
+struct.int64 = struct.make_type('int64_t')
+struct.float = struct.make_type('float')
+struct.double = struct.make_type('double')
+struct.bool = struct.make_type('bool')
 
 do
     local ffi_string = ffi.string
@@ -551,7 +551,7 @@ do
 
         local ftype = cache[size]
         if not ftype then
-            ftype = structs.array(structs.make_type('char'), size)
+            ftype = struct.array(struct.make_type('char'), size)
             ftype.converter = tag
             ftype.tag = tag
 
@@ -563,7 +563,7 @@ do
         return ftype
     end
 
-    structs.string = function(size)
+    struct.string = function(size)
         return make(size, 'string', string_cache)
     end
 
@@ -590,7 +590,7 @@ do
         ffi_copy(instance[index], string_sub(value, 1, ftype.size) .. '\x00')
     end
 
-    structs.data = function(size)
+    struct.data = function(size)
         return make(size, 'data', data_cache)
     end
 
@@ -603,8 +603,8 @@ do
     end
 end
 
-structs.time = structs.tag(structs.uint32, 'time')
-structs.time.converter = 'time'
+struct.time = struct.tag(struct.uint32, 'time')
+struct.time.converter = 'time'
 do
     local now = os.time()
     local off = os.difftime(now, os.time(os.date('!*t', now)))
@@ -633,8 +633,8 @@ do
 
     local ctype = ffi_typeof('char[?]')
 
-    structs.packed_string = function(size, lookup_string)
-        local ftype = structs.array(structs.make_type('char'), size)
+    struct.packed_string = function(size, lookup_string)
+        local ftype = struct.array(struct.make_type('char'), size)
         ftype.converter = 'packed_string'
 
         do
@@ -700,16 +700,16 @@ do
     end
 end
 
-structs.bit = function(base, bits)
-    local ftype = structs.copy_type(base)
+struct.bit = function(base, bits)
+    local ftype = struct.copy_type(base)
 
     ftype.bits = bits
 
     return ftype
 end
 
-structs.boolbit = function(base)
-    local ftype = structs.bit(base, 1)
+struct.boolbit = function(base)
+    local ftype = struct.bit(base, 1)
 
     ftype.converter = 'boolbit'
 
@@ -761,8 +761,8 @@ do
         end,
     }
 
-    structs.bits = function(bytes)
-        local ftype = structs.data(bytes)
+    struct.bits = function(bytes)
+        local ftype = struct.data(bytes)
 
         ftype.converter = 'bits'
 
@@ -798,14 +798,14 @@ do
     local ffi_sizeof = ffi.sizeof
     local ffi_typeof = ffi.typeof
 
-    structs.copy = function(cdata)
+    struct.copy = function(cdata)
         local copy = ffi_typeof(cdata)()
         ffi_copy(copy, cdata, ffi_sizeof(cdata))
         return copy
     end
 end
 
-return structs
+return struct
 
 --[[
 Copyright © 2018, Windower Dev Team

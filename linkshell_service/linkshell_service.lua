@@ -1,24 +1,24 @@
 local packets = require('packets')
 local server = require('shared.server')
-local structs = require('structs')
+local struct = require('struct')
 
-local ls_struct = structs.struct({
-    name                = {structs.string(0x14)},
-    permissions         = {structs.data(0x04)},
-    color               = {structs.struct({
-        red                 = {structs.uint8},
-        green               = {structs.uint8},
-        blue                = {structs.uint8},
+local ls_struct = struct.struct({
+    name                = {struct.string(0x14)},
+    permissions         = {struct.data(0x04)},
+    color               = {struct.struct({
+        red                 = {struct.uint8},
+        green               = {struct.uint8},
+        blue                = {struct.uint8},
     })},
-    lsmes               = {structs.struct({
-        message             = {structs.string(0x80)},
-        player_name         = {structs.string(0x10)},
-        timestamp           = {structs.uint32},
+    lsmes               = {struct.struct({
+        message             = {struct.string(0x80)},
+        player_name         = {struct.string(0x10)},
+        timestamp           = {struct.uint32},
     })},
-    bag_index           = {structs.uint8},
+    bag_index           = {struct.uint8},
 })
 
-local data = server.new(structs.struct({
+local data = server.new(struct.struct({
     [1]                 = {ls_struct},
     [2]                 = {ls_struct},
 }))

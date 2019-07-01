@@ -1,20 +1,20 @@
 local event = require('event')
 local packets = require('packets')
 local server = require('shared.server')
-local structs = require('structs')
+local struct = require('struct')
 
-local data = server.new(structs.struct({
-    zone_id             = {structs.int32},
-    weather_id          = {structs.int32},
-    music               = {structs.struct({
-        day                 = {structs.int32},
-        night               = {structs.int32},
-        solo_combat         = {structs.int32},
-        party_combat        = {structs.int32},
-        mount               = {structs.int32},
-        knockout            = {structs.int32},
-        mog_house           = {structs.int32},
-        fishing             = {structs.int32},
+local data = server.new(struct.struct({
+    zone_id             = {struct.int32},
+    weather_id          = {struct.int32},
+    music               = {struct.struct({
+        day                 = {struct.int32},
+        night               = {struct.int32},
+        solo_combat         = {struct.int32},
+        party_combat        = {struct.int32},
+        mount               = {struct.int32},
+        knockout            = {struct.int32},
+        mog_house           = {struct.int32},
+        fishing             = {struct.int32},
     })},
     zone_change         = {data = event.new()},
     weather_change      = {data = event.new()},

@@ -1,5 +1,5 @@
 local ffi = require('ffi')
-local structs = require('structs')
+local struct = require('struct')
 local unicode = require('unicode')
 
 local ffi_cast = ffi.cast
@@ -9,18 +9,18 @@ local unicode_from_shift_jis = unicode.from_shift_jis
 local byte_ptr = ffi.typeof('uint8_t*')
 local int_ptr = ffi.typeof('uint32_t*')
 
-local header_type = structs.struct({
-    format          = {0x00, structs.string(0x08)},
-    type            = {0x08, structs.uint16},
-    encrypted       = {0x0A, structs.bool},
-    version1        = {0x0C, structs.uint32},
-    version2        = {0x10, structs.uint32},
-    file_size       = {0x14, structs.uint32},
-    header_size     = {0x18, structs.uint32},
-    table_size      = {0x1C, structs.uint32},
-    entry_size      = {0x20, structs.uint32}, -- Maybe not set in memory? Is zero, at least for weather strings
-    data_size       = {0x24, structs.uint32},
-    count           = {0x28, structs.uint32},
+local header_type = struct.struct({
+    format          = {0x00, struct.string(0x08)},
+    type            = {0x08, struct.uint16},
+    encrypted       = {0x0A, struct.bool},
+    version1        = {0x0C, struct.uint32},
+    version2        = {0x10, struct.uint32},
+    file_size       = {0x14, struct.uint32},
+    header_size     = {0x18, struct.uint32},
+    table_size      = {0x1C, struct.uint32},
+    entry_size      = {0x20, struct.uint32}, -- Maybe not set in memory? Is zero, at least for weather strings
+    data_size       = {0x24, struct.uint32},
+    count           = {0x28, struct.uint32},
 })
 
 local offset_from_table = function(id, table, entry_size)
@@ -72,7 +72,7 @@ return {
         ptr = ffi_cast(byte_ptr, ptr)
         lookup = lookup or {}
 
-        local header = structs.from_ptr(header_type, ptr)
+        local header = struct.from_ptr(header_type, ptr)
         local size = header.count
 
         return setmetatable({}, {
