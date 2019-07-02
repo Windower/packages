@@ -79,15 +79,15 @@ end
 
 local settings_command = command.new('settings')
 
-local get = function(source, addon, path, options)
-    data.get:trigger(addon, path, options)
+local get = function(source, addon, path, id)
+    data.get:trigger(addon, path, id)
     print_setting(source, query_result.path, query_result.setting)
 end
 
-local set = function(source, addon, path, value, options)
-    data.set:trigger(addon, path, value, options)
+local set = function(source, addon, path, value, id)
+    data.set:trigger(addon, path, value, id)
     print_setting(source, query_result.path, query_result.setting)
 end
 
-settings_command:register_source('get', get, '<addon:string> <path:string> [options:string]')
-settings_command:register_source('set', set, '<addon:string> <path:string> <value:string> [options:string]')
+settings_command:register_source('get', get, '<addon:string> <path:string> [id:string]')
+settings_command:register_source('set', set, '<addon:string> <path:string> <value:string> [id:string]')
