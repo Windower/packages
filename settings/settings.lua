@@ -28,7 +28,6 @@ local account_logout = account.logout
 local windower_settings_path = windower.settings_path
 
 local info_cache = {}
-local name_cache = {}
 
 local settings = {}
 
@@ -52,14 +51,14 @@ do
         return account.name .. '_' .. (account.server and account.server.name or account.id)
     end
 
-    get_file = function(name, global)
+    get_file = function(id, global)
         local dir = windower_settings_path .. '\\' .. make_account_name(global) .. '\\'
 
         C.CreateDirectoryW(unicode.to_utf16(windower_settings_path .. '\\..'), nil)
         C.CreateDirectoryW(unicode.to_utf16(windower_settings_path), nil)
         C.CreateDirectoryW(unicode.to_utf16(dir), nil)
 
-        return file_create(dir .. name .. '.lua')
+        return file_create(dir .. id .. '.lua')
     end
 end
 
@@ -149,8 +148,8 @@ do
         end
     end
 
-    parse = function(defaults, name, global)
-        local options_file = get_file(name, global)
+    parse = function(defaults, id, global)
+        local options_file = get_file(id, global)
         local options
         if file_exists(options_file) then
             options = loadfile(options_file.path)()
@@ -165,48 +164,36 @@ do
     end
 end
 
-settings.load = function(defaults, name, global)
-    if type(name) == 'boolean' then
-        global = name
-        name = nil
+settings.load = function(defaults, id, global)
+    if type(id) == 'boolean' then
+        global = id
+        id = nil
     end
 
-    name = name or 'settings'
+    id = id or 'settings'
     global = global ~= nil and global
 
-    local options = parse(defaults, name, global)
+    local options = parse(defaults, id, global)
 
-    info_cache[options] = {
-        name = name,
+    info_cache[id] = {
+        id = id,
         defaults = defaults,
         global = global,
+        options = options,
     }
 
-    name_cache[name] = options
-
-    settings.save(options)
+    settings.save(id)
     settings.settings_change:trigger(options)
 
     return options
 end
 
-local save_options
 do
     local file_write = file.write
 
-    save_options = function(options, info)
-        file_write(get_file(info.name, info.global), 'return ' .. format_table(options))
-    end
-end
-
-settings.save = function(options)
-    if options then
-        save_options(options, info_cache[options])
-        return
-    end
-
-    for options, info in pairs(info_cache) do
-        save_options(options, info)
+    settings.save = function(id)
+        local info = info_cache[id or 'settings']
+        file_write(get_file(info.id, info.global), 'return ' .. format_table(info.options))
     end
 end
 
@@ -244,11 +231,14 @@ do
     end
 
     local reparse = function()
-        for options, info in pairs(info_cache) do
+        for id, info in pairs(info_cache) do
             if not info.global then
-                local parsed = parse(info.defaults, info.name)
+                local options = info.options
+                local parsed = parse(info.defaults, info.id)
+
                 update(options, parsed)
-                settings.save(options)
+
+                settings.save(id)
                 settings.settings_change:trigger(options)
             end
         end
@@ -260,8 +250,8 @@ end
 
 settings.settings_change = event.slim.new()
 
-settings.get = function(path, options)
-    local setting = name_cache[options or 'settings']
+settings.get = function(path, id)
+    local setting = info_cache[id or 'settings'].options
 
     local tokens = path:split('%.')
     for i = 1, #tokens do
@@ -296,8 +286,8 @@ do
         error('Unknown parameter')
     end
 
-    settings.set = function(path, value, options)
-        local setting_container = name_cache[options or 'settings']
+    settings.set = function(path, value, id)
+        local setting_container = info_cache[id or 'settings'].options
 
         local tokens = path:split('%.')
         local length = #tokens
