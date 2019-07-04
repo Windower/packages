@@ -86,7 +86,7 @@ local update_item = function(bag, index, count, status, id, bazaar, extdata)
 end
 
 packets.incoming:register_init({
-    [{0x01C}] = function(p, info)
+    [{0x01C}] = function(p)
         for bag = 0, bag_count - 1 do
             items.sizes[bag] = p.size[bag] - 1
         end
@@ -109,11 +109,10 @@ packets.incoming:register_init({
         local bag = p.bag_id
         local index = p.bag_index
 
-        if index == 0 then
-            local old = equipment[slot].item
-            equipment_references[old.bag][old.index] = nil
-            equipment[slot].item = empty_item
-        else
+        local old = equipment[slot].item
+        equipment_references[old.bag][old.index] = nil
+        equipment[slot].item = empty_item
+        if index > 0 then
             local new = items.bags[bag][index]
             equipment[slot].item = new
             equipment_references[new.bag][new.index] = slot
