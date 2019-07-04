@@ -279,7 +279,7 @@ packets_server.env.update = function(p)
     updated = p
 end
 
-local process_packet = function(packet, info, path)
+local process_packet = function(entry, packet, info, path)
     local events = registry[path]
     if events then
         for i = 1, #events do
@@ -302,10 +302,7 @@ local process_packet = function(packet, info, path)
         end
     end
 
-    history[path] = {
-        packet = packet,
-        info = info,
-    }
+    history[path] = entry
 end
 
 local make_timestamp
@@ -349,18 +346,22 @@ do
         local ftype = packet_types[direction][id]
         local packet = parse_packet(data, ftype)
 
-        process_packet(packet, info, '')
+        local entry = {
+            packet = packet,
+            info = info,
+        }
+        process_packet(entry, packet, info, '')
         local path = '/' .. direction
-        process_packet(packet, info, path)
+        process_packet(entry, packet, info, path)
         path = path .. '/' .. id
-        process_packet(packet, info, path)
+        process_packet(entry, packet, info, path)
 
         local finfo = ftype and ftype.info
         local cache = finfo and finfo.cache
         if cache then
             for i = 1, #cache do
                 path = path .. '/' .. tostring(packet[cache[i]])
-                process_packet(packet, info, path)
+                process_packet(entry, packet, info, path)
             end
         end
 
