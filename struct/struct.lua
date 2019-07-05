@@ -337,7 +337,7 @@ do
             return ftype
         end
 
-        ftype.cdef = 'struct{ ' .. (base.name or base.cdef) .. ' array[' .. count .. '];}'
+        ftype.cdef = 'struct{' .. (base.name or base.cdef) .. ' array[' .. count .. '];}'
         ftype.size = base.size * count
 
         struct.name(ftype, info.name)
@@ -382,12 +382,21 @@ do
             end
         end
 
-        local first = arranged[1]
-        if first and first.position then
-            table_sort(arranged, function(field1, field2)
+        table_sort(arranged, function(field1, field2)
+            if field1.position and field2.position then
                 return field1.position < field2.position or field1.position == field2.position and field1.offset < field2.offset
-            end)
-        end
+            end
+
+            if field1.position and not field2.position then
+                return true
+            end
+
+            if not field1.position and field2.position then
+                return false
+            end
+
+            return field1.label < field2.label
+        end)
 
         local cdef, size = make_struct_cdef(arranged, info.size)
         info.size = size
