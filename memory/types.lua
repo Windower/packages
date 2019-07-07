@@ -245,6 +245,15 @@ local entity_string = struct({
     id                      = {0x1C, uint32},
 })
 
+local map_entry = struct({
+    zone = {0x00, uint16},
+    map = {0x02, uint8},
+    count = {0x03, uint8},
+    scale = {0x05, uint8},
+    offset_x = {0x0A, int16},
+    offset_y = {0x0C, int16},
+})
+
 local types = {}
 
 types.graphics = struct({signature = '83EC205355568BF18B0D'}, {
@@ -443,6 +452,10 @@ types.music = struct.struct({signature = '668B490625FFFF000066C705????????FFFF66
     knockout                = {0xA, uint16},
     mog_house               = {0xC, uint16},
     fishing                 = {0xE, uint16},
+})
+
+types.map_table = struct.struct({signature = '8A0D????????5333C05684C95774??8A5424188B7424148B7C2410B9&'}, {
+    ptr = {0x00, ptr(map_entry)},
 })
 
 return types
