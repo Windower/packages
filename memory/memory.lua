@@ -65,11 +65,12 @@ return setmetatable({}, {
     __newindex = function(_, name, value)
         types[name] = value
     end,
-    __pairs = function(_)
+    __pairs = function(memory)
         return function(t, k)
-            return (next(t, k))
+            local key = next(t, k)
+            return key, key and memory[key]
         end, types, nil
-    end
+    end,
 })
 
 --[[
