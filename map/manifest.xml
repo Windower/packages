@@ -1,9 +1,10 @@
 <package>
   <name>map</name>
-  <version>1.0.0.0</version>
+  <version>2.0.0.0</version>
   <type>library</type>
   <dependencies>
     <dependency>memory</dependency>
+    <dependency>target</dependency>
     <dependency>world</dependency>
   </dependencies>
 </package>
