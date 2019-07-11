@@ -2353,7 +2353,8 @@ types.incoming[0x113] = struct({
     water_crystals          = {0xEE, uint16},
     light_crystals          = {0xF0, uint16},
     dark_crystals           = {0xF2, uint16},
-    -- Packet structure current as of 2018-07-05 update.
+    deeds                   = {0xF4, int32},
+    -- Packet structure current as of 2019-07-08 update.
 })
 
 -- Fishing Minigame Parameters
@@ -2387,13 +2388,13 @@ types.incoming[0x118] = struct({
     bayld                   = {0x00, int32},
     kinetic_units           = {0x04, uint16},
     coalition_imprimaturs   = {0x06, uint8},
-    -- 0x07 does not seem to be displayed currently, so its meaning is unclear. Was 0x16 for me.
+    mystical_canteens       = {0x07, uint8},
     obsidian_fragments      = {0x08, int32},
     lebondopt_wings         = {0x0C, uint16},
     pulchridopt_wings       = {0x0E, uint16},
     mweya_plasm             = {0x10, int32},
     ghastly_stones          = {0x14, uint8},
-    ghastly_stones_1        = {0x15, uint8}, -- #BYRTH# Should revisit if struct.lua becomes compatible with + in keys
+    ghastly_stones_1        = {0x15, uint8},
     ghastly_stones_2        = {0x16, uint8},
     verdigris_stones        = {0x17, uint8},
     verdigris_stones_1      = {0x18, uint8},
@@ -2443,11 +2444,39 @@ types.incoming[0x118] = struct({
     mellidopt_wings         = {0x44, uint16},
     escha_beads             = {0x46, uint16},
     escha_silt              = {0x48, int32},
-    potpourri               = {0x4C, uint16},
+    potpourri               = {0x4C, int32},
     hallmarks               = {0x50, int32},
     total_hallmarks         = {0x54, int32},
     gallantry               = {0x58, int32},
-    -- Packet structure current as of 2018-07-05 update.
+    crafter_points          = {0x5C, int32},
+    fire_crystals_set       = {0x60, uint8},
+    ice_crystals_set        = {0x61, uint8},
+    wind_crystals_set       = {0x62, uint8},
+    earth_crystals_set      = {0x63, uint8},
+    lightning_crystals_set  = {0x64, uint8},
+    water_crystals_set      = {0x65, uint8},
+    light_crystals_set      = {0x66, uint8},
+    dark_crystals_set       = {0x67, uint8},
+    MCSSR01s_set            = {0x68, uint8},
+    MCSSR02s_set            = {0x69, uint8},
+    MCSSR03s_set            = {0x6A, uint8},
+    liquefaction_spheres_set = {0x6B, uint8},
+    induration_spheres_set  = {0x6C, uint8},
+    detonation_spheres_set  = {0x6D, uint8},
+    scission_spheres_set    = {0x6E, uint8},
+    impaction_spheres_set   = {0x6F, uint8},
+    reverberation_spheres_set = {0x70, uint8},
+    transfixion_spheres_set = {0x71, uint8},
+    compression_spheres_set = {0x72, uint8},
+    fusion_spheres_set      = {0x73, uint8},
+    distortion_spheres_set  = {0x74, uint8},
+    fragmentation_spheres_set = {0x75, uint8},
+    gravitation_spheres_set = {0x76, uint8},
+    light_spheres_set       = {0x77, uint8},
+    darkness_spheres_set    = {0x78, uint8},
+    -- unknown padding 0x79 for 3 bytes
+    silver_aman_vouchers    = {0x7C, int32},
+    -- Packet structure current as of 2019-07-08 update.
 })
 
 -- Ability timers
