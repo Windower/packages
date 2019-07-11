@@ -245,11 +245,18 @@ local entity_string = struct({
     id                      = {0x1C, uint32},
 })
 
+local key_item_map_offset_lookup = {
+    [0] = 384,
+    [1] = 1855,
+    [2] = 2301,
+}
 local map_entry = struct({
     zone_id                 = {0x00, int16},
     map_id                  = {0x02, uint8},
     count                   = {0x03, uint8},
+    key_item_offset         = {0x04, bit(uint8, 4), offset=4, lookup=key_item_map_offset_lookup},
     scale                   = {0x05, uint8},
+    key_item_index          = {0x06, int8},
     offset_x                = {0x0A, int16},
     offset_y                = {0x0C, int16},
 })
