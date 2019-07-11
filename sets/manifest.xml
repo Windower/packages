@@ -1,8 +1,0 @@
-<package>
-  <name>sets</name>
-  <version>1.0.0.2</version>
-  <type>library</type>
-  <dependencies>
-    <dependency>enumerable</dependency>
-  </dependencies>
-</package>

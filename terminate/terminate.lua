@@ -2,13 +2,12 @@ local command = require('command')
 local ffi = require('ffi')
 
 ffi.cdef[[
+    void* GetCurrentProcess();
     bool TerminateProcess(void* hProcess, uint32_t uExitCode);
 ]]
 
-local kernel32 = ffi.load('kernel32')
-
-command.core.register('terminate', function() 
-    kernel32.TerminateProcess(ffi.cast('void*',-1), 0)
+command.new('terminate'):register(function()
+    ffi.C.TerminateProcess(ffi.cast('void*', ffi.C.GetCurrentProcess()), 0)
 end)
 
 --[[

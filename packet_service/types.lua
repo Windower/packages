@@ -1,6 +1,78 @@
-local structs = require('structs')
+local math = require('math')
+local struct = require('struct')
 
-local struct = structs.struct
+local bit_get
+local bit_set
+do
+    local floor = math.floor
+
+    bit_get = function(cdata, bit, length)
+        local first = floor(bit / 8)
+        local last = floor((bit + length - 1) / 8)
+
+        local acc = 0
+        local step = 0
+        for i = first, last do
+            acc = acc + 0x100 ^ step * cdata[i]
+            step = step + 1
+        end
+
+        return floor(acc / 2 ^ (bit % 8)) % 2 ^ length
+    end
+
+    bit_set = function(cdata, bit, length, value)
+        local first = floor(bit / 8)
+        local last = floor((bit + length - 1) / 8)
+
+        local low_mask = 2 ^ (bit % 8)
+        local high_mask = 2 ^ ((bit + length - 1) % 8)
+
+        local shifted = value * low_mask
+
+        local step = 0
+        for i = first, last do
+            local current = cdata[i]
+            local prefix = i == first and current % low_mask or 0
+            local suffix = i == last and floor(current / high_mask) * high_mask or 0
+            cdata[i] = prefix + floor(shifted / 0x100 ^ step) % 0x100 + suffix
+            step = step + 1
+        end
+    end
+end
+
+local tag = struct.tag
+local string = struct.string
+local data = struct.data
+local packed_string = struct.packed_string
+
+local int8 = struct.int8
+local int16 = struct.int16
+local int32 = struct.int32
+local int64 = struct.int64
+local uint8 = struct.uint8
+local uint16 = struct.uint16
+local uint32 = struct.uint32
+local uint64 = struct.uint64
+local float = struct.float
+local double = struct.double
+local bool = struct.bool
+
+local bit = struct.bit
+local boolbit = struct.boolbit
+
+local time = struct.time
+
+local struct = function(info, fields)
+    info, fields = fields and info or {}, fields or info
+    for _, field in pairs(fields) do
+        local ftype = field[2]
+        if ftype and ftype.count == '*' then
+            info.size = 0x100
+            break
+        end
+    end
+    return struct.struct(info, fields)
+end
 
 local multiple
 do
@@ -13,13 +85,13 @@ do
 
     multiple = function(ftype)
         local types = {}
-        local cache = {cache = {ftype.key}}
+        local base_info = {cache = {ftype.key}}
         for index, definitions in pairs(ftype.lookups) do
-            types[index] = struct(cache, update(update({}, ftype.base), definitions))
+            types[index] = struct(update({}, base_info), update(update({}, ftype.base), definitions))
         end
 
-        ftype.info = { cache = cache }
-        ftype.base = struct(cache, ftype.base)
+        ftype.info = { cache = base_info.cache }
+        ftype.base = struct(base_info, ftype.base)
         ftype.lookups = nil
 
         ftype.types = types
@@ -27,28 +99,6 @@ do
         return ftype
     end
 end
-
-local tag = structs.tag
-local string = structs.string
-local data = structs.data
-local packed_string = structs.packed_string
-
-local int8 = structs.int8
-local int16 = structs.int16
-local int32 = structs.int32
-local int64 = structs.int64
-local uint8 = structs.uint8
-local uint16 = structs.uint16
-local uint32 = structs.uint32
-local uint64 = structs.uint64
-local float = structs.float
-local double = structs.double
-local bool = structs.bool
-
-local bit = structs.bit
-local boolbit = structs.boolbit
-
-local time = structs.time
 
 local entity = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
@@ -77,9 +127,9 @@ local roe_quest = tag(bit(uint32, 12), 'roe_quest')
 local pc_name = string(0x10)
 local fourcc = string(0x04)
 
-local ls_name = packed_string(0x0F, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+local ls_name = packed_string(0x0F, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 local item_inscription = packed_string(0x0C, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
-local ls_name_extdata = packed_string(0x0C, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
+local ls_name_extdata = packed_string(0x0C, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 
 local stats = struct({
     str                 = {0x00, int16},
@@ -203,7 +253,7 @@ local merit_entry = struct({
     value               = {0x03, uint8},
 })
 
-local job_point_entry =struct({
+local job_point_entry = struct({
     job_point_id        = {0x00, uint16},
     _known1             = {0x02, bit(uint16,10), offset=0},
     value               = {0x02, bit(uint16, 6), offset=10},
@@ -251,6 +301,12 @@ local types = {
     outgoing = {},
 }
 
+types.incoming[0x009] = struct({
+    target_id           = {0x00, entity},
+    target_index        = {0x04, entity_index},
+    message_id          = {0x06, uint16},
+})
+
 -- Zone update
 types.incoming[0x00A] = struct({
     player_id           = {0x00, entity},
@@ -276,6 +332,7 @@ types.incoming[0x00A] = struct({
     night_music         = {0x54, uint16},
     solo_combat_music   = {0x56, uint16},
     party_combat_music  = {0x58, uint16},
+    mount_music         = {0x5A, uint16},
     menu_zone           = {0x5E, uint16},
     menu_id             = {0x60, uint16},
     weather_id          = {0x64, weather},
@@ -366,6 +423,7 @@ types.incoming[0x00D] = struct({
     linkshell_red       = {0x20, uint8},
     linkshell_green     = {0x21, uint8},
     linkshell_blue      = {0x22, uint8},
+    indi_bubble         = {0x3E, uint8},
     face_flags          = {0x3F, uint8}, -- 0, 3, 4 or 8
     face_model_id       = {0x44, uint8},
     race_id             = {0x45, race},
@@ -418,7 +476,8 @@ types.incoming[0x00E] = struct({
 -- Incoming Chat
 types.incoming[0x017] = struct({
     chat                = {0x00, chat},
-    gm                  = {0x01, bool},
+    gm                  = {0x01, boolbit(uint8), offset=0},
+    formatted           = {0x01, boolbit(uint8), offset=3},
     zone                = {0x02, zone},
     name                = {0x04, pc_name},
     message             = {0x14, string(0xEC)},
@@ -548,6 +607,110 @@ types.incoming[0x027] = struct({
     name_other          = {0x3C, pc_name},
 })
 
+types.incoming[0x028] = struct({
+    size                = {0x00, uint8},
+    _payload            = {0x01, uint8[0xFF]},
+    actor               = {
+        get = function(p) return bit_get(p._payload,  0, 32) end,
+        set = function(p, value) bit_set(p._payload,  0, 32, value) end,
+    },
+    target_count        = {
+        get = function(p) return bit_get(p._payload, 32, 10) end,
+        set = function(p, value) bit_set(p._payload, 32, 10, value) end,
+    },
+    category            = {
+        get = function(p) return bit_get(p._payload, 42,  4) end,
+        set = function(p, value) bit_set(p._payload, 42,  4, value) end,
+    },
+    param               = {
+        get = function(p) return bit_get(p._payload, 46, 16) end,
+        set = function(p, value) bit_set(p._payload, 46, 16, value) end,
+    },
+    recast              = {
+        get = function(p) return bit_get(p._payload, 78, 32) end,
+        set = function(p, value) bit_set(p._payload, 78, 32, value) end,
+    },
+    targets             = {
+        get = function(p)
+            local payload = p._payload
+            local current = 110
+
+            local get = function(length)
+                local value = bit_get(payload, current, length)
+                current = current + length
+                return value
+            end
+
+            local skip = function(length)
+                current = current + length
+            end
+
+            local targets = {}
+            for i = 1, p.target_count do
+                local id = get(32)
+                local action_count = get(4)
+                local actions = {}
+
+                for i = 1, action_count do
+                    local reaction = get(5)
+                    local animation = get(11)
+                    local effect = get(5)
+                    local stagger = get(6)
+                    local param = get(17)
+                    local message = get(10)
+
+                    skip(31) -- Message Modifier? If you get a complete (Resist!) this is set to 2 otherwise a regular Resist is 0.
+
+                    local has_add_effect = get(1) == 1
+                    local add_effect
+                    if has_add_effect then
+                        add_effect = {
+                            animation = get(6),
+                            effect = get(4),
+                            param = get(17),
+                            message = get(10),
+                        }
+                    end
+
+                    local has_spike_effect = get(1) == 1
+                    local spike_effect
+                    if has_spike_effect then
+                        spike_effect = {
+                            animation = get(6),
+                            effect = get(4),
+                            param = get(14),
+                            message = get(10),
+                        }
+                    end
+
+                    actions[i] = {
+                        reaction = reaction,
+                        animation = animation,
+                        effect = effect,
+                        stagger = stagger,
+                        param = param,
+                        message = message,
+                        has_add_effect = has_add_effect,
+                        add_effect = add_effect,
+                        has_spike_effect = has_spike_effect,
+                        spike_effect = spike_effect,
+                    }
+                end
+
+                targets[i] = {
+                    id = id,
+                    action_count = action_count,
+                    actions = actions,
+                }
+            end
+            return targets
+        end,
+        set = function(p)
+            error('todo...')
+        end,
+    },
+})
+
 -- Action Message
 types.incoming[0x029] = struct({
     actor_id            = {0x00, entity},
@@ -558,7 +721,6 @@ types.incoming[0x029] = struct({
     target_index        = {0x12, entity_index},
     message_id          = {0x14, action_message},
 })
-
 
 --[[ 0x2A can be triggered by knealing in the right areas while in the possession of a VWNM KI:
     Field1 will be lights level:
@@ -854,7 +1016,6 @@ types.incoming[0x037] = struct({
     status_effect_mask  = {0x48, data(8)},
     indi_status_effect  = {0x54, indi},
 })
-
 
 -- Entity Animation
 -- Most frequently used for spawning ("deru") and despawning ("kesu")
@@ -1437,6 +1598,13 @@ types.incoming[0x057] = struct({
     weather_id          = {0x04, weather},
 })
 
+-- Assist response
+types.incoming[0x058] = struct({
+    player_id           = {0x00, entity},
+    target_id           = {0x04, entity},
+    player_index        = {0x08, entity_index},
+})
+
 -- Emote
 types.incoming[0x05A] = struct({
     player_id           = {0x00, entity},
@@ -1604,7 +1772,12 @@ types.incoming[0x063] = multiple({
     lookups = {
 
         [0x02] = {
-            flags           = {0x04, data(5)}, -- The 3rd bit of the last byte is the flag that indicates whether or not you are xp capped (blue levels)
+            limit_points    = {0x04, uint16},
+            merit_points    = {0x06, uint8},
+            merit_switch    = {0x07, boolbit(uint8), offset=7},
+            level_capped    = {0x07, boolbit(uint8), offset=6},
+            merits_unlocked = {0x07, boolbit(uint8), offset=5}, -- Merits unlocked and/or limit points earnable? Needs confirmation from lower level characters.
+            merit_points_max= {0x08, uint8},
         },
 
         [0x03] = {
@@ -1805,7 +1978,12 @@ types.incoming[0x0A0] = struct({
     y                   = {0x10, float},
 })
 
---0x0AA, 0x0AC, and 0x0AE are all bitfields where the lsb indicates whether you have index 0 of the related resource.
+-- Player spells known
+types.incoming[0x0AA] = struct({
+    spells              = {0x00, data(128)} -- 0 indexed bit field where nth bit indicates if that spell_id is known. I.E. bit 1 is Cure, bit 2 is Cure II, etc.
+})
+
+-- 0x0AC, and 0x0AE are bitfields where the lsb indicates whether you have index 0 of the related resource.
 
 -- Help Desk submenu open
 types.incoming[0x0B5] = struct({
@@ -1873,13 +2051,13 @@ types.incoming[0x0CC] = struct({cache = {'linkshell_index'}}, {
 })
 
 -- Found Item
-types.incoming[0x0D2] = struct({
+types.incoming[0x0D2] = struct({cache = {'pool_index'}}, {
     -- 0x00~0x03: Could be characters starting the line - FD 02 02 18 observed; Arcon: Only ever observed 0x00000001 for this
     dropper_id          = {0x04, entity},
-    count               = {0x08, uint32}, -- Takes values greater than 1 in the case of gil
+    gil                 = {0x08, uint32},
     item_id             = {0x0C, item},
     dropper_index       = {0x0E, entity_index},
-    pool_location       = {0x10, uint8}, -- This is the internal index in memory, not the one it appears in in the menu
+    pool_index          = {0x10, uint8}, -- This is the internal index in memory, not the one it appears in in the menu
     is_old              = {0x11, bool}, -- This is true if it was already in the pool, but appeared in the pool before you joined a party
     _known1             = {0x12, uint8, const=0},
     -- 0x17: Seemingly random, both 00 and FF observed, as well as many values in between
@@ -1888,18 +2066,18 @@ types.incoming[0x0D2] = struct({
 })
 
 -- Item lot/drop
-types.incoming[0x0D3] = struct({
+types.incoming[0x0D3] = struct({cache = {'pool_index'}}, {
     highest_lotter_id   = {0x00, entity},
-    lowest_lotter_id    = {0x04, entity},
+    lotter_id           = {0x04, entity},
     highest_lotter_index= {0x08, entity_index},
     highest_lot         = {0x0A, uint16},
-    lowest_lotter_index = {0x0C, bit(uint16, 15), offset=0}, -- Not a normal index somehow
+    lotter_index        = {0x0C, bit(uint16, 15), offset=0}, -- Not a normal index somehow
     --_known1             = {0x0C, bit(uint16, 1 ), offset=15, const=1}, -- Always seems set
-    current_lot         = {0x0E, uint16}, -- 0xFFFF if passing
-    pool_location       = {0x10, uint8},
+    lot                 = {0x0E, uint16}, -- 0xFFFF if passing
+    pool_index          = {0x10, uint8},
     drop                = {0x11, uint8}, -- 0 if no drop, 1 if dropped to player, 3 if floored
     highest_lotter_name = {0x12, pc_name},
-    current_lotter_name = {0x22, pc_name},
+    lotter_name         = {0x22, pc_name},
     -- 0x32~0x37: Thought to be junk
 })
 
@@ -2079,7 +2257,7 @@ types.incoming[0x10B] = struct({
 
 -- Sparks update packet
 types.incoming[0x110] = struct({
-    sparks_total        = {0x00, uint16},
+    sparks_total        = {0x00, uint32},
     -- 0x02~0x03: Sparks are currently capped at 50,000
     shared_unity        = {0x04, uint8}, -- Unity (Shared) designator (0=A, 1=B, 2=C, etc.)
     person_unity        = {0x05, uint8}, -- The game does not distinguish these
@@ -2411,7 +2589,7 @@ types.outgoing[0x029] = struct({
     current_bag_id      = {0x04, bag},
     target_bag_id       = {0x05, bag},
     current_bag_index   = {0x06, uint8},
-    target_bag_id       = {0x07, uint8}, -- This byte is normally 0x52 (max index + 1) when moving items between bags, but setting it specifically works. It takes other values when manually sorting.
+    target_bag_index    = {0x07, uint8}, -- This byte is normally 0x52 (max index + 1) when moving items between bags, but setting it specifically works. It takes other values when manually sorting.
 })
 
 -- Translate
@@ -2486,12 +2664,12 @@ types.outgoing[0x03D] = struct({
 
 -- Lot item
 types.outgoing[0x041] = struct({
-    pool_location       = {0x00, uint8},
+    pool_index          = {0x00, uint8},
 })
 
 -- Pass item
 types.outgoing[0x042] = struct({
-    pool_location       = {0x00, uint8},
+    pool_index          = {0x00, uint8},
 })
 
 -- Servmes

@@ -1,11 +1,10 @@
 local client = require('shared.client')
-local event = require('event')
 local resources = require('resources')
 
 local data, ftype = client.new('account_service')
 
 ftype.fields.server = {
-    fn = function(data)
+    get = function(data)
         return resources.servers[data.server_id]
     end,
 }

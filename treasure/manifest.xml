@@ -1,8 +1,10 @@
 <package>
   <name>treasure</name>
-  <version>1.0.0.0</version>
+  <version>2.1.0.3</version>
   <type>library</type>
   <dependencies>
-    <dependency>packets</dependency>
+    <dependency>client_data</dependency>
+    <dependency>shared</dependency>
+    <dependency>treasure_service</dependency>
   </dependencies>
 </package>

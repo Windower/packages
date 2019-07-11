@@ -1,0 +1,14 @@
+<package>
+  <name>client_data</name>
+  <version>2.1.1.2</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>client_data_service</dependency>
+    <dependency>entities</dependency>
+    <dependency>memory</dependency>
+    <dependency>resources</dependency>
+    <dependency>struct</dependency>
+    <dependency>target</dependency>
+    <dependency>world</dependency>
+  </dependencies>
+</package>

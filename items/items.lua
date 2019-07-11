@@ -4,7 +4,7 @@ local resources = require('resources')
 local data, ftype = client.new('items_service', 'items')
 
 ftype.fields.bags.type.base.base.fields.item = {
-    fn = function(data)
+    get = function(data)
         return resources.items[data.id]
     end,
 }

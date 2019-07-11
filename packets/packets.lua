@@ -1,12 +1,14 @@
-local event = require('event')
 local shared = require('shared')
 local table = require('table')
-local string = require('string')
 
 local client = shared.get('packet_service', 'packets')
 
 local get_last = function(_, path)
     return get_last(path)
+end
+
+local get_lasts = function(_, path)
+    return get_lasts(path)
 end
 
 local make_event = function(_, path)
@@ -64,20 +66,23 @@ fns.register_init = function(t, init_table)
     local lasts_count = 0
     for i = 1, #paths do
         local path = paths[i]
-        local last = client:call(get_last, path.path)
-        if last then
+        local lasts_path = client:call(get_lasts, path.path)
+        for j = 1, #lasts_path do
+            local entry = lasts_path[j]
+            local packet = entry.packet
+            local info = entry.info
             lasts_count = lasts_count + 1
-            lasts[lasts_count] = { packet = last, fn = path.fn, path = path }
+            lasts[lasts_count] = { packet = packet, info = info, fn = path.fn , timestamp = info.timestamp }
         end
     end
 
     table.sort(lasts, function(l1, l2)
-        return l1.packet._info.timestamp < l2.packet._info.timestamp
+        return l1.timestamp < l2.timestamp
     end)
 
     for i = 1, #lasts do
         local last = lasts[i]
-        last.fn(last.packet)
+        last.fn(last.packet, last.info)
     end
 end
 

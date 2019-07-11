@@ -1,4 +1,5 @@
 local ffi = require('ffi')
+local windower = require('windower')
 
 ffi.cdef[[
     bool OpenClipboard(void* hWndNewOwner);
@@ -13,6 +14,8 @@ ffi.cdef[[
 
 local C = ffi.C
 
+local hwnd = windower.client_hwnd
+
 local get
 local set
 local clear
@@ -24,7 +27,7 @@ do
     local char_ptr = ffi.typeof('char*')
 
     get = function()
-        C.OpenClipboard(nil)
+        C.OpenClipboard(hwnd)
 
         local hmem = C.GetClipboardData(1)
         if hmem == nil then
@@ -45,7 +48,7 @@ do
     end
 
     set = function(str)
-        C.OpenClipboard(nil)
+        C.OpenClipboard(hwnd)
 
         local length = #str + 1
         local hmem = C.GlobalAlloc(2, length)
@@ -56,13 +59,14 @@ do
 
         C.GlobalUnlock(hmem)
 
+        C.EmptyClipboard()
         C.SetClipboardData(1, hmem)
 
         C.CloseClipboard()
     end
 
     clear = function()
-        C.OpenClipboard(nil)
+        C.OpenClipboard(hwnd)
         C.EmptyClipboard()
         C.CloseClipboard()
     end
@@ -71,5 +75,5 @@ end
 return {
     get = get,
     set = set,
-    clear = clear
+    clear = clear,
 }

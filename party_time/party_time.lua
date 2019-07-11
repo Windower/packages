@@ -1,11 +1,11 @@
-local os = require('os')
-local ui = require('ui')
-local sets = require('sets')
-local string = require('string')
 local command = require('command')
+local os = require('os')
 local packets = require('packets')
+local set = require('set')
 local settings = require('settings')
+local string = require('string')
 local treasure = require('treasure')
+local ui = require('ui')
 
 local defaults = {
     ui = {
@@ -17,14 +17,11 @@ local defaults = {
         decline = false, -- also ignores party requests from players on blacklists
     },
     default = 'ask',     -- sets default behavior for unhandled invites. ask user, treat as whitelist, treat as blacklist,
-    blacklist = sets({}),
-    whitelist = sets({}),
+    blacklist = set(),
+    whitelist = set(),
 }
-settings.settings_change:register(function(options)
-    options.blacklist = sets(options.blacklist)
-    options.whitelist = sets(options.whitelist)
-end)
-options = settings.load(defaults)
+
+local options = settings.load(defaults)
 
 local invite_dialog = {}
 local invite_dialog_state = {
@@ -86,7 +83,7 @@ command.arg.register_type('lookup_boolean', {
             return bool
         end
 
-        error('Expected one of \'' .. table.concat(args_lookups.bool, ',') .. '\', received \'' .. str .. '\'.')
+        error('Expected one of \'' .. table.concat(arg_lookups.bool, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
 
@@ -97,7 +94,7 @@ command.arg.register_type('lookup_add_remove', {
             return op
         end
 
-        error('Expected one of \'' .. table.concat(args_lookups.addremove, ',') .. '\', received \'' .. str .. '\'.')
+        error('Expected one of \'' .. table.concat(arg_lookups.addremove, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
 command.arg.register_type('lookup_option', {
@@ -107,7 +104,7 @@ command.arg.register_type('lookup_option', {
             return option
         end
 
-        error('Expected one of \'' .. table.concat(args_lookups.option, ',') .. '\', received \'' .. str .. '\'.')
+        error('Expected one of \'' .. table.concat(arg_lookups.option, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
 
@@ -138,9 +135,9 @@ pt:register('request', request, '{name}')
 
 
 local blacklist = function(sub_cmd, ...)
-    local names = sets({...})
+    local names = set(...)
     options.blacklist[sub_cmd](options.blacklist, names)
-    settings.save(options)
+    settings.save()
 end
 
 pt:register('b', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
@@ -148,9 +145,9 @@ pt:register('blacklist', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
 local whitelist = function(sub_cmd, ...)
-    local names = sets({...})
+    local names = set(...)
     options.whitelist[sub_cmd](options.whitelist, names)
-    settings.save(options)
+    settings.save()
 end
 
 pt:register('w', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
@@ -159,7 +156,7 @@ pt:register('whitelist', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
 
 local auto_accept_enable = function(bool)
     options.auto.accept = bool
-    settings.save(options)
+    settings.save()
 end
 
 pt:register('auto_accept', auto_accept_enable, '<enabled:lookup_boolean>')
@@ -167,7 +164,7 @@ pt:register('auto_accept', auto_accept_enable, '<enabled:lookup_boolean>')
 
 local auto_decline_enable = function(bool)
     options.auto.decline = bool
-    settings.save(options)
+    settings.save()
 end
 
 pt:register('auto_decline', auto_decline_enable, '<enabled:lookup_boolean>')
@@ -175,7 +172,7 @@ pt:register('auto_decline', auto_decline_enable, '<enabled:lookup_boolean>')
 
 local default_handler = function(option)
     options.default = option
-    settings.save(options)
+    settings.save()
 end
 
 pt:register('default', default_handler, '<option:lookup_option>')
@@ -200,7 +197,7 @@ local default_handlers = {
                         return
                     end
                     coroutine.sleep_frame()
-                until(#treasure == 0)
+                until(#treasure.pool == 0)
                 command.input('/join')
             end)
         end,
@@ -292,7 +289,7 @@ ui.display(function()
                 unhandled_invite = false
                 if invite_dialog.add_to_whitelist then
                     options.whitelist:add(invite_dialog.name)
-                    settings.save(options)
+                    settings.save()
                 end
             end
 
@@ -312,7 +309,7 @@ ui.display(function()
             options.ui.y = invite_dialog.state.y
             invite_dialog_state.x = invite_dialog.state.x
             invite_dialog_state.y = invite_dialog.state.y
-            settings.save(options)
+            settings.save()
         end
     end
 
@@ -339,7 +336,7 @@ ui.display(function()
                 closed_dialogs[#closed_dialogs + 1] = id
                 if request_dialog.add_to_whitelist then
                     options.whitelist:add(id)
-                    settings.save(options)
+                    settings.save()
                 end
             end
             ui.location(93,72)
@@ -355,7 +352,7 @@ ui.display(function()
             options.ui.y = request_dialog.state.y
             invite_dialog_state.x = request_dialog.state.x
             invite_dialog_state.y = request_dialog.state.y
-            settings.save(options)
+            settings.save()
         end
     end
 

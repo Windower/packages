@@ -1,0 +1,9 @@
+<package>
+  <name>speedometer</name>
+  <version>1.0.0.2</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>player</dependency>
+    <dependency>entities</dependency>
+  </dependencies>
+</package>

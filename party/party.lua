@@ -32,9 +32,9 @@ return setmetatable({}, {
 
             k = k + 1
             for i = k, 18 do
-                local member = memory.party.members[k - 1]
+                local member = memory.party.members[i - 1]
                 if member.active then
-                    return k, member
+                    return i, member
                 end
             end
 

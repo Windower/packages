@@ -1,10 +1,10 @@
 <package>
   <name>world_service</name>
-  <version>1.1.2.0</version>
+  <version>1.2.0.1</version>
   <type>service</type>
   <dependencies>
     <dependency>packets</dependency>
     <dependency>shared</dependency>
-    <dependency>structs</dependency>
+    <dependency>struct</dependency>
   </dependencies>
 </package>

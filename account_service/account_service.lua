@@ -2,15 +2,15 @@ local event = require('event')
 local memory = require('memory')
 local packets = require('packets')
 local server = require('shared.server')
-local structs = require('structs')
+local struct = require('struct')
 
-local data = server.new(structs.struct({
-    logged_in           = {structs.bool},
-    name                = {structs.string(0x10)},
-    id                  = {structs.int32},
-    server_id           = {structs.int32},
-    login               = {data=event.new()},
-    logout              = {data=event.new()},
+local data = server.new(struct.struct({
+    logged_in           = {struct.bool},
+    name                = {struct.string(0x10)},
+    id                  = {struct.int32},
+    server_id           = {struct.int32},
+    login               = {data = event.new()},
+    logout              = {data = event.new()},
 }))
 
 local login_event = data.login

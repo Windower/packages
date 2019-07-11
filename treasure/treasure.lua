@@ -1,54 +1,15 @@
-local packets = require("packets")
+local client = require('shared.client')
+local items = require('client_data.items')
 
-local treasure = {}
+local data, ftype = client.new('treasure_service')
 
-packets.incoming[0x0D2]:register(function(p)
-    if p.item_id ~= 0 then
-        treasure[p.pool_location] = {
-            dropper_id      = p.dropper_id,
-            count           = p.count,
-            item_id         = p.item_id,
-            dropper_index   = p.dropper_index,
-            pool_location   = p.pool_location,
-            is_old          = p.is_old,
-            timestamp       = p.timestamp,
-        }
-    end
-
-    if p.dropper_id == 0 then
-        treasure[p.pool_location] = nil
-    end
-end)
-
-packets.incoming[0x0D3]:register(function(p)
-    if p.drop ~= 0 then
-        treasure[p.pool_location] = nil
-    end
-end)
-
-return setmetatable({}, {
-    __index = function(_, k)
-        return treasure[k]
+ftype.fields.pool.type.base.fields.item = {
+    get = function(data)
+        return items[data.item_id]
     end,
+}
 
-    __newindex = function()
-        return error('This value is read-only.')
-    end,
-
-    __pairs = function(_)
-        return function(_, k)
-            return next(treasure, k)
-        end
-    end,
-
-    __len = function()
-        local count = 0
-        for _ in pairs(treasure) do
-            count = count + 1
-        end
-        return count
-    end,
-})
+return data
 
 --[[
 Copyright © 2018, Windower Dev Team

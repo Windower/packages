@@ -71,10 +71,10 @@ string.pack = function(format, ...)
 
         while count > 0 do
             index = index + 1
-            assert(index <= args, 'Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got no value)')
+            assert(index <= args, 'Bad argument #' .. tostring(index + 1) .. ' to \'pack\' (' .. info.type .. ' expected, got no value)')
 
             local value = select(index, ...)
-            assert(type(value) == info.type, 'Bad argument #' .. tostring(index) .. ' to \'pack\' (' .. info.type .. ' expected, got ' .. type(value) .. ')')
+            assert(type(value) == info.type, 'Bad argument #' .. tostring(index + 1) .. ' to \'pack\' (' .. info.type .. ' expected, got ' .. type(value) .. ')')
 
             if offset >= 8 then
                 res[#res + 1], offset, current = convert_number(current, offset, 7)
@@ -114,7 +114,7 @@ string.pack = function(format, ...)
         end
     end
 
-    assert(index >= args, 'Bad argument #' .. tostring(index + 2) .. ' to \'pack\' (no value expected, got ' .. type(select(index + 2, ...)) .. ')')
+    assert(index >= args, 'Bad argument #' .. tostring(index + 2) .. ' to \'pack\' (no value expected, got ' .. type(select(index + 1, ...) or nil) .. ')')
 
     if offset > 0 then
         res[#res + 1] = convert_number(current, offset, 0)
@@ -163,7 +163,7 @@ string.unpack = function(data, format, index, offset)
             offset = 0
         end
 
-        count = count_str ~= '' and tonumber(count_str) or 1
+        local count = count_str ~= '' and tonumber(count_str) or 1
 
         assert(index + info.size * count <= #data + 1, 'Data to unpack too small for the provided format')
 

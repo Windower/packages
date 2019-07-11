@@ -3,7 +3,6 @@ local command = require('command')
 local entities = require('entities')
 local memory = require('memory')
 local player = require('player')
-local party = require('party')
 local shared = require('shared')
 local table = require('table')
 local windower = require('windower')
@@ -59,7 +58,7 @@ if package then
                 while #pending ~= 0 do
                     local descriptor = table.remove(pending, 1)
                     if descriptor.counter == counter then
-                        coroutine.schedule(descriptor.callback, 0, entities.get_by_id(target_id))
+                        coroutine.schedule(descriptor.callback, 0, entities:by_id(target_id))
                         return
                     end
                 end

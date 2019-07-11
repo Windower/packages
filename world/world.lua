@@ -1,17 +1,16 @@
 local client = require('shared.client')
-local event = require('event')
 local resources = require('resources')
 
 local data, ftype = client.new('world_service')
 
 ftype.fields.zone = {
-    fn = function(data)
+    get = function(data)
         return resources.zones[data.zone_id]
     end,
 }
 
 ftype.fields.weather = {
-    fn = function(data)
+    get = function(data)
         return resources.weather[data.weather_id]
     end,
 }

@@ -1,0 +1,9 @@
+<package>
+  <name>settings_service</name>
+  <version>1.0.0.2</version>
+  <type>service</type>
+  <dependencies>
+    <dependency>shared</dependency>
+    <dependency>struct</dependency>
+  </dependencies>
+</package>

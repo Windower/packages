@@ -1,25 +1,40 @@
 local event = require('event')
 local packets = require('packets')
 local server = require('shared.server')
-local structs = require('structs')
+local struct = require('struct')
 
-local data = server.new(structs.struct({
-    zone_id             = {structs.int32},
-    weather_id          = {structs.int32},
-    music               = {structs.struct({
-        day                 = {structs.int32},
-        night               = {structs.int32},
-        solo_combat         = {structs.int32},
-        party_combat        = {structs.int32},
+local data = server.new(struct.struct({
+    zone_id             = {struct.int32},
+    weather_id          = {struct.int32},
+    music               = {struct.struct({
+        day                 = {struct.int32},
+        night               = {struct.int32},
+        solo_combat         = {struct.int32},
+        party_combat        = {struct.int32},
+        mount               = {struct.int32},
+        knockout            = {struct.int32},
+        mog_house           = {struct.int32},
+        fishing             = {struct.int32},
     })},
-    zone_change         = {data=event.new()},
-    weather_change      = {data=event.new()},
+    zone_change         = {data = event.new()},
+    weather_change      = {data = event.new()},
 }))
 
 data.zone_id = -1
 data.weather_id = -1
 
 local music = data.music
+
+local music_type_to_field = {
+    [0] = 'day',
+    [1] = 'night',
+    [2] = 'solo_combat',
+    [3] = 'party_combat',
+    [4] = 'mount',
+    [5] = 'knockout',
+    [6] = 'mog_house',
+    [7] = 'fishing',
+}
 
 local zone_change_event = data.zone_change
 local weather_change_event = data.weather_change
@@ -32,6 +47,7 @@ packets.incoming:register_init({
         music.night = p.night_music
         music.solo_combat = p.solo_combat_music
         music.party_combat = p.party_combat_music
+        music.mount = p.mount_music
 
         zone_change_event:trigger()
         weather_change_event:trigger()
@@ -41,6 +57,9 @@ packets.incoming:register_init({
 
         weather_change_event:trigger()
     end,
+    [{0x05F}] = function(p)
+        music[music_type_to_field[p.music_type]] = p.song_id
+    end,
     [{0x00B}] = function(p)
         data.zone_id = -1
         data.weather_id = -1
@@ -48,6 +67,7 @@ packets.incoming:register_init({
         music.night = 0
         music.solo_combat = 0
         music.party_combat = 0
+        music.mount = 0
     end,
 })
 

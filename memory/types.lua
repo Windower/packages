@@ -1,30 +1,32 @@
-local ffi = require('ffi')
-local structs = require('structs')
+local struct = setmetatable(require('struct'), {
+    __call = function(t, ...)
+        return t.struct(...)
+    end,
+})
 
-local struct = structs.struct
-local array = structs.array
+local array = struct.array
 
-local tag = structs.tag
-local string = structs.string
-local data = structs.data
-local packed_string = structs.packed_string
+local tag = struct.tag
+local string = struct.string
+local data = struct.data
+local packed_string = struct.packed_string
 
-local int8 = structs.int8
-local int16 = structs.int16
-local int32 = structs.int32
-local int64 = structs.int64
-local uint8 = structs.uint8
-local uint16 = structs.uint16
-local uint32 = structs.uint32
-local uint64 = structs.uint64
-local float = structs.float
-local double = structs.double
-local bool = structs.bool
+local int8 = struct.int8
+local int16 = struct.int16
+local int32 = struct.int32
+local int64 = struct.int64
+local uint8 = struct.uint8
+local uint16 = struct.uint16
+local uint32 = struct.uint32
+local uint64 = struct.uint64
+local float = struct.float
+local double = struct.double
+local bool = struct.bool
 
-local bit = structs.bit
-local boolbit = structs.boolbit
+local bit = struct.bit
+local boolbit = struct.boolbit
 
-local ptr = structs.ptr
+local ptr = struct.ptr
 
 local entity_id = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
@@ -38,23 +40,41 @@ local npc_name = string(0x18)
 local fourcc = string(0x04)
 local chat_input_buffer = string(0x97)
 
-local ffi_cdef = ffi.cdef
-
-local render = struct({
-    framerate_divisor       = {0x030, uint32},
-    aspect_ratio            = {0x2F0, float},
+local vector_3f = struct({
+    x                       = {0x0, float},
+    z                       = {0x4, float},
+    y                       = {0x8, float}, 
 })
 
-local world_coord = struct({
+local vector_4f = struct({
     x                       = {0x0, float},
     z                       = {0x4, float},
     y                       = {0x8, float}, 
     w                       = {0xC, float},
 })
 
+local world_coord = tag(vector_4f, 'world_coord')
+
+local matrix = float[4][4]
+
 local screen_coord = struct({
     x                       = {0x0, float},
     z                       = {0x4, float},
+})
+
+local render = struct({
+    framerate_divisor       = {0x030, uint32},
+    aspect_ratio            = {0x2F0, float},
+    zoom                    = {0x2F8, float},
+})
+
+local gamma = struct({
+    red                     = {0x7F8, float},
+    green                   = {0x7FC, float},
+    blue                    = {0x800, float},
+    _dupe_red               = {0x804, float},
+    _dupe_green             = {0x808, float},
+    _dupe_blue              = {0x80C, float},
 })
 
 local linkshell_color = struct({
@@ -74,7 +94,7 @@ local model = struct({
     range_model_id          = {0xE, uint16},
 })
 
-structs.declare('entity')
+struct.declare('entity')
 
 local display = struct({
     position                = {0x34, world_coord},
@@ -93,13 +113,25 @@ local display = struct({
 
 local entity = struct({
     position_display        = {0x004, world_coord},
-    heading                 = {0x018, float}, -- E=0  N=+pi/2   W=+/-pi S=-pi/2
+    rotation                = {0x014, vector_4f}, -- y: E=0  N=+pi/2   W=+/-pi S=-pi/2
     position                = {0x024, world_coord},
-    _dupe_heading           = {0x038, float},
-    _dupe_position          = {0x044, world_coord},
+    _dupe_rotation          = {0x034, vector_3f},
+    _unknown_1              = {0x040, data(0x04)}, -- Sometimes a single world coordinate, sometimes a pointer...
+    _dupe_position          = {0x044, vector_3f}, -- Seems unused! w-coordinate is occasionally overwritten by pointer value...
+    _unknown_variable       = {0x050, data(0x24)}, -- Data in here varies! Sometimes the same field is a pointer, sometimes coordinates. Seems to depend on the entity
+    -- Observed constellations:
+    -- Ding Bats
+    --  ptr1    coord   coord   coord       -- small coordinates, ~0.01 range
+    --  ptr2    ptr3    ptr4    0           -- ptr2 == _unknonw_1 - 0x35C, ptr3 == ptr1 + 0xCA0, ptr4 == ptr1 + 28A6
+    --  1(float)
+    -- Wild Rabbit
+    --  0       0       0       0
+    --  0       1       0       0
+    --  1(int)
     index                   = {0x074, entity_index},
     id                      = {0x078, entity_id},
     name                    = {0x07C, npc_name},
+    _unknown_ptr_1          = {0x094, ptr()},
     movement_speed          = {0x098, float},
     movement_speed_base     = {0x09C, float},
     display                 = {0x0A0, ptr(display)},
@@ -112,7 +144,14 @@ local entity = struct({
     face_model_id           = {0x0FC, uint16},
     model                   = {0x0FE, model},
     freeze                  = {0x11C, bool},
-    flags                   = {0x120, uint32[0x06]},
+    -- flags                   = {0x120, uint32[0x06]},
+    flags                   = {0x120, struct({size = 0x18}, {
+        enemy                   = {0x01, boolbit(uint8), offset=5},
+    })},
+    _unkonwn_ptr_2          = {0x150, ptr()}, -- Sometimes same as _unknown_1
+    _unknown_float_1        = {0x158, float}, -- Always 4?
+    _unknown_short_1        = {0x15C, uint16}, -- Flags?
+    _unknown_short_2        = {0x15E, uint16}, -- Duplicate of _unknown_short_1
     status                  = {0x168, uint32}, -- Is this type correct?
     claim_id                = {0x184, entity_id},
     animation               = {0x18C, fourcc[0x0A]},
@@ -130,6 +169,10 @@ local entity = struct({
     model_size              = {0x204, float},
     fellow_index            = {0x29C, entity_index},
     owner_index             = {0x29E, entity_index},
+    heading                 = {
+        get = function(data) return data.rotation.z end,
+        set = function(data, value) data.rotation.z = value end,
+    },
     -- TODO: Verify
     -- npc_talking             = {0x0AC, uint32},
     -- pos_move                = {0x054, world_coord}
@@ -197,15 +240,32 @@ local chat_menu_entry = struct({
     auto_translate          = {0x14, string(0x04)}, -- Auto-translate code, 0 if the phrase is a regular string
 })
 
+local entity_string = struct({
+    name                    = {0x00, string(0x18)},
+    id                      = {0x1C, uint32},
+})
+
+local map_entry = struct({
+    zone_id                 = {0x00, int16},
+    map_id                  = {0x02, uint8},
+    count                   = {0x03, uint8},
+    scale                   = {0x05, uint8},
+    offset_x                = {0x0A, int16},
+    offset_y                = {0x0C, int16},
+})
+
 local types = {}
 
-types.misc2_graphics = struct({signature = '894E188B15????????33FF6A24893D'}, {
-    render                  = {0x000, ptr(render)},
-    footstep_effects        = {0x174, bool},
-    clipping_plane_entity   = {0x1AC, float},
-    clipping_plane_map      = {0x1BC, float},
-    aspect_ratio_option     = {0x2EC, uint32},
-    animation_framerate     = {0x304, uint32},
+types.graphics = struct({signature = '83EC205355568BF18B0D'}, {
+    gamma                   = {0x000, ptr(gamma)},
+    render                  = {0x28C, ptr(render)},
+    footstep_effects        = {0x400, bool},
+    clipping_plane_entity   = {0x438, float},
+    clipping_plane_map      = {0x448, float},
+    aspect_ratio_option     = {0x578, uint32},
+    animation_framerate     = {0x590, uint32},
+    view_matrix             = {0xBB8, matrix},
+    projection_matrix       = {0xDF8, matrix},
 })
 
 types.volumes = struct({signature = '33DBF3AB6A10881D????????C705'}, {
@@ -218,15 +278,6 @@ types.auto_disconnect = struct({signature = '6A00E8????????8B44240883C40485C0750
     last_active_time        = {0x04, uint32}, -- in ms, unknown offset
     timeout_time            = {0x08, uint32}, -- in ms
     active                  = {0x10, bool},
-})
-
-types.gamma_adjustment = struct({signature = '83EC205355568BF18B0D', static_offsets = {0x00}}, {
-    red                     = {0x7F8, float},
-    green                   = {0x7FC, float},
-    blue                    = {0x800, float},
-    _dupe_red               = {0x804, float},
-    _dupe_green             = {0x808, float},
-    _dupe_blue              = {0x80C, float},
 })
 
 types.entities = array({signature = '8B560C8B042A8B0485'}, ptr(entity), 0x900)
@@ -302,7 +353,6 @@ types.tell_history = struct({signature = '8B0D????????85C9740F8B15'}, {
 })
 
 types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D', static_offsets = {0x00}}, {
-    _prt                    = {0x0004, ptr()},
     temporary_buffer        = {0x7EDC, chat_input_buffer},
     history                 = {0x7F73, chat_input_buffer[9]},
     temporary_length        = {0x84C4, uint8},
@@ -335,9 +385,77 @@ types.follow = struct({signature = '8BCFE8????FFFF8B0D????????E8????????8BE885ED
     auto_run                = {0x29, bool},
 })
 
-types.camera = struct({signature = '89542418E8????????8B0D????????68'}, {
-    view_matrix             = {0x000, float[4][4]},
-    projection_matrix       = {0x240, float[4][4]},
+types.string_tables = struct({signature = '8B81????0000F6C402750532C0C20400A0'}, {
+    skills                  = {0x10, ptr()},
+    elements                = {0x14, ptr()},
+    entities                = {0x18, ptr(entity_string)},
+    emotes                  = {0x1C, ptr()},
+    actions                 = {0x20, ptr()},
+    status_effects          = {0x24, ptr()},
+    gameplay                = {0x28, ptr()},
+    abilities               = {0x34, ptr()},
+    unity                   = {0x38, ptr()},
+    zone                    = {0x3C, ptr()},
+})
+
+types.action_strings = struct({signature = '7406B8????????C38B4424046A006A0050B9'}, {
+    abilities               = {0x014, ptr()},
+    mounts                  = {0x094, ptr()},
+    spells                  = {0x9B4, ptr()},
+})
+
+types.status_effect_strings = struct({signature = '8A46055E3C0273188B0D', static_offsets = {0x00}}, {
+    d_msg                   = {0x04, ptr()},
+})
+
+types.weather_strings = struct({signature = 'C333C9668B08518B0D', static_offsets = {0x148}}, {
+    d_msg                   = {0x00, ptr()},
+})
+
+types.d_msg_table = struct({signature = '85C0752B5F5EC38B0CF5'}, {
+    str0                    = {0x00, ptr(ptr())}, -- [1] = Failed to read data. [2] = Checking the size of the files to download and
+    str1                    = {0x08, ptr(ptr())}, -- [1] = Error code: FFXI-%04d [2] = Could not connect to lobby server.
+    str2                    = {0x10, ptr(ptr())}, -- nullptr
+    str3                    = {0x18, ptr(ptr())}, -- [1] = You are currently not in a party. [2] = This region is not under any country's control.
+    str4                    = {0x20, ptr(ptr())}, -- nullptr
+    str5                    = {0x28, ptr(ptr())}, -- [1] = Race [2] = Job
+    str6                    = {0x30, ptr(ptr())}, -- [1] = Shout [2] = Tell
+    str7                    = {0x38, ptr(ptr())}, -- [1] = Activate Linkshell item and participate in its chat channel. [2] = Deactivate Linkshell item and quit its chat channel.
+    str8                    = {0x40, ptr(ptr())}, -- [1] = Region Info [2] = Items
+    str9                    = {0x48, ptr(ptr())}, -- [1] = All [2] All
+    regions                 = {0x50, ptr(ptr())},
+    zones                   = {0x58, ptr(ptr())},
+    zone_autotranslates     = {0x60, ptr(ptr())},
+    servers                 = {0x68, ptr(ptr())},
+    jobs                    = {0x70, ptr(ptr())},
+    days                    = {0x78, ptr(ptr())},
+    directions              = {0x80, ptr(ptr())},
+    moon_phases             = {0x88, ptr(ptr())},
+    _dupe_jobs              = {0x90, ptr(ptr())},
+    job_abbreviations       = {0x98, ptr(ptr())},
+    _dupe_zones             = {0xA0, ptr(ptr())},
+    zone_search_names       = {0xA8, ptr(ptr())},
+    races                   = {0xB0, ptr(ptr())},
+    str23                   = {0xB8, ptr(ptr())}, -- nullptr
+    equipment_slots         = {0xC0, ptr(ptr())},
+    _dupe_equipment_slots   = {0xC8, ptr(ptr())},
+    einherjar_chambers      = {0xD0, ptr(ptr())},
+    str27                   = {0xD8, ptr(ptr())}, -- [1] = Objectives [2] = Get grinding!
+})
+
+types.music = struct.struct({signature = '668B490625FFFF000066C705????????FFFF66890C45'}, {
+    day                     = {0x0, uint16},
+    night                   = {0x2, uint16},
+    solo_combat             = {0x4, uint16},
+    party_combat            = {0x6, uint16},
+    mount                   = {0x8, uint16},
+    knockout                = {0xA, uint16},
+    mog_house               = {0xC, uint16},
+    fishing                 = {0xE, uint16},
+})
+
+types.map_table = struct.struct({signature = '8A5424188B7424148B7C2410B9&'}, {
+    ptr = {0x00, ptr(map_entry)},
 })
 
 return types
