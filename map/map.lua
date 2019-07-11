@@ -1,6 +1,10 @@
 local ffi = require('ffi')
+local key_items = require('key_items')
+local math = require('math')
 local memory = require('memory')
 local scanner = require('scanner')
+local string = require('string')
+local target = require('target')
 local world = require('world')
 
 ffi.cdef[[
@@ -10,23 +14,91 @@ ffi.cdef[[
 local fn = ffi.cast('map_fn', scanner.scan('&8B542408568D4424108BF18B4C2410508B44240C'))
 local this = ffi.cast('void**', scanner.scan('8B7424148B4424108B7C240C8B0D'))[0]
 
+local math_floor = math.floor
+local string_char = string.char
+
+local zones = {}
+do
+    local ptr = memory.map_table.ptr
+    local i = 0
+    while true do
+        local entry = ptr[i]
+        if entry.zone_id <= 0 then
+            break
+        end
+
+        local zone = zones[entry.zone_id]
+        if not zone then
+            zone = {}
+            zones[entry.zone_id] = zone
+        end
+        zone[entry.map_id] = entry
+        zone.key_item_offset = entry.key_item_offset
+        zone.key_item_index = entry.key_item_index
+
+        i = i + 1
+    end
+end
+
 return {
-    map = function(x, y, z)
-        return fn(this, 0, x, z, y)
-    end,
-    data = function(map_id)
+    available = function()
         local zone_id = world.zone_id
-        local ptr = memory.map_table.ptr
-        local count = 0
-        while ptr[count].zone_id ~= zone_id do
-            count = count + 1
+        if not zone_id then
+            return nil
         end
 
-        while ptr[count].map_id ~= map_id do
-            count = count + 1
+        local zone = zones[zone_id]
+        if not zone then
+            return nil
         end
 
-        return ptr[count]
+        return key_items[zone.key_item_offset + zone.key_item_index].available
+    end,
+    coordinates = function(entity)
+        entity = entity or target.me
+        if not entity then
+            return nil, nil, nil
+        end
+
+        local pos = entity.position
+        local map_id = fn(this, 0, pos.x, pos.z, pos.y)
+        local maps = zones[world.zone_id]
+        if not maps then
+            return nil, nil, nil
+        end
+
+        local entry = maps[map_id]
+        if not entry then
+            return nil, nil, nil
+        end
+
+        return
+            pos.x * entry.scale / 1200 - entry.offset_x / 240 - 16 / 15,
+            -pos.y * entry.scale / 1200 - entry.offset_y / 240 - 16 / 15,
+            map_id
+    end,
+    position = function(entity)
+        entity = entity or target.me
+        if not entity then
+            return nil
+        end
+
+        local pos = entity.position
+        local map_id = fn(this, 0, pos.x, pos.z, pos.y)
+        local maps = zones[world.zone_id]
+        if not maps then
+            return '(?-?)'
+        end
+
+        local entry = maps[map_id]
+        if not entry then
+            return '(?-?)'
+        end
+
+        local x = pos.x * entry.scale / 160 - entry.offset_x / 32 + 0.5
+        local y = -pos.y * entry.scale / 160 - entry.offset_y / 32 + 0.5
+
+        return '(' .. string_char(x + 0x40) .. '-' .. tostring(math_floor(y)) .. ')'
     end,
 }
 
