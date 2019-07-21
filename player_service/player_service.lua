@@ -2,7 +2,7 @@ local packets = require('packets')
 local server = require('shared.server')
 local struct = require('struct')
 
-local skill = struct.struct({
+local skill_type = struct.struct({
     level               = {struct.int32},
     capped              = {struct.bool},
     rank_id             = {struct.int32},
@@ -37,7 +37,7 @@ local data = server.new(struct.struct({
     nation_rank_points  = {struct.int32},
     home_point_zone_id  = {struct.int32},
     job_levels          = {struct.int32[0x18]},
-    skills              = {skill[0x40]},
+    skills              = {skill_type[0x40]},
     race_id             = {struct.int32},
     face_id             = {struct.int32},
     model               = {struct.struct({
