@@ -7,7 +7,7 @@ local prepared = {}
 local prepare_struct
 local prepare_array
 
-local setup_ftype = function(ftype)
+local configure_ftype = function(ftype)
     local count = ftype.count
     local fields = ftype.fields
 
@@ -34,7 +34,7 @@ prepare_struct = function(struct)
     for _, field in pairs(struct.fields) do
         local ftype = field.type
         if ftype then
-            setup_ftype(ftype)
+            configure_ftype(ftype)
         end
 
         local lookup = field.lookup
@@ -47,7 +47,7 @@ end
 prepare_array = function(array)
     local ftype = array.base
     if ftype then
-        setup_ftype(ftype)
+        configure_ftype(ftype)
     end
 end
 
@@ -59,9 +59,12 @@ return {
         local data = data_client:read()
 
         local ftype = data.ftype
-        setup_ftype(ftype)
+        configure_ftype(ftype)
 
-        return struct.from_ptr(ftype, data.ptr), ftype
+        return struct.from_ptr(ftype, data.address), ftype
+    end,
+    configure = function(ftype)
+        configure_ftype(ftype)
     end,
 }
 
