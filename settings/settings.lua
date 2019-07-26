@@ -19,12 +19,16 @@ ffi.cdef[[
 ]]
 
 local C = ffi.C
+local error = error
 local getmetatable = getmetatable
+local loadstring = loadstring
 local pairs = pairs
+local tonumber = tonumber
 local tostring = tostring
 local type = type
 local account_login = account.login
 local account_logout = account.logout
+local unicode_to_utf16 = unicode.to_utf16
 local windower_settings_path = windower.settings_path
 
 local info_cache = {}
@@ -37,7 +41,7 @@ end
 
 local get_file
 do
-    local file_create = file.create
+    local file_new = file.new
 
     local make_account_name = function(global)
         if global then
@@ -52,13 +56,13 @@ do
     end
 
     get_file = function(id, global)
-        local dir = windower_settings_path .. '\\' .. make_account_name(global) .. '\\'
+        local dir = windower_settings_path .. '\\' .. make_account_name(global)
 
-        C.CreateDirectoryW(unicode.to_utf16(windower_settings_path .. '\\..'), nil)
-        C.CreateDirectoryW(unicode.to_utf16(windower_settings_path), nil)
-        C.CreateDirectoryW(unicode.to_utf16(dir), nil)
+        C.CreateDirectoryW(unicode_to_utf16(windower_settings_path .. '\\..'), nil)
+        C.CreateDirectoryW(unicode_to_utf16(windower_settings_path), nil)
+        C.CreateDirectoryW(unicode_to_utf16(dir), nil)
 
-        return file_create(dir .. id .. '.lua')
+        return file_new(dir .. '\\' .. id .. '.lua')
     end
 end
 
@@ -124,6 +128,7 @@ end
 local parse
 do
     local file_exists = file.exists
+    local file_read = file.read
     local file_write = file.write
 
     local amend
@@ -152,7 +157,7 @@ do
         local options_file = get_file(id, global)
         local options
         if file_exists(options_file) then
-            options = loadfile(options_file.path)()
+            options = loadstring(file_read(options_file))()
         else
             file_write(options_file, 'return ' .. format_table(defaults))
             options = {}

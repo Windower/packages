@@ -2,6 +2,7 @@ local core = {
     packet = require('packet'),
 }
 local event = require('event')
+local file = require('file')
 local ffi = require('ffi')
 local os = require('os')
 local server = require('shared.server')
@@ -10,6 +11,7 @@ local string = require('string')
 local struct = require('struct')
 local windower = require('windower')
 
+local loadstring = loadstring
 local pairs = pairs
 local tonumber = tonumber
 local tostring = tostring
@@ -18,8 +20,16 @@ packets_server = shared.new('packets')
 types_server = shared.new('types')
 
 local packet_types
-local parse_types = function()
-    packet_types = dofile(windower.package_path .. '\\types.lua')
+local parse_types
+do
+    local file_new = file.new
+    local file_read = file.read
+
+    local type_file = file_new(windower.package_path .. '\\types.lua')
+
+    parse_types = function()
+        packet_types = loadstring(file_read(type_file))()
+    end
 end
 
 parse_types()

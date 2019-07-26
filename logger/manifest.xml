@@ -1,9 +1,10 @@
 <package>
   <name>logger</name>
-  <version>1.0.0.2</version>
+  <version>1.1.0.0</version>
   <type>addon</type>
   <dependencies>
-    <dependency>file</dependency>
     <dependency>account</dependency>
+    <dependency>file</dependency>
+    <dependency>string</dependency>
   </dependencies>
 </package>
