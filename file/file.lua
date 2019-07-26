@@ -1,4 +1,19 @@
-local io = require('io')
+local bit = require('bit')
+local ffi = require('ffi')
+local unicode = require('unicode')
+
+ffi.cdef[[
+    bool CloseHandle(void*);
+    void* CreateFileW(wchar_t const*, uint32_t, uint32_t, void*, uint32_t, uint32_t, void*);
+    uint32_t GetFileAttributesW(wchar_t const*);
+    uint32_t GetFileSize(void*, void*);
+    bool ReadFile(void*, uint8_t*, uint32_t, uint32_t*, void*);
+    bool WriteFile(void*, uint8_t*, uint32_t, uint32_t*, void*);
+]]
+
+local C = ffi.C
+
+local paths = {}
 
 local file = {}
 
@@ -6,43 +21,90 @@ local file_mt = {
     __index = file,
 }
 
-file.create = function(path)
-    return setmetatable({path = path}, file_mt)
-end
+do
+    local setmetatable = setmetatable
+    local unicode_to_utf16 = unicode.to_utf16
 
-file.exists = function(f)
-    local handle = io.open(f.path, 'r')
-    local exists = handle ~= nil
-
-    if exists then
-        handle:close()
+    file.new = function(path)
+        local obj = {}
+        paths[obj] = unicode_to_utf16(path)
+        return setmetatable(obj, file_mt)
     end
-
-    return exists
 end
 
-file.read = function(f)
-    local handle = io.open(f.path, 'r')
-    local contents = handle:read("*a")
-    handle:close()
-    return contents
-end
+do
+    local bit_band = bit.band
 
-file.write = function(f, str)
-    local handle = io.open(f.path, 'w')
-    handle:write(str)
-    handle:close()
-end
-
-file.append = function(f, str, newline)
-    newline = newline ~= false
-
-    local handle = io.open(f.path, 'a')
-    handle:write(str)
-    if newline then
-        handle:write('\n')
+    file.exists = function(f)
+        local attr = C.GetFileAttributesW(paths[f])
+        return attr ~= 0xFFFFFFFF and bit_band(attr, 0x10) == 0
     end
-    handle:close()
+end
+
+do
+    local ffi_new = ffi.new
+    local ffi_string = ffi.string
+    local ffi_typeof = ffi.typeof
+
+    local buffer_type = ffi_typeof('char[?]')
+    local read_ptr = ffi_new('int[1]')
+
+    file.read = function(f)
+        local handle = C.CreateFileW(paths[f], 0x00000001, 0x00000003, nil, 3, 0x00000080, nil)
+        local size = C.GetFileSize(handle, nil)
+        local buffer = buffer_type(size)
+
+        C.ReadFile(handle, buffer, size, read_ptr, nil)
+        C.CloseHandle(handle)
+        return ffi_string(buffer, size)
+    end
+end
+
+do
+    local ffi_copy = ffi.copy
+    local ffi_new = ffi.new
+    local ffi_typeof = ffi.typeof
+
+    local buffer_type = ffi_typeof('char[?]')
+    local read_ptr = ffi_new('int[1]')
+
+    file.write = function(f, str)
+        local handle = C.CreateFileW(paths[f], 0x40000000, 0x00000000, nil, 2, 0x00000080, nil)
+        local size = #str
+        local buffer = buffer_type(size)
+
+        ffi_copy(buffer, str, size)
+        C.WriteFile(handle, buffer, size, read_ptr, nil)
+        C.CloseHandle(handle)
+    end
+end
+
+do
+    local ffi_copy = ffi.copy
+    local ffi_gc = ffi.gc
+    local ffi_new = ffi.new
+    local ffi_typeof = ffi.typeof
+
+    local buffer_type = ffi_typeof('char[?]')
+    local read_ptr = ffi_new('int[1]')
+
+    local logs = setmetatable({}, {
+        __index = function(t, k)
+            local value = ffi_gc(C.CreateFileW(paths[k], 0x00000004, 0x00000001, nil, 4, 0x80000000, nil), C.CloseHandle)
+            t[k] = value
+            return value
+        end,
+    })
+
+    file.log = function(f, str)
+        local line = str .. '\n'
+        local handle = logs[f]
+        local size = #line
+        local buffer = buffer_type(size)
+
+        ffi_copy(buffer, line, size)
+        C.WriteFile(handle, buffer, size, read_ptr, nil)
+    end
 end
 
 return file

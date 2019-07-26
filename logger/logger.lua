@@ -1,41 +1,45 @@
-local string = require('string')
-local windower = require('windower')
+local account = require('account')
+local chat = require('chat')
+local ffi = require('ffi')
 local file = require('file')
 local os = require('os')
-local chat = require('chat')
-local account = require('account')
+local string = require('string.ext')
+local unicode = require('unicode')
+local windower = require('windower')
+
+ffi.cdef[[
+    bool CreateDirectoryW(wchar_t*, void*);
+    int GetLastError();
+]]
+
+local C = ffi.C
 
 local log_file = nil
-local log_date = nil
+local log_day = nil
+
+local p = function(...) print(...) return ... end
+local base_path = windower.user_path .. '\\'
+C.CreateDirectoryW(unicode.to_utf16(base_path .. '..'), nil)
+C.CreateDirectoryW(unicode.to_utf16(base_path), nil)
 
 local get_log = function()
-    local dir = windower.user_path .. '\\' .. account.name .. '\\'
-    os.execute('mkdir "' .. dir .. '" >nul 2>nul')
+    local dir = base_path .. account.name
+    C.CreateDirectoryW(unicode.to_utf16(dir), nil)
 
-    log_date = os.date('*t')
-    local file_timestamp = string.format('%.4u.%.2u.%.2u.log', log_date.year, log_date.month, log_date.day)
+    local date = os.date('*t')
+    local file_timestamp = string.format('%.4u-%.2u-%.2u.log', date.year, date.month, date.day)
 
-    log_file = file.create(dir .. file_timestamp)
+    log_file = file.new(dir .. '\\' .. file_timestamp)
+    log_day = date.day
 end
 
-account.login:register(get_log)
-
-account.logout:register(function()
-    log_file = nil
-    log_date = nil
-end)
-
 chat.text_added:register(function(obj)
-    if account.logged_in then
-        local date = os.date('*t')
-        if log_date == nil or date.day ~= log_date.day then
-            get_log()
-        end
-
-        if log_file ~= nil then
-            log_file:append(obj.text, true)
-        end
+    local date = os.date('*t')
+    if date.day ~= log_day then
+        get_log()
     end
+
+    log_file:log(obj.text:trim())
 end)
 
 --[[
