@@ -68,9 +68,6 @@ do
                 offset = offset + bit_diff
             end
 
-            field.offset = offset
-            field.position = index
-
             cdef_count = cdef_count + 1
             if is_bit then
                 cdefs[cdef_count] = ftype.cdef .. ' ' .. field.cname .. ':' .. tostring(ftype.bits) .. ';'
@@ -111,7 +108,7 @@ do
             cdefs[cdef_count] = 'char __' .. tostring(unknown_count) .. '[' .. tostring(size - index) .. ']' .. ';'
         end
 
-        return 'struct{' .. table_concat(cdefs) .. '}'
+        return 'struct{' .. table_concat(cdefs) .. '}', size or index
     end
 end
 
@@ -185,7 +182,6 @@ local keywords = {
 
 do
     local ffi_metatype = ffi.metatype
-    local ffi_sizeof = ffi.sizeof
     local math_floor = math.floor
     local table_sort = table.sort
 
@@ -195,6 +191,10 @@ do
             ftype.signature = info.signature
             ftype.offsets = info.offsets or {}
             ftype.static_offsets = info.static_offsets or {}
+        end
+
+        if info.size then
+            ftype.size = info.size
         end
 
         ftype.info = info
@@ -256,7 +256,7 @@ do
             __index = function(cdata, key)
                 local field = fields[key]
                 if not field then
-                    error('Unknown field \'' .. tostring(key) .. '\'.')
+                    error('Unknown field \'' .. key .. '\'.')
                 end
 
                 if field.get then
@@ -271,7 +271,6 @@ do
                 do
                     local child_ftype = field.type
                     local converter = child_ftype.converter
-                    if field.cname == 'size' then error() end
                     data = cdata[field.cname]
                     if converter then
                         data = tolua[converter](data, child_ftype)
@@ -292,7 +291,7 @@ do
             __newindex = function(cdata, key, value)
                 local field = fields[key]
                 if not field then
-                    error('Unknown field \'' .. tostring(key) .. '\'.')
+                    error('Unknown field \'' .. key .. '\'.')
                 end
 
                 if field.set then
@@ -339,11 +338,9 @@ do
         end
 
         ftype.cdef = 'struct{' .. (base.name or base.cdef) .. ' array[' .. count .. '];}'
+        ftype.size = base.size * count
 
         struct.name(ftype, info.name)
-
-        ftype.size = ffi_sizeof(ftype.name)
-
         struct.metatype(ftype)
 
         return ftype
@@ -354,7 +351,7 @@ do
 
         local arranged = {}
         local arranged_index = 0
-        local vla = false
+        local vla = {}
         for label, field in pairs(fields) do
             local position = field[2] and field[1]
             field.label = label
@@ -364,7 +361,7 @@ do
             local ftype = field[2] or field[1]
             if ftype then
                 local size = info.size
-                if ftype.count == '*' then
+                if ftype.count == '*' and size then
                     local base = ftype.base
                     local fixed_ftype = struct.array(base, math_floor((size - position) / base.size))
                     ftype.base = nil
@@ -376,9 +373,6 @@ do
                     end
 
                     ftype = fixed_ftype
-                    ftype.vla = true
-                    ftype.position = position
-                    vla = true
                 end
 
                 field.type = ftype
@@ -386,17 +380,6 @@ do
                 arranged_index = arranged_index + 1
                 arranged[arranged_index] = field
             end
-        end
-
-        if vla then
-            arranged_index = arranged_index + 1
-            arranged[arranged_index] = {
-                position = info.size,
-                offset = 0,
-                cname = '__size',
-                type = struct.int32,
-                internal = true,
-            }
         end
 
         table_sort(arranged, function(field1, field2)
@@ -415,12 +398,16 @@ do
             return field1.label < field2.label
         end)
 
-        local cdef = make_struct_cdef(arranged, info.size)
+        local cdef, size = make_struct_cdef(arranged, info.size)
+        info.size = size
         local ftype = build_type(cdef, info)
 
         struct.name(ftype, info.name)
 
-        ftype.size = ffi_sizeof(ftype.name)
+        for key, value in pairs(vla) do
+            ftype[key] = value
+        end
+
         ftype.fields = fields
         ftype.arranged = arranged
 
@@ -442,13 +429,10 @@ do
     local typedefs = {}
 
     struct.name = function(ftype, name)
+        named_count = named_count + 1
         name = name or ftype.name
         if not name then
-            named_count = named_count + 1
             name = '_gensym_' .. package_identifier .. '_' .. tostring(named_count)
-        end
-        if typedefs[name] then
-            return
         end
 
         ftype.name = name
@@ -564,8 +548,6 @@ struct.double = struct.make_type('double')
 struct.bool = struct.make_type('bool')
 
 do
-    local bit_rshift = bit.rshift
-    local bit_lshift = bit.lshift
     local ffi_string = ffi.string
     local ffi_copy = ffi.copy
     local string_sub = string.sub
@@ -583,7 +565,7 @@ do
             ftype.tag = tag
 
             if size ~= '*' then
-                cache[size] = ftype
+                string_cache[size] = ftype
             end
         end
 
@@ -595,6 +577,10 @@ do
     end
 
     tolua.string = function(value, ftype)
+        if ftype.size == '*' then
+            return ffi_string(value)
+        end
+
         for i = 0, ftype.size - 1 do
             if value[i] == 0 then
                 return ffi_string(value, i)
@@ -605,11 +591,12 @@ do
     end
 
     toc.string = function(instance, index, value, ftype)
-        local str = string_sub(value, 1, ftype.size - 1)
-        if ftype.vla then
-            instance.__size = bit_lshift(bit_rshift(ftype.position + #str + 4, 2), 2)
+        if ftype.size == '*' then
+            ffi_copy(instance[index], value)
+            return
         end
-        ffi_copy(instance[index], str)
+
+        ffi_copy(instance[index], string_sub(value, 1, ftype.size) .. '\x00')
     end
 
     struct.data = function(size)
@@ -819,17 +806,10 @@ do
     local ffi_copy = ffi.copy
     local ffi_sizeof = ffi.sizeof
     local ffi_typeof = ffi.typeof
-    local math_min = math.min
 
-    struct.copy = function(cdata, ftype)
-        if not ftype then
-            local copy = ffi_typeof(cdata)()
-            ffi_copy(copy, cdata, ffi_sizeof(cdata))
-            return copy
-        end
-
-        local copy = struct.new(ftype)
-        ffi_copy(copy, cdata, math_min(ftype.size, ffi_sizeof(cdata)))
+    struct.copy = function(cdata)
+        local copy = ffi_typeof(cdata)()
+        ffi_copy(copy, cdata, ffi_sizeof(cdata))
         return copy
     end
 end
