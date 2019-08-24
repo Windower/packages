@@ -315,22 +315,23 @@ do
         query_response(path, setting)
     end
 
-    data.get:register(function(addon, path, options)
+    data.get:register(function(addon, path, id)
         if addon ~= package.name then
             return
         end
 
-        local setting = settings.get(path, options)
+        local setting = settings.get(path, id)
 
         query_client:call(query_response, path, setting)
     end)
 
-    data.set:register(function(addon, path, value, options)
+    data.set:register(function(addon, path, value, id)
         if addon ~= package.name then
             return
         end
 
-        local setting = settings.set(path, value, options)
+        local setting = settings.set(path, value, id)
+        settings.save(id)
 
         query_client:call(query_response, path, setting)
     end)
