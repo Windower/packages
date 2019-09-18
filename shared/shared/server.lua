@@ -18,24 +18,20 @@ local shared_new = shared.new
 local struct_name = struct.name
 
 local ptrs = {}
-local cleared = {}
+local destroyed = false
 local heap = ffi_gc(C.HeapCreate(0, 0, 0), function(heap)
-    for ptr in pairs(ptrs) do
-        cleared[ptr] = true
-    end
-
+    destroyed = true
     C.HeapDestroy(heap)
 end)
 
 local make_ptr
 do
     local destroy = function(ptr)
-        if cleared[ptr] then
+        if destroyed then
             return
         end
 
-        C.HeapFree(heap, 0, ptr)
-        cleared[ptr] = true
+        -- C.HeapFree(heap, 0, ptr)
     end
 
     make_ptr = function(ftype)
