@@ -6,6 +6,7 @@ local struct = require('struct')
 
 ffi.cdef[[
     void* HeapAlloc(void*, uint32_t, size_t);
+    bool HeapFree(void*, uint32_t, void*);
     void* HeapCreate(uint32_t, size_t, size_t);
     bool HeapDestroy(void*);
 ]]
@@ -13,17 +14,37 @@ ffi.cdef[[
 local C = ffi.C
 local ffi_cast = ffi.cast
 local ffi_gc = ffi.gc
-local ffi_sizeof = ffi.sizeof
 local shared_new = shared.new
-local structs_from_ptr = struct.from_ptr
+local struct_name = struct.name
 
-local heap = ffi_gc(C.HeapCreate(0, 0, 0), C.HeapDestroy)
-local servers = {}
+local ptrs = {}
+local destroyed = false
+local heap = ffi_gc(C.HeapCreate(0, 0, 0), function(heap)
+    destroyed = true
+    C.HeapDestroy(heap)
+end)
 
-local make_ptr = function(identifier)
-    return C.HeapAlloc(heap, 8, ffi_sizeof(identifier))
+local make_ptr
+do
+    local destroy = function(ptr)
+        if destroyed then
+            return
+        end
+
+        -- C.HeapFree(heap, 0, ptr)
+    end
+
+    make_ptr = function(ftype)
+        struct_name(ftype)
+
+        local ptr = ffi_gc(ffi_cast(ftype.name .. '*', C.HeapAlloc(heap, 8, ftype.size)), destroy)
+        ptrs[ptr] = true
+
+        return ptr
+    end
 end
 
+local servers = {}
 local service_name = windower.package_path:gsub('(.+\\)', '')
 
 return {
@@ -33,13 +54,19 @@ return {
         local server = shared_new(service_name .. '_' .. name)
         servers[name] = server
 
-        local ptr = make_ptr(ftype.cdef)
+        local ptr = make_ptr(ftype)
         server.data = {
-            ptr = tonumber(ffi_cast('intptr_t', ptr)),
+            address = tonumber(ffi_cast('intptr_t', ptr)),
             ftype = ftype,
         }
 
-        return structs_from_ptr(ftype, ptr)
+        return ptr[0]
+    end,
+    new_ptr = function(ftype)
+        return make_ptr(ftype)
+    end,
+    delete_ptr = function(ptr)
+        ptrs[ptr] = nil
     end,
 }
 
