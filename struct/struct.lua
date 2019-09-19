@@ -787,6 +787,7 @@ do
         local ftype = struct.data(bytes)
 
         ftype.converter = 'bits'
+        ftype.tag = 'bits'
 
         return ftype
     end
