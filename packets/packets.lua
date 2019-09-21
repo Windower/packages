@@ -64,7 +64,11 @@ local register_path
 do
     local ffi_cast = ffi.cast
 
-    local current_address = packets_client:call(function() return get_current_address() end)
+    local get_current_address = function()
+        return get_current_address()
+    end
+
+    local current_address = packets_client:call(get_current_address)
     local current = ffi_cast(type_map.current.name .. '*', current_address)[0]
 
     register_path = function(path, fn)
