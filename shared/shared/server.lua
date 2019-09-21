@@ -1,8 +1,8 @@
 require('event') -- Required for the serializer
 local ffi = require('ffi')
 local shared = require('shared')
-local windower = require('windower')
 local struct = require('struct')
+local windower = require('windower')
 
 ffi.cdef[[
     void* HeapAlloc(void*, uint32_t, size_t);
@@ -17,30 +17,26 @@ local ffi_gc = ffi.gc
 local shared_new = shared.new
 local struct_name = struct.name
 
-local ptrs = {}
 local destroyed = false
 local heap = ffi_gc(C.HeapCreate(0, 0, 0), function(heap)
     destroyed = true
     C.HeapDestroy(heap)
 end)
 
-local make_ptr
+local new_ptr
 do
     local destroy = function(ptr)
         if destroyed then
             return
         end
 
-        -- C.HeapFree(heap, 0, ptr)
+        C.HeapFree(heap, 0, ptr)
     end
 
-    make_ptr = function(ftype)
+    new_ptr = function(ftype)
         struct_name(ftype)
 
-        local ptr = ffi_gc(ffi_cast(ftype.name .. '*', C.HeapAlloc(heap, 8, ftype.size)), destroy)
-        ptrs[ptr] = true
-
-        return ptr
+        return ffi_gc(ffi_cast(ftype.name .. '*', C.HeapAlloc(heap, 8, ftype.size)), destroy)
     end
 end
 
@@ -54,7 +50,7 @@ return {
         local server = shared_new(service_name .. '_' .. name)
         servers[name] = server
 
-        local ptr = make_ptr(ftype)
+        local ptr = new_ptr(ftype)
         server.data = {
             address = tonumber(ffi_cast('intptr_t', ptr)),
             ftype = ftype,
@@ -62,12 +58,7 @@ return {
 
         return ptr[0]
     end,
-    new_ptr = function(ftype)
-        return make_ptr(ftype)
-    end,
-    delete_ptr = function(ptr)
-        ptrs[ptr] = nil
-    end,
+    new_ptr = new_ptr,
 }
 
 --[[

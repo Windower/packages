@@ -1,8 +1,8 @@
-local ffi = require('ffi')
 local bit = require('bit')
-local string = require('string')
-local os = require('os')
+local ffi = require('ffi')
 local math = require('math')
+local os = require('os')
+local string = require('string')
 local table = require('table')
 
 local error = error
@@ -568,6 +568,7 @@ do
     local bit_lshift = bit.lshift
     local ffi_string = ffi.string
     local ffi_copy = ffi.copy
+    local math_min = math.min
     local string_sub = string.sub
 
     local string_cache = {}
@@ -621,7 +622,7 @@ do
     end
 
     toc.data = function(instance, index, value, ftype)
-        ffi_copy(instance[index], value, ftype.size)
+        ffi_copy(instance[index], value, math_min(ftype.size, #value))
     end
 end
 

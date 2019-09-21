@@ -171,7 +171,6 @@ do
     local ffi_copy = ffi.copy
     local ffi_string = ffi.string
     local server_new_ptr = server.new_ptr
-    local server_delete_ptr = server.delete_ptr
 
     local make_timestamp
     do
@@ -267,7 +266,6 @@ do
         local entry_ptr = server_new_ptr(current_type)
         ffi_copy(entry_ptr, current_ptr, current_size)
         local entry = {
-            count = 0,
             ptr = entry_ptr,
             payload = {
                 address = tonumber(ffi_cast('intptr_t', entry_ptr)),
@@ -276,18 +274,7 @@ do
         }
 
         for i = 1, paths_count do
-            local path = paths[i]
-            local old_entry = history[path]
-            if old_entry then
-                local old_count = old_entry.count
-                if old_count > 1 then
-                    old_entry.count = old_entry.count - 1
-                else
-                    server_delete_ptr(old_entry.ptr)
-                end
-            end
-            history[path] = entry
-            entry.count = entry.count + 1
+            history[paths[i]] = entry
         end
 
         if current.blocked then
