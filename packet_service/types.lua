@@ -59,18 +59,20 @@ local bool = struct.bool
 
 local bit = struct.bit
 local boolbit = struct.boolbit
+local bits = struct.bits
 
 local time = struct.time
 
 local struct = function(info, fields)
     info, fields = fields and info or {}, fields or info
+
     for _, field in pairs(fields) do
         local ftype = field[2]
         if ftype and ftype.count == '*' then
             info.size = 0x100
-            break
         end
     end
+
     return struct.struct(info, fields)
 end
 
@@ -85,13 +87,17 @@ do
 
     multiple = function(ftype)
         local types = {}
-        local base_info = {cache = {ftype.key}}
+        local base_info = {
+            cache = { ftype.key },
+            empty = true,
+        }
+        local base_fields = ftype.base.fields
         for index, definitions in pairs(ftype.lookups) do
-            types[index] = struct(update({}, base_info), update(update({}, ftype.base), definitions))
+            types[index] = struct(update({}, base_info), update(update({}, base_fields), definitions.fields))
         end
 
         ftype.info = { cache = base_info.cache }
-        ftype.base = struct(base_info, ftype.base)
+        ftype.base = struct(base_info, base_fields)
         ftype.lookups = nil
 
         ftype.types = types
@@ -1053,12 +1059,10 @@ types.incoming[0x03A] = struct({
 })
 
 -- Shop
--- #BYRTH# Address this after a mechanism is added to address it
---types.incoming[0x03C] = struct({
---    _known1             = {0x00, uint16, const=0x0000},
---    items               = {0x04, },
---    {ref=types.shop_item,       label='Item',               count='*'},         -- 08 -   *
---})
+types.incoming[0x03C] = struct({
+   offset               = {0x00, uint16},
+   items                = {0x04, shop_item['*']},
+})
 
 -- Price response
 -- Sent after an outgoing price request for an NPC vendor (0x085)
@@ -1104,24 +1108,24 @@ types.incoming[0x042] = struct({
 -- contains information about your main job. The second contains information about your
 -- subjob and has the Subjob flag flipped.
 types.incoming[0x044] = multiple({
-    base = {
+    base = struct({
         job             = {0x00, job},
         subjob          = {0x01, bool},
         _padding1       = {0x02, data(2)},
-    },
+    }),
 
     key = 'job',
 
     lookups = {
 
         --PUP
-        [0x12] = {
+        [0x12] = struct({
             automaton_head  = {0x04, uint8}, -- Harlequinn 0x01, Valoredge 0x02, Sharpshot 0x03, Stormwaker 0x04, Soulsoother 0x05, Spiritreaver 0x06 (Item ID - 0x2000)
             automaton_frame = {0x05, uint8}, -- Harlequinn 0x20, Valoredge 0x21, Sharpshot 0x22, Stormwaker 0x23 (Item ID - 0x2000)
             attachments     = {0x06, uint8[0x0C]}, -- Attachment assignments are based off their position in the equipment list. 0 is an empty slot, otherwise Item ID - 0x2100, so Strobe is 0x01, etc.
-            available_heads = {0x14, data(4)}, -- Flags for the available heads. Position corresponds to Item ID shifted down by 0x2000. Harlequinn & 0x02, etc.
-            available_frames= {0x18, data(4)}, -- #BYRTH# Flags for the available frames. Position corresponds to the item ID shifted down by 0x2020. Harlequinn & 0x01, etc.
-            available_attach= {0x34, data(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments. Position corresponds to the item ID shifted down by 0x2100.
+            available_heads = {0x14, bits(4)}, -- Flags for the available heads. Position corresponds to Item ID shifted down by 0x2000. Harlequinn & 0x02, etc.
+            available_frames= {0x18, bits(4)}, -- #BYRTH# Flags for the available frames. Position corresponds to the item ID shifted down by 0x2020. Harlequinn & 0x01, etc.
+            available_attach= {0x34, bits(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments. Position corresponds to the item ID shifted down by 0x2100.
             pet_name        = {0x54, string(0x10)},
             hp              = {0x64, uint16},
             hp_max          = {0x66, uint16},
@@ -1134,27 +1138,27 @@ types.incoming[0x044] = multiple({
             magic           = {0x74, uint16},
             magic_max       = {0x76, uint16},
             str             = {0x7C, uint16},
-            str_max         = {0x7E, uint16},
+            str_modifier    = {0x7E, uint16},
             dex             = {0x80, uint16},
-            dex_max         = {0x82, uint16},
+            dex_modifier    = {0x82, uint16},
             vit             = {0x84, uint16},
-            vit_max         = {0x86, uint16},
+            vit_modifier    = {0x86, uint16},
             agi             = {0x88, uint16},
-            agi_max         = {0x8A, uint16},
+            agi_modifier    = {0x8A, uint16},
             int             = {0x8C, uint16},
-            int_max         = {0x8E, uint16},
+            int_modifier    = {0x8E, uint16},
             mnd             = {0x90, uint16},
-            mnd_max         = {0x92, uint16},
+            mnd_modifier    = {0x92, uint16},
             chr             = {0x94, uint16},
-            chr_max         = {0x96, uint16}
-        },
+            chr_modifier    = {0x96, uint16}
+        }),
 
         --MON
-        [0x17] = {
+        [0x17] = struct({
             species         = {0x04, uint16},
             instinct        = {0x08, item[12]}, -- Order is based off their position in the equipment list.
             -- Zeroing everything after byte 0x22 has no notable effect.
-        },
+        }),
 
         -- For BLM, 0x29 to 0x43 appear to represent the black magic that you know
     },
@@ -1176,20 +1180,20 @@ types.incoming[0x047] = struct({
 
 -- Delivery Item
 types.incoming[0x04B] = multiple({
-    base = {
+    base = struct({
         type            = {0x00, uint8},
         _known1         = {0x01, uint8}, -- 0x01 for all types except 0x05, where it is 0xFF
         delivery_slot   = {0x02, uint8}, -- This goes left to right and then drops down a row and left to right again. Value is 00 through 07
         _known2         = {0x03, uint8}, -- 0xFF for all packets except 0x06, where it indicates whether the packet is the first of a pair.
         _known3         = {0x04, uint32, const=0xFFFFFFFF},
-    },
+    }),
 
     key = 'type',
 
     lookups = {
 
         -- Seems to occur when refreshing the d-box after any change (or before changes).
-        [0x01] = {
+        [0x01] = struct({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
@@ -1200,20 +1204,20 @@ types.incoming[0x04B] = multiple({
             count           = {0x34, uint16},
             -- 0x2E: Unknown short
             -- 0x30: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
-        },
+        }),
 
         -- Seems to occur when placing items into the d-box.
-        [0x02] = {
+        [0x02] = struct({
             packet_number   = {0x08, uint8},
-        },
+        }),
 
         -- Two occur per item that is actually sent (hitting "OK" to send).
-        [0x03] = {
+        [0x03] = struct({
             packet_number   = {0x08, uint8},
-        },
+        }),
 
         -- Two occur per sent item that is Canceled.
-        [0x04] = {
+        [0x04] = struct({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
@@ -1224,19 +1228,19 @@ types.incoming[0x04B] = multiple({
             count           = {0x34, uint16},
             -- 0x2E: Unknown short
             -- 0x30: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
-        },
+        }),
 
         -- Seems to occur quasi-randomly. Can be seen following spells.
-        [0x05] = {
+        [0x05] = struct({
             packet_number   = {0x08, uint8},
-        },
+        }),
 
         -- 0x06 Occurs for new items.
         -- Two of these are sent sequentially. The first one doesn't seem to contain much/any
         -- information and the second one is very similar to a type 0x01 packet
         -- First packet's first 12 bytes:   06 01 00 01 FF FF FF FF 02 02 FF FF
         -- Second packet's first 12 bytes:  06 01 00 FF FF FF FF FF 01 02 FF FF
-        [0x06] = {
+        [0x06] = struct({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
@@ -1247,15 +1251,15 @@ types.incoming[0x04B] = multiple({
             count           = {0x34, uint16},
             -- 0x2E: Unknown short
             -- 0x30: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
-        },
+        }),
 
         -- Occurs as the first packet when removing something from the send box.
-        [0x07] = {
+        [0x07] = struct({
             packet_number   = {0x08, uint8},
-        },
+        }),
 
         -- Occurs as the first packet when removing or dropping something from the delivery box.
-        [0x08] = {
+        [0x08] = struct({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
@@ -1266,15 +1270,15 @@ types.incoming[0x04B] = multiple({
             count           = {0x34, uint16},
             -- 0x2E: Unknown short
             -- 0x30: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
-        },
+        }),
 
         -- Occurs when someone returns something from the delivery box.
-        [0x09] = {
+        [0x09] = struct({
             packet_number   = {0x08, uint8},
-        },
+        }),
 
         -- Occurs as the second packet when removing something from the delivery box or send box.
-        [0x0A] = {
+        [0x0A] = struct({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
@@ -1285,32 +1289,32 @@ types.incoming[0x04B] = multiple({
             count           = {0x34, uint16},
             -- 0x2E: Unknown short
             -- 0x30: 28 bytes of all 0x00 observed, extdata? Doesn't seem to be the case, but same size
-        },
+        }),
 
         -- Occurs as the second packet when dropping something from the delivery box.
-        [0x0B] = {
+        [0x0B] = struct({
             packet_number   = {0x08, uint8},
-        },
+        }),
 
         -- Sent after entering a name and hitting "OK" in the outbox.
-        [0x0C] = {
+        [0x0C] = struct({
             packet_number   = {0x08, uint8},
-        },
+        }),
 
         -- Sent after requesting the send box, causes the client to open the send box dialogue.
-        [0x0D] = {
+        [0x0D] = struct({
             success         = {0x08, uint8}, -- 01 grants request to open inbox/outbox. With FA you get "Please try again later"
-        },
+        }),
 
         -- Sent after requesting the delivery box, causes the client to open the delivery box dialogue.
-        [0x0E] = {
+        [0x0E] = struct({
             success         = {0x08, uint8}, -- 01 grants request to open inbox/outbox. With FA you get "Please try again later"
-        },
+        }),
 
         -- Sent after closing the delivery box or send box.
-        [0x0F] = {
+        [0x0F] = struct({
             packet_number   = {0x08, uint8},
-        },
+        }),
     },
 })
 
@@ -1318,46 +1322,46 @@ types.incoming[0x04B] = multiple({
 -- All types in here are server responses to the equivalent type in 0x04E
 -- The only exception is type 0x02, which is sent to initiate the AH menu
 types.incoming[0x04C] = multiple({
-    base = {
+    base = struct({
         type            = {0x00, uint8},
         sale_slot       = {0x01, uint8}, -- 0xFF for types 0x02, 0x03, 0x04, and 0x05, which do not use a sale slot.
         packet_number   = {0x02, uint8}, -- 0xF6 if the action fails
         _known2         = {0x03, uint8}, -- 0x00 except for type 0x04, where it takes the value 0x04 and type 0x0D, where it is 0x00 for the first packet (packet_number == 0x02) and 0x01 for the second (packet_number == 0x01)
-    },
+    }),
 
     key = 'type',
 
     lookups = {
 
         -- Open menu response
-        [0x02] = {
+        [0x02] = struct({
             -- Two identical packets were sent to me
             -- 0x00: 0x35 observed
             -- 0x28~0x2F take values.
-        },
+        }),
 
         -- Unknown Logout
-        [0x03] = {
-        },
+        [0x03] = struct({
+        }),
 
         -- Sell item confirmation
-        [0x04] = {
+        [0x04] = struct({
             fee             = {0x08, uint32},
             bag_index       = {0x0C, uint8},
             _known2         = {0x0D, uint8, const=0x00},
             item_id         = {0x0E, item},
             stack           = {0x10, bool},
             -- 0x2A was 0x32 for me. The rest of the undefined bytes were 0x00.
-        },
+        }),
 
         -- Open sales status menu
-        [0x05] = {
+        [0x05] = struct({
             -- 0x00: 0x72 observed
             -- 0x02: 0x08 observed
             -- 0x2A: 0x32 observed
             -- 0x2C~0x33 are likely junk. Came through as "AuctionC"
             -- Rest of the bytes were 0x00 for me.
-        },
+        }),
 
         --[[ sale_status = {
             [0x00] = Do not display the slot,
@@ -1376,7 +1380,7 @@ types.incoming[0x04C] = multiple({
         } ]]
 
         -- Open menu confirmation
-        [0x0A] = {
+        [0x0A] = struct({
             -- 12 junk bytes?
             sale_status     = {0x10, uint8}, -- see breakoutabove
             -- 0x11 is not a part of sale_status
@@ -1390,10 +1394,10 @@ types.incoming[0x04C] = multiple({
             auction_state   = {0x2E, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
             auction_start   = {0x34, time}, -- UTC time
-        },
+        }),
 
         -- Sell item confirmation - Sent twice. On action completion, the second seems to contain updated information
-        [0x0B] = {
+        [0x0B] = struct({
             -- 0x28~0x2F: are only populated in the second packet (after the auction is confirmed accepted)
             -- 12 junk bytes?
             sale_status     = {0x10, uint8}, -- see above
@@ -1407,10 +1411,10 @@ types.incoming[0x04C] = multiple({
             auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
             auction_start   = {0x34, time}, -- UTC time
-        },
+        }),
 
         -- Remove item confirmation?
-        [0x0C] = {
+        [0x0C] = struct({
             -- 0x00~0x33 are only populated in the first packet (before the auction is confirmed canceled)
             -- 12 junk bytes?
             sale_status     = {0x10, uint8}, -- see above
@@ -1424,10 +1428,10 @@ types.incoming[0x04C] = multiple({
             auction_state   = {0x2C, uint32}, -- 04 00 00 00 in the first packet and 00 00 00 00 when confirmed canceled.
             auction_id      = {0x30, uint32}, -- present in the first packet and blanked in the second.
             auction_start   = {0x34, time}, -- UTC time
-        },
+        }),
 
         -- Sales item status - Sent twice. On action completion, the second seems to contain updated information
-        [0x0D] = {
+        [0x0D] = struct({
             -- 12 junk bytes?
             sale_status     = {0x10, uint8}, -- see above
             bag_index       = {0x12, uint8}, -- From when the item was put on auction
@@ -1440,11 +1444,11 @@ types.incoming[0x04C] = multiple({
             auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
             auction_start   = {0x34, time}, -- UTC time the auction started
-        },
+        }),
 
         -- ??? : I have never seen this one.
-        [0x10] = {
-        },
+        [0x10] = struct({
+        }),
     },
 })
 
@@ -1545,40 +1549,40 @@ types.incoming[0x055] = struct({cache = {'type'}}, { -- #BYRTH# unadjusted for t
 -- Quests will remain in your 'current' list after they are completed unless they are repeatable.
 
 types.incoming[0x056] = multiple({ -- #BYRTH# unadjusted for the base offset
-    base = {
+    base = struct({
         type            = {0x20, uint16},
-    },
+    }),
 
     key = 'type',
 
     lookups = {
 
-        [0x0080] = {
+        [0x0080] = struct({
             current_toau_quests     = {0x00, data(16)},
             current_assault_mission = {0x10, uint32},
             current_toau_mission    = {0x14, uint32},
             current_wotg_mission    = {0x18, uint32},
             current_campaign_mission= {0x1C, uint32},
-        },
+        }),
 
-        [0x00C0] = {
+        [0x00C0] = struct({
             completed_toau_quests   = {0x00, data(16)},
             completed_assaults      = {0x10, data(16)},
-        },
+        }),
 
-        [0x00D0] = {
+        [0x00D0] = struct({
             completed_sandoria_missions = {0x00, data(8)},
             completed_bastok_missions   = {0x08, data(8)},
             completed_windurst_missions = {0x10, data(8)},
             completed_rotz_missions     = {0x18, data(8)},
-        },
+        }),
 
-        [0x00D8] = {
+        [0x00D8] = struct({
             completed_toau_missions = {0x00, data(8)},
             completed_wotg_missions = {0x08, data(8)},
-        },
+        }),
 
-        [0xFFFF] = {
+        [0xFFFF] = struct({
             nation                  = {0x00, uint32},
             current_nation_mission  = {0x04, uint32},
             current_rotz_mission    = {0x08, uint32},
@@ -1588,7 +1592,7 @@ types.incoming[0x056] = multiple({ -- #BYRTH# unadjusted for the base offset
             current_asa_mission     = {0x14, bit(uint16, 4), offset=8},
             current_soa_mission     = {0x18, uint32},
             current_rov_mission     = {0x1C, uint32},
-        },
+        }),
     },
 })
 
@@ -1762,48 +1766,48 @@ types.incoming[0x062] = struct({
 -- It also appears in three chunks, so it's double-varying.
 -- Packet was expanded in the March 2014 update and now includes a fourth packet, which contains CP values.
 types.incoming[0x063] = multiple({
-    base = {
+    base = struct({
         type            = {0x00, uint16},
         size            = {0x02, uint16},
-    },
+    }),
 
     key = 'type',
 
     lookups = {
 
-        [0x02] = {
+        [0x02] = struct({
             limit_points    = {0x04, uint16},
             merit_points    = {0x06, uint8},
             merit_switch    = {0x07, boolbit(uint8), offset=7},
             level_capped    = {0x07, boolbit(uint8), offset=6},
             merits_unlocked = {0x07, boolbit(uint8), offset=5}, -- Merits unlocked and/or limit points earnable? Needs confirmation from lower level characters.
             merit_points_max= {0x08, uint8},
-        },
+        }),
 
-        [0x03] = {
+        [0x03] = struct({
             flags1          = {0x04, data(2)}, -- Vary when I change species
             flags2          = {0x06, data(2)}, -- Consistent across species
             monstrosity_rank= {0x08, uint8}, -- 00 = Mon, 01 = NM, 02 = HM
             infamy          = {0x0E, uint16},
             instinct_flags  = {0x18, data(0x40)}, -- Bitpacked 2-bit values. 0 = no instincts from that species, 1 == first instinct, 2 == first and second instinct, 3 == first, second, and third instinct.
             monster_levels  = {0x58, data(0x80)}, -- Mapped onto the item ID for these creatures. (00 doesn't exist, 01 is rabbit, 02 is behemoth, etc.)
-        },
+        }),
 
-        [0x04] = {
+        [0x04] = struct({
             slime_level     = {0x82, uint8},
             spriggan_level  = {0x83, uint8},
             instinct_flags  = {0x84, data(0x0C)}, -- Contains job/race instincts from the 0x03 set. Has 8 unused bytes. This is a 1:1 mapping.
             variants_flags  = {0x90, data(0x20)}, -- Does not show normal monsters, only variants. Bit is 1 if the variant is owned. Length is an estimation including the possible padding.
-        },
+        }),
 
-        [0x05] = {
+        [0x05] = struct({
             job_points      = {0x08, job_point_info[0x18], key_lookup='jobs'}
-        },
+        }),
 
-        [0x09] = {
+        [0x09] = struct({
             status_effects  = {0x04, uint16[0x20]},
             durations       = {0x44, time[0x20]},
-        },
+        }),
     },
 })
 
@@ -1999,19 +2003,19 @@ types.incoming[0x0C8] = struct({
 
 -- Check data
 types.incoming[0x0C9] = multiple({
-    base = {
+    base = struct({
         target_id       = {0x00, entity},
         target_index    = {0x04, entity_index},
         type            = {0x06, uint8}, -- fn=e+{0x0C9} ?
         count           = {0x07, uint8}, -- only known to be valid for type 0x03, but needs to be here to align the uint16s correctly
-    },
+    }),
 
     key = 'type',
 
     lookups = {
 
         -- Metadata
-        [0x01] = {
+        [0x01] = struct({
             icon_set_subtype= {0x0A, uint8},
             icon_set_id     = {0x0B, uint8},
             linkshell_red   = {0x0C, bit(uint16, 4), offset=0},
@@ -2023,12 +2027,12 @@ types.incoming[0x0C9] = multiple({
             main_job_level  = {0x20, uint8},
             sub_job_level   = {0x21, uint8},
             -- 0x1A~0x46: At least the first two bytes and the last twelve bytes are junk, possibly more.
-        },
+        }),
 
         -- Equipment listing
-        [0x03] = {
+        [0x03] = struct({
             equipment       = {0x08, check_item[8]}, -- #BYRTH# There are `count` copies of this struct, not necessarily 8
-        },
+        }),
     },
 })
 
@@ -2708,62 +2712,62 @@ types.outgoing[0x04D] = struct({
 } ]]
 
 types.outgoing[0x04E] = multiple({
-    base = {
+    base = struct({
         type            = {0x00, uint8},
         sale_slot       = {0x01, uint8}, -- 0xFF for packet type 0x0A
         _padding1       = {0x02, data(2)},
-    },
+    }),
 
     key = 'type',
 
     lookups = {
 
         -- Sent when putting an item up for auction (request)
-        [0x04] = {
+        [0x04] = struct({
             price           = {0x04, uint32},
             bag_index       = {0x08, uint8}, -- This was a short in fields.lua
             item_id         = {0x0A, item},
             stack           = {0x0C, bool},
-        },
+        }),
 
         -- Sent when checking your sale status
-        [0x05] = {
+        [0x05] = struct({
             -- Labeled junk in fields.lua
-        },
+        }),
 
         -- Sent when initially opening the AH menu
-        [0x0A] = {
-        },
+        [0x0A] = struct({
+        }),
 
         -- Sent when putting an item up for auction (confirmation)
-        [0x0B] = {
+        [0x0B] = struct({
             price           = {0x04, uint32},
             bag_index       = {0x08, uint8}, -- This was a short in fields.lua
             stack           = {0x0C, bool},
-        },
+        }),
 
         -- Sent when stopping an item from sale
-        [0x0C] = {
-        },
+        [0x0C] = struct({
+        }),
 
         -- Sent after receiving the sale status list for each item
-        [0x0D] = {
-        },
+        [0x0D] = struct({
+        }),
 
         -- Sent when bidding on an item
-        [0x0E] = {
+        [0x0E] = struct({
             price           = {0x04, uint32},
             item_id         = {0x08, item},
             stack           = {0x0C, bool},
-        },
+        }),
 
         -- ???
-        [0x0D] = {
-        },
+        [0x0D] = struct({
+        }),
 
         -- Sent when taking a sold item from the list
-        [0x10] = {
-        },
+        [0x10] = struct({
+        }),
     },
 })
 

@@ -1,7 +1,14 @@
+local ffi = require('ffi')
 local shared = require('shared')
+local string = require('string')
+local client = require('shared.client')
 local table = require('table')
 
-local client = shared.get('packet_service', 'packets')
+local packets_client = shared.get('packet_service', 'packets')
+
+local get_ftype = function(_, path)
+    return get_ftype(path)
+end
 
 local get_last = function(_, path)
     return get_last(path)
@@ -19,108 +26,246 @@ local inject = function(_, path, values)
     inject(path, values)
 end
 
-local block = function(_)
-    block()
-end
-
-local update = function(_, p)
-    update(p)
-end
+local pairs = pairs
+local setmetatable = setmetatable
+local tonumber = tonumber
+local tostring = tostring
 
 local registry = {}
+local type_map = setmetatable({}, {
+    __index = function(t, k)
+        local ftype = packets_client:call(get_ftype, k)
+        client.configure(ftype)
+        t[k] = ftype
+        return ftype
+    end,
+})
+
+local path_cache = {}
+local info_cache = {}
 
 local fns = {}
 
-local register_path = function(path, fn)
-    local events = registry[path]
-    if not events then
-        events = {}
-        registry[path] = events
+local get_packet
+do
+    local ffi_cast = ffi.cast
+    local ffi_typeof = ffi.typeof
+
+    local current_ftype = type_map.current
+    local modified_offset = current_ftype.fields.modified.position
+    local current_type = ffi_typeof(current_ftype.name .. '*')
+
+    get_packet = function(address, path)
+        return ffi_cast(type_map[path].name .. '*', address + modified_offset)[0], ffi_cast(current_type, address)[0]
     end
-    local event = client:call(make_event, path)
-    events[fn] = event
-    event:register(fn)
+end
+
+local register_path
+do
+    local ffi_cast = ffi.cast
+
+    local get_current_address = function()
+        return get_current_address()
+    end
+
+    local current_address = packets_client:call(get_current_address)
+    local current = ffi_cast(type_map.current.name .. '*', current_address)[0]
+
+    register_path = function(path, fn)
+        local wrapped = function()
+            fn(get_packet(current_address, current.path))
+        end
+
+        local events = registry[path]
+        if not events then
+            events = {}
+            registry[path] = events
+        end
+
+        local event = packets_client:call(make_event, path)
+        events[wrapped] = event
+        event:register(wrapped)
+    end
 end
 
 fns.register = function(t, fn)
-    register_path(t.path, fn)
+    register_path(path_cache[t], fn)
 end
 
 fns.unregister = function(t, fn)
-    registry[t.path][fn] = nil
+    registry[path_cache[t]][fn] = nil
 end
 
-fns.register_init = function(t, init_table)
-    local paths = {}
-    local path_count = 0
-    for indices, fn in pairs(init_table) do
-        local path = t.path .. '/' .. table.concat(indices, '/')
+do
+    local table_concat = table.concat
+    local table_sort = table.sort
 
-        register_path(path, fn)
+    fns.register_init = function(t, init_table)
+        local root_path = path_cache[t]
+        local paths = {}
+        local path_count = 0
+        for indices, fn in pairs(init_table) do
+            local path = root_path .. '/' .. table_concat(indices, '/')
 
-        path_count = path_count + 1
-        paths[path_count] = { path = path, fn = fn }
+            register_path(path, fn)
+
+            path_count = path_count + 1
+            paths[path_count] = {
+                path = path,
+                fn = fn,
+            }
+        end
+
+        local lasts = {}
+        local lasts_count = 0
+        for i = 1, #paths do
+            local path = paths[i]
+            local last_entries = packets_client:call(get_lasts, path.path)
+            for j = 1, #last_entries do
+                local entry = last_entries[j]
+                local packet, info = get_packet(entry.address, entry.path)
+                lasts_count = lasts_count + 1
+                lasts[lasts_count] = {
+                    packet = packet,
+                    info = info,
+                    fn = path.fn ,
+                    timestamp = info.timestamp,
+                }
+            end
+        end
+
+        table_sort(lasts, function(l1, l2)
+            return l1.timestamp < l2.timestamp
+        end)
+
+        for i = 1, #lasts do
+            local last = lasts[i]
+            last.fn(last.packet, last.info)
+        end
     end
+end
 
-    local lasts = {}
-    local lasts_count = 0
-    for i = 1, #paths do
-        local path = paths[i]
-        local lasts_path = client:call(get_lasts, path.path)
-        for j = 1, #lasts_path do
-            local entry = lasts_path[j]
-            local packet = entry.packet
-            local info = entry.info
-            lasts_count = lasts_count + 1
-            lasts[lasts_count] = { packet = packet, info = info, fn = path.fn , timestamp = info.timestamp }
+do
+    local ffi_cast = ffi.cast
+
+    local injection_ptr = ffi_cast(type_map.injection.name .. '*', packets_client:call(function() return get_injection_address() end))
+    local injection = injection_ptr[0]
+    local injection_size = type_map.injection.size
+    local buffer = ffi_cast('char*', injection_ptr) + type_map.injection.fields.data.position
+
+    local copy
+    copy = function(cdata, values, ftype)
+        if not values then
+            return
+        end
+
+        local fields = ftype.fields
+        for key, value in pairs(values) do
+            local field = fields[key]
+            if field and field.count and not field.converter then
+                local array = cdata[key]
+                for i = 0, field.count do
+                    copy(array[i], value, field.base)
+                end
+            else
+                cdata[key] = value
+            end
         end
     end
 
-    table.sort(lasts, function(l1, l2)
-        return l1.timestamp < l2.timestamp
-    end)
+    fns.inject = function(t, values)
+        local info = info_cache[t]
+        local ftype = info.ftype
 
-    for i = 1, #lasts do
-        local last = lasts[i]
-        last.fn(last.packet, last.info)
+        ffi.fill(injection_ptr, injection_size)
+
+        injection.data_size = ftype.size
+        injection.direction = info.direction
+        injection.id = info.id
+
+        copy(ffi_cast(ftype.name .. '*', buffer)[0], values, ftype)
+        packets_client:call(inject)
     end
 end
 
-fns.inject = function(t, values)
-    client:call(inject, t.path, values)
+fns.last = function(t)
+    local last = packets_client:call(get_last, path_cache[t])
+    if not last then
+        return nil, nil
+    end
+    return get_packet(last.address, last.path)
 end
 
-local make_table = function(path, allow_injection)
+local make_error = function(message)
+    return function()
+        error(message, 2)
+    end
+end
+
+local make_table
+do
+    local string_find = string.find
+    local string_sub = string.sub
+
+    make_table = function(path)
+        local ftype = type_map[path]
+
+        local specific = ftype.info.empty ~= true
+        local result = {
+            register = fns.register,
+            unregister = fns.unregister,
+            register_init = fns.register_init,
+            inject = specific and fns.inject or make_error('Cannot inject path: ' .. path),
+            last = specific and fns.last or make_error('Cannot retrieve last path: ' .. path),
+        }
+
+        if specific then
+            local info = {}
+
+            info.ftype = ftype
+
+            info.direction = string_sub(path, 2, 9)
+            local slash_index = string_find(path, '/', 11, true)
+            info.id = tonumber(string_sub(path, 11, slash_index and slash_index - 1))
+
+            info_cache[result] = info
+        end
+        path_cache[result] = path
+
+        return result, specific
+    end
+end
+
+local final_meta = function(path)
     return {
-        path = path,
-        register = fns.register,
-        unregister = fns.unregister,
-        register_init = fns.register_init,
-        inject = allow_injection and fns.inject or nil,
+        __index = make_error('Cannot index path: ' .. path),
+        __newindex = make_error('Cannot assign to path: ' .. path),
     }
 end
 
 local packet_meta
 packet_meta = {
     __index = function(t, k)
-        if k == 'last' then
-            return client:call(get_last, t.path)
+        local path = path_cache[t] .. '/' .. tostring(k)
+        if type(k) ~= 'number' then
+            error('Invalid packet path: ' .. path)
         end
 
-        return setmetatable(make_table(t.path .. '/' .. tostring(k), true), packet_meta)
+        local inner, specific = make_table(path)
+        local value = setmetatable(inner, specific and final_meta(path) or packet_meta)
+        rawset(t, k, value)
+        return value
+    end,
+    __newindex = function(t, _, _)
+        error('Cannot assign to path: ' .. path_cache[t])
     end,
 }
 
-local packets = make_table('', false)
+local packets = setmetatable(make_table(''), packet_meta)
 
-packets.incoming = setmetatable(make_table('/incoming', false), packet_meta)
-packets.outgoing = setmetatable(make_table('/outgoing', false), packet_meta)
-packets.block = function()
-    client:call(block)
-end
-packets.update = function(p)
-    client:call(update, p)
-end
+rawset(packets, 'incoming', setmetatable(make_table('/incoming'), packet_meta))
+rawset(packets, 'outgoing', setmetatable(make_table('/outgoing'), packet_meta))
+rawset(packets, 'types', type_map)
 
 return packets
 
