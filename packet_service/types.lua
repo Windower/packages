@@ -59,6 +59,7 @@ local bool = struct.bool
 
 local bit = struct.bit
 local boolbit = struct.boolbit
+local bits = struct.bits
 
 local time = struct.time
 
@@ -1122,9 +1123,9 @@ types.incoming[0x044] = multiple({
             automaton_head  = {0x04, uint8}, -- Harlequinn 0x01, Valoredge 0x02, Sharpshot 0x03, Stormwaker 0x04, Soulsoother 0x05, Spiritreaver 0x06 (Item ID - 0x2000)
             automaton_frame = {0x05, uint8}, -- Harlequinn 0x20, Valoredge 0x21, Sharpshot 0x22, Stormwaker 0x23 (Item ID - 0x2000)
             attachments     = {0x06, uint8[0x0C]}, -- Attachment assignments are based off their position in the equipment list. 0 is an empty slot, otherwise Item ID - 0x2100, so Strobe is 0x01, etc.
-            available_heads = {0x14, data(4)}, -- Flags for the available heads. Position corresponds to Item ID shifted down by 0x2000. Harlequinn & 0x02, etc.
-            available_frames= {0x18, data(4)}, -- #BYRTH# Flags for the available frames. Position corresponds to the item ID shifted down by 0x2020. Harlequinn & 0x01, etc.
-            available_attach= {0x34, data(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments. Position corresponds to the item ID shifted down by 0x2100.
+            available_heads = {0x14, bits(4)}, -- Flags for the available heads. Position corresponds to Item ID shifted down by 0x2000. Harlequinn & 0x02, etc.
+            available_frames= {0x18, bits(4)}, -- #BYRTH# Flags for the available frames. Position corresponds to the item ID shifted down by 0x2020. Harlequinn & 0x01, etc.
+            available_attach= {0x34, bits(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments. Position corresponds to the item ID shifted down by 0x2100.
             pet_name        = {0x54, string(0x10)},
             hp              = {0x64, uint16},
             hp_max          = {0x66, uint16},
@@ -1137,19 +1138,19 @@ types.incoming[0x044] = multiple({
             magic           = {0x74, uint16},
             magic_max       = {0x76, uint16},
             str             = {0x7C, uint16},
-            str_max         = {0x7E, uint16},
+            str_modifier    = {0x7E, uint16},
             dex             = {0x80, uint16},
-            dex_max         = {0x82, uint16},
+            dex_modifier    = {0x82, uint16},
             vit             = {0x84, uint16},
-            vit_max         = {0x86, uint16},
+            vit_modifier    = {0x86, uint16},
             agi             = {0x88, uint16},
-            agi_max         = {0x8A, uint16},
+            agi_modifier    = {0x8A, uint16},
             int             = {0x8C, uint16},
-            int_max         = {0x8E, uint16},
+            int_modifier    = {0x8E, uint16},
             mnd             = {0x90, uint16},
-            mnd_max         = {0x92, uint16},
+            mnd_modifier    = {0x92, uint16},
             chr             = {0x94, uint16},
-            chr_max         = {0x96, uint16}
+            chr_modifier    = {0x96, uint16}
         }),
 
         --MON
