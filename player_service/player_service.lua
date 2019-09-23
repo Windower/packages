@@ -1,3 +1,4 @@
+local event = require('event')
 local packets = require('packets')
 local server = require('shared.server')
 local struct = require('struct')
@@ -50,6 +51,8 @@ local data = server.new(struct.struct({
         sub_id              = {struct.int32},
         range_id            = {struct.int32},
     })},
+    state_change        = {data = event.new()},
+    job_change          = {data = event.new()},
 }))
 
 local model = data.model
@@ -105,8 +108,6 @@ packets.incoming:register_init({
 
     [{0x01B}] = function(p)
         data.race_id = p.race_id
-        data.main_job_id = p.main_job_id
-        data.sub_job_id = p.sub_job_id
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
         for i = 0, 0x17 do
@@ -117,14 +118,15 @@ packets.incoming:register_init({
     [{0x037}] = function(p)
         data.id = p.player_id
         data.hp_percent = p.hp_percent
-        data.state_id = p.state_id
         data.pet_index = p.pet_index
+        if data.state_id ~= p.state_id then
+            data.state_id = p.state_id
+            data.state_change:trigger()
+        end
     end,
 
     [{0x061}] = function(p)
-        data.main_job_id = p.main_job_id
         data.main_job_level = p.main_job_level
-        data.sub_job_id = p.sub_job_id
         data.sub_job_level = p.sub_job_level
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
@@ -137,6 +139,11 @@ packets.incoming:register_init({
         data.item_level = p.item_level_over_99 + p.main_job_level
         data.exp = p.exp
         data.exp_required = p.exp_required
+        if data.main_job_id ~= p.main_job_id or data.sub_job_id ~= p.sub_job_id then
+            data.main_job_id = p.main_job_id
+            data.sub_job_id = p.sub_job_id
+            data.job_change:trigger()
+        end
     end,
 
     [{0x062}] = function(p)
