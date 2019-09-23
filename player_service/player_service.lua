@@ -1,7 +1,7 @@
-local event   = require('event')
+local event = require('event')
 local packets = require('packets')
-local server  = require('shared.server')
-local struct  = require('struct')
+local server = require('shared.server')
+local struct = require('struct')
 
 local skill = struct.struct({
     level               = {struct.int32},
@@ -52,8 +52,7 @@ local data = server.new(struct.struct({
         range_id            = {struct.int32},
     })},
     state_change        = {data = event.new()},
-    main_job_change     = {data = event.new()},
-    sub_job_change      = {data = event.new()},
+    job_change          = {data = event.new()},
 }))
 
 local model = data.model
@@ -140,13 +139,10 @@ packets.incoming:register_init({
         data.item_level = p.item_level_over_99 + p.main_job_level
         data.exp = p.exp
         data.exp_required = p.exp_required
-        if data.main_job_id ~= p.main_job_id then
+        if data.main_job_id ~= p.main_job_id or data.sub_job_id ~= p.sub_job_id then
             data.main_job_id = p.main_job_id
-            data.main_job_change:trigger()
-        end
-        if data.sub_job_id ~= p.sub_job_id then
             data.sub_job_id = p.sub_job_id
-            data.sub_job_change:trigger()
+            data.job_change:trigger()
         end
     end,
 
