@@ -43,6 +43,7 @@ local type_map = setmetatable({}, {
 
 local path_cache = {}
 local info_cache = {}
+local fragments_cache = {}
 
 local fns = {}
 
@@ -147,6 +148,7 @@ end
 
 do
     local ffi_cast = ffi.cast
+    local ffi_fill = ffi.fill
 
     local injection_ptr = ffi_cast(type_map.injection.name .. '*', packets_client:call(function() return get_injection_address() end))
     local injection = injection_ptr[0]
@@ -177,13 +179,22 @@ do
         local info = info_cache[t]
         local ftype = info.ftype
 
-        ffi.fill(injection_ptr, injection_size)
+        ffi_fill(injection_ptr, injection_size)
 
         injection.data_size = ftype.size
         injection.direction = info.direction
         injection.id = info.id
 
-        copy(ffi_cast(ftype.name .. '*', buffer)[0], values, ftype)
+        local cdata = ffi_cast(ftype.name .. '*', buffer)[0]
+        local cache = ftype.info.cache
+        local fragments = fragments_cache[t]
+        if cache then
+            for i = 1, #cache do
+                cdata[cache[i]] = fragments[i]
+            end
+        end
+
+        copy(cdata, values, ftype)
         packets_client:call(inject)
     end
 end
@@ -207,7 +218,7 @@ do
     local string_find = string.find
     local string_sub = string.sub
 
-    make_table = function(path)
+    make_table = function(path, parent, fragment)
         local ftype = type_map[path]
 
         local specific = ftype.info.empty ~= true
@@ -232,6 +243,21 @@ do
         end
         path_cache[result] = path
 
+        if ftype.info.cache then
+            fragments_cache[result] = {}
+        end
+
+        local cached_fragments = fragments_cache[parent]
+        if cached_fragments then
+            local fragments = {}
+            local cached_fragments_count = #cached_fragments
+            for i = 1, cached_fragments_count do
+                fragments[i] = cached_fragments[i]
+            end
+            fragments[cached_fragments_count + 1] = fragment
+            fragments_cache[result] = fragments
+        end
+
         return result, specific
     end
 end
@@ -251,7 +277,7 @@ packet_meta = {
             error('Invalid packet path: ' .. path)
         end
 
-        local inner, specific = make_table(path)
+        local inner, specific = make_table(path, t, k)
         local value = setmetatable(inner, specific and final_meta(path) or packet_meta)
         rawset(t, k, value)
         return value

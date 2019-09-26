@@ -54,10 +54,10 @@ local ftype_map = {
         path            = {struct.string(0x100)},
     }),
     injection = struct.struct({
-        data        = {0x000, struct.data(0x100)},
-        data_size   = {0x100, struct.int32},
-        id          = {struct.int32},
-        direction   = {struct.string(0x10)},
+        data            = {0x000, struct.data(0x100)},
+        data_size       = {0x100, struct.int32},
+        id              = {struct.int32},
+        direction       = {struct.string(0x10)},
     })
 }
 
@@ -71,7 +71,7 @@ do
         local ftype = ftype_map[path]
 
         if not ftype then
-            if path == '' or string_sub(path, 10, 10) == '' then
+            if #path < 10 then
                 ftype = empty_ftype
             else
                 local direction = string_sub(path, 2, 9)
@@ -81,17 +81,16 @@ do
                 ftype = packet_types[direction][id] or empty_ftype
 
                 local types = ftype.types
-                while types do
-                    if slash_index then
-                        local start_index = slash_index + 1
-                        slash_index = string_find(path, '/', start_index, true)
-                        local key = tonumber(string_sub(path, start_index, slash_index and slash_index - 1))
-                        local found = types[key]
-                        ftype = found or ftype.base
-                        types = ftype.types
-                    else
-                        ftype = ftype.base
-                    end
+                while slash_index do
+                    local start_index = slash_index + 1
+                    slash_index = string_find(path, '/', start_index, true)
+                    local key = tonumber(string_sub(path, start_index, slash_index and slash_index - 1))
+                    ftype = types[key]
+                    types = ftype.types
+                end
+
+                if types then
+                    ftype = ftype.base
                 end
             end
 
