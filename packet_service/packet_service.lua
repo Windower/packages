@@ -81,7 +81,7 @@ do
                 ftype = packet_types[direction][id] or empty_ftype
 
                 local types = ftype.types
-                while slash_index do
+                while slash_index and types do
                     local start_index = slash_index + 1
                     slash_index = string_find(path, '/', start_index, true)
                     local key = tonumber(string_sub(path, start_index, slash_index and slash_index - 1))
