@@ -247,7 +247,7 @@ do
             fragments_cache[result] = {}
         end
 
-        local cached_fragments = fragments_cache[parent]
+        local cached_fragments = parent and fragments_cache[parent]
         if cached_fragments then
             local fragments = {}
             local cached_fragments_count = #cached_fragments
