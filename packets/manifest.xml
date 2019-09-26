@@ -1,6 +1,6 @@
 <package>
   <name>packets</name>
-  <version>3.0.0.2</version>
+  <version>3.1.0.0</version>
   <type>library</type>
   <dependencies>
     <dependency>packet_service</dependency>

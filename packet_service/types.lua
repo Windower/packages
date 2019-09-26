@@ -89,13 +89,13 @@ do
         local types = {}
         local base_info = {
             cache = { ftype.key },
-            empty = true,
         }
         local base_fields = ftype.base.fields
         for index, definitions in pairs(ftype.lookups) do
             types[index] = struct(update({}, base_info), update(update({}, base_fields), definitions.fields))
         end
 
+        base_info.empty = true
         ftype.info = { cache = base_info.cache }
         ftype.base = struct(base_info, base_fields)
         ftype.lookups = nil
@@ -657,7 +657,7 @@ types.incoming[0x028] = struct({
                 local action_count = get(4)
                 local actions = {}
 
-                for i = 1, action_count do
+                for j = 1, action_count do
                     local reaction = get(5)
                     local animation = get(11)
                     local effect = get(5)
@@ -689,7 +689,7 @@ types.incoming[0x028] = struct({
                         }
                     end
 
-                    actions[i] = {
+                    actions[j] = {
                         reaction = reaction,
                         animation = animation,
                         effect = effect,
@@ -1324,9 +1324,9 @@ types.incoming[0x04B] = multiple({
 types.incoming[0x04C] = multiple({
     base = struct({
         type            = {0x00, uint8},
-        sale_slot       = {0x01, uint8}, -- 0xFF for types 0x02, 0x03, 0x04, and 0x05, which do not use a sale slot.
+        sale_slot       = {0x01, int8}, -- 0xFF for types 0x02, 0x03, 0x04, and 0x05, which do not use a sale slot.
         packet_number   = {0x02, uint8}, -- 0xF6 if the action fails
-        _known2         = {0x03, uint8}, -- 0x00 except for type 0x04, where it takes the value 0x04 and type 0x0D, where it is 0x00 for the first packet (packet_number == 0x02) and 0x01 for the second (packet_number == 0x01)
+        _known1         = {0x03, uint8}, -- 0x00 except for type 0x04, where it takes the value 0x04 and type 0x0D, where it is 0x00 for the first packet (packet_number == 0x02) and 0x01 for the second (packet_number == 0x01)
     }),
 
     key = 'type',
