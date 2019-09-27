@@ -271,7 +271,6 @@ do
                 do
                     local child_ftype = field.type
                     local converter = child_ftype.converter
-                    if field.cname == 'size' then error() end
                     data = cdata[field.cname]
                     if converter then
                         data = tolua[converter](data, child_ftype)
@@ -564,15 +563,20 @@ struct.double = struct.make_type('double')
 struct.bool = struct.make_type('bool')
 
 do
+    local bit_band = bit.band
+    local bit_bor = bit.bor
+    local bit_bnot = bit.bnot
     local bit_rshift = bit.rshift
     local bit_lshift = bit.lshift
     local ffi_string = ffi.string
     local ffi_copy = ffi.copy
+    local math_floor = math.floor
     local math_min = math.min
     local string_sub = string.sub
 
     local string_cache = {}
     local data_cache = {}
+    local bits_cache = {}
 
     local make = function(size, tag, cache)
         size = size or '*'
@@ -623,6 +627,63 @@ do
 
     toc.data = function(instance, index, value, ftype)
         ffi_copy(instance[index], value, math_min(ftype.size, #value))
+    end
+
+    local bits_mt = {
+        __index = function(t, k)
+            local cdata = t._cdata
+            local index = math_floor(k / 8)
+            local current = cdata[index]
+            local mask = bit_lshift(1, k % 8)
+            return bit_band(current, mask) ~= 0
+        end,
+        __newindex = function(t, k, v)
+            local cdata = t._cdata
+            local index = math_floor(k / 8)
+            local current = cdata[index]
+            local mask = bit_lshift(1, k % 8)
+            cdata[index] = v and bit_bor(current, mask) or bit_band(current, bit_bnot(mask))
+        end,
+        __pairs = function(t)
+            return function(t, k)
+                local key = k + 1
+                if key >= t._bits then
+                    return nil, nil
+                end
+                return key, t[key]
+            end, t, -1
+        end,
+        __ipairs = pairs,
+        __len = function(t)
+            return t._bits
+        end,
+    }
+
+    struct.bits = function(size)
+        return make(size, 'bits', bits_cache)
+    end
+
+    tolua.bits = function(value, ftype)
+        return setmetatable({
+            _cdata = value,
+            _bits = 8 * ftype.size
+        }, bits_mt)
+    end
+
+    toc.bits = function(instance, index, value, ftype)
+        local ptr = instance[index]
+        for byte_index = 0, ftype.size - 1 do
+            local byte = 0
+            local current = 1
+            for bit_index = 0, 7 do
+                if value[8 * byte_index + bit_index] then
+                    byte = byte + current
+                end
+                current = current * 2
+            end
+
+            ptr[byte_index] = byte
+        end
     end
 end
 
@@ -745,76 +806,6 @@ end
 
 toc.boolbit = function(instance, index, value, ftype)
     instance[index] = value and 1 or 0
-end
-
-do
-    local math_floor = math.floor
-    local band = bit.band
-    local bor = bit.bor
-    local bnot = bit.bnot
-    local lshift = bit.lshift
-
-    local bits_mt = {
-        __index = function(t, k)
-            local cdata = t._cdata
-            local index = math_floor(k / 8)
-            local current = cdata[index]
-            local mask = lshift(1, k % 8)
-            return band(current, mask) ~= 0
-        end,
-        __newindex = function(t, k, v)
-            local cdata = t._cdata
-            local index = math_floor(k / 8)
-            local current = cdata[index]
-            local mask = lshift(1, k % 8)
-            cdata[index] = v and bor(current, mask) or band(current, bnot(mask))
-        end,
-        __pairs = function(t)
-            return function(t, k)
-                local key = k + 1
-                if key >= t._bits then
-                    return nil, nil
-                end
-                return key, t[key]
-            end, t, -1
-        end,
-        __ipairs = pairs,
-        __len = function(t)
-            return t._bits
-        end,
-    }
-
-    struct.bits = function(bytes)
-        local ftype = struct.data(bytes)
-
-        ftype.converter = 'bits'
-        ftype.tag = 'bits'
-
-        return ftype
-    end
-
-    tolua.bits = function(value, ftype)
-        return setmetatable({
-            _cdata = value,
-            _bits = 8 * ftype.size
-        }, bits_mt)
-    end
-
-    toc.bits = function(instance, index, value, ftype)
-        local ptr = instance[index]
-        for byte_index = 0, ftype.size - 1 do
-            local byte = 0
-            local current = 1
-            for bit_index = 0, 7 do
-                if value[8 * byte_index + bit_index] then
-                    byte = byte + current
-                end
-                current = current * 2
-            end
-
-            ptr[byte_index] = byte
-        end
-    end
 end
 
 do
