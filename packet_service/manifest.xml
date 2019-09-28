@@ -1,6 +1,6 @@
 <package>
   <name>packet_service</name>
-  <version>3.1.0.1</version>
+  <version>3.1.0.2</version>
   <type>service</type>
   <dependencies>
     <dependency>file</dependency>

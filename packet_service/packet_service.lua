@@ -85,7 +85,13 @@ do
                     local start_index = slash_index + 1
                     slash_index = string_find(path, '/', start_index, true)
                     local key = tonumber(string_sub(path, start_index, slash_index and slash_index - 1))
-                    ftype = types[key]
+
+                    local sub_ftype = types[key]
+                    if not sub_ftype then
+                        break
+                    end
+
+                    ftype = sub_ftype
                     types = ftype.types
                 end
 
