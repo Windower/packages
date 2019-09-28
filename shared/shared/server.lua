@@ -23,21 +23,26 @@ local heap = ffi_gc(C.HeapCreate(0, 0, 0), function(heap)
     C.HeapDestroy(heap)
 end)
 
-local new_ptr
-do
-    local destroy = function(ptr)
-        if destroyed then
-            return
-        end
+local ptr_cache = setmetatable({}, {
+    __mode = 'k'
+})
 
-        C.HeapFree(heap, 0, ptr)
+local destroy = function(cdata)
+    if destroyed then
+        return
     end
 
-    new_ptr = function(ftype)
-        struct_name(ftype)
+    C.HeapFree(heap, 0, ptr_cache[cdata])
+end
 
-        return ffi_gc(ffi_cast(ftype.name .. '*', C.HeapAlloc(heap, 8, ftype.size)), destroy)
-    end
+local attach_gc = function(cdata, ptr)
+    ptr_cache[cdata] = tonumber(ffi_cast('intptr_t', ptr))
+    return ffi_gc(cdata, destroy)
+end
+
+local new_ptr = function(ftype)
+    struct_name(ftype)
+    return ffi_cast(ftype.name .. '*', C.HeapAlloc(heap, 8, ftype.size))
 end
 
 local servers = {}
@@ -56,9 +61,12 @@ return {
             ftype = ftype,
         }
 
-        return ptr[0]
+        return attach_gc(ptr[0], ptr)
     end,
-    new_ptr = new_ptr,
+    new_ptr = function(ftype)
+        local ptr = new_ptr(ftype)
+        return attach_gc(ptr, ptr)
+    end,
 }
 
 --[[
