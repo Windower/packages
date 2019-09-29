@@ -73,18 +73,23 @@ do
     local current = ffi_cast(type_map.current.name .. '*', current_address)[0]
 
     register_path = function(path, fn)
-        local wrapped = function()
-            fn(get_packet(current_address, current.path))
-        end
-
         local events = registry[path]
         if not events then
             events = {}
             registry[path] = events
+        elseif events[fn] then
+            return
+        end
+
+        local wrapped = function()
+            fn(get_packet(current_address, current.path))
         end
 
         local event = packets_client:call(make_event, path)
-        events[wrapped] = event
+        events[fn] = {
+            event = event,
+            fn = wrapped,
+        }
         event:register(wrapped)
     end
 end
@@ -94,7 +99,8 @@ fns.register = function(t, fn)
 end
 
 fns.unregister = function(t, fn)
-    registry[path_cache[t]][fn] = nil
+    local entry = registry[path_cache[t]][fn]
+    entry.event:unregister(entry.fn)
 end
 
 do
