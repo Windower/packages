@@ -77,8 +77,6 @@ do
         if not events then
             events = {}
             registry[path] = events
-        elseif events[fn] then
-            return
         end
 
         local wrapped = function()
