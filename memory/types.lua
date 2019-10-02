@@ -43,13 +43,13 @@ local chat_input_buffer = string(0x97)
 local vector_3f = struct({
     x                       = {0x0, float},
     z                       = {0x4, float},
-    y                       = {0x8, float}, 
+    y                       = {0x8, float},
 })
 
 local vector_4f = struct({
     x                       = {0x0, float},
     z                       = {0x4, float},
-    y                       = {0x8, float}, 
+    y                       = {0x8, float},
     w                       = {0xC, float},
 })
 
@@ -306,7 +306,7 @@ types.account_info = struct({signature = '538B5C240856578BFB83C9FF33C053F2AEA1'}
     server_id               = {0x390, int16},
 })
 
-types.target = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&', static_offsets = {0x18, 0x00}}, {
+types.target = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&', offsets = {0x18, 0x00}}, {
     window                  = {0x08, ptr()},
     name                    = {0x14, npc_name},
     entity                  = {0x48, ptr(entity)},
@@ -314,7 +314,7 @@ types.target = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&'
     hp_percent              = {0x64, uint8},
 })
 
-types.target_array = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&', static_offsets = {0x18, 0x2F0}}, {
+types.target_array = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&', offsets = {0x18, 0x2F0}}, {
     targets                 = {0x00, target_array_entry[2]},
     auto_target             = {0x51, bool},
     both_targets_active     = {0x52, bool},
@@ -367,7 +367,7 @@ types.tell_history = struct({signature = '8B0D????????85C9740F8B15'}, {
     senders                 = {0x11E, pc_name[8]},
 })
 
-types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D', static_offsets = {0x00}}, {
+types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D', offsets = {0x00}}, {
     temporary_buffer        = {0x7EDC, chat_input_buffer},
     history                 = {0x7F73, chat_input_buffer[9]},
     temporary_length        = {0x84C4, uint8},
@@ -376,7 +376,7 @@ types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D', static_
     history_index           = {0x84F0, uint8},
     internal                = {0x84F4, chat_input_buffer},
     length_internal         = {0x86B8, uint8},
-    stripped                = {0x86BC, chat_input_buffer}, 
+    stripped                = {0x86BC, chat_input_buffer},
     length_stripped         = {0x8880, uint8},
     length_internal_max     = {0x8884, uint8},
     position_internal       = {0x8888, uint8},
@@ -419,11 +419,11 @@ types.action_strings = struct({signature = '7406B8????????C38B4424046A006A0050B9
     spells                  = {0x9B4, ptr()},
 })
 
-types.status_effect_strings = struct({signature = '8A46055E3C0273188B0D', static_offsets = {0x00}}, {
+types.status_effect_strings = struct({signature = '8A46055E3C0273188B0D', offsets = {0x00}}, {
     d_msg                   = {0x04, ptr()},
 })
 
-types.weather_strings = struct({signature = 'C333C9668B08518B0D', static_offsets = {0x148}}, {
+types.weather_strings = struct({signature = 'C333C9668B08518B0D', offsets = {0x148}}, {
     d_msg                   = {0x00, ptr()},
 })
 
@@ -458,7 +458,7 @@ types.d_msg_table = struct({signature = '85C0752B5F5EC38B0CF5'}, {
     str27                   = {0xD8, ptr(ptr())}, -- [1] = Objectives [2] = Get grinding!
 })
 
-types.music = struct.struct({signature = '668B490625FFFF000066C705????????FFFF66890C45'}, {
+types.music = struct({signature = '668B490625FFFF000066C705????????FFFF66890C45'}, {
     day                     = {0x0, uint16},
     night                   = {0x2, uint16},
     solo_combat             = {0x4, uint16},
@@ -469,7 +469,7 @@ types.music = struct.struct({signature = '668B490625FFFF000066C705????????FFFF66
     fishing                 = {0xE, uint16},
 })
 
-types.map_table = struct.struct({signature = '8A5424188B7424148B7C2410B9&'}, {
+types.map_table = struct({signature = '8A5424188B7424148B7C2410B9&'}, {
     ptr = {0x00, ptr(map_entry)},
 })
 
