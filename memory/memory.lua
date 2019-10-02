@@ -2,13 +2,12 @@ local ffi = require('ffi')
 local scanner = require('scanner')
 local types = require('memory:types')
 
-local scan_results = {}
-local fixed_types = {}
-
 local modules = {'FFXiMain.dll', 'polcore.dll', 'polcoreEU.dll'}
 local byte_ptr = ffi.typeof('char*')
 local void_ptr_ptr = ffi.typeof('void**')
 
+local rawset = rawset
+local next = next
 local ffi_cast = ffi.cast
 local scanner_scan = scanner.scan
 
@@ -16,59 +15,43 @@ local get_instance = function(ftype, ptr)
     return ffi_cast(ftype.name .. '*', ptr)[0]
 end
 
+local get_scan_ptr = function(ftype)
+    for i = 1, #modules do
+        local ptr = scanner_scan(ftype.signature, modules[i])
+        if ptr ~= nil then
+            return ptr
+        end
+    end
+end
+
 local setup_name = function(name)
     local ftype = types[name]
 
-    local ptr = scan_results[name]
-    if ptr == nil then
-        for _, module in ipairs(modules) do
-            ptr = scanner_scan(ftype.signature, module)
-            if ptr ~= nil then
-                break
-            end
-        end
+    local ptr = get_scan_ptr(ftype)
 
-        for _, offset in ipairs(ftype.static_offsets) do
-            ptr = ffi_cast(void_ptr_ptr, ffi_cast(byte_ptr, ptr) + offset)[0]
-        end
-
-        scan_results[name] = ptr
+    local offsets = ftype.offsets
+    for i = 1, #offsets do
+        ptr = ffi_cast(void_ptr_ptr, ffi_cast(byte_ptr, ptr) + offsets[i])[0]
     end
 
     return ftype, ptr
 end
 
 return setmetatable({}, {
-    __index = function(_, name)
-        do
-            local cached = fixed_types[name]
-            if cached ~= nil then
-                return cached
-            end
-        end
+    __index = function(t, k)
+        local ftype, ptr = setup_name(k)
 
-        local ftype, ptr = setup_name(name)
-
-        local offsets = ftype.offsets
-        if next(offsets) == nil then
-            local res = get_instance(ftype, ptr)
-            fixed_types[name] = res
-            return res
-        end
-
-        for _, offset in ipairs(offsets) do
-            ptr = ffi_cast(byte_ptr, ptr)[offset]
-        end
-
-        return get_instance(ftype, ptr)
+        local cdata = get_instance(ftype, ptr)
+        rawset(t, k, cdata)
+        return cdata
     end,
-    __newindex = function(_, name, value)
-        types[name] = value
+    __newindex = function(_, k, value)
+        types[k] = value
     end,
-    __pairs = function(memory)
+    __pairs = function(t)
         return function(t, k)
             local key = next(t, k)
-            return key, key and memory[key]
+            return key, key and t[key]
         end, types, nil
     end,
 })

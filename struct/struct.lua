@@ -115,6 +115,7 @@ do
     end
 end
 
+local make_type
 do
     local ffi_sizeof = ffi.sizeof
 
@@ -128,7 +129,7 @@ do
         end,
     }
 
-    struct.make_type = function(cdef, info)
+    make_type = function(cdef, info)
         return setmetatable({
             cdef = cdef,
             size = info and info.size or ffi_sizeof(cdef),
@@ -136,8 +137,8 @@ do
     end
 end
 
-struct.copy_type = function(base)
-    local ftype = struct.make_type(base.cdef)
+local copy_type = function(base)
+    local ftype = make_type(base.cdef)
 
     for key, value in pairs(base) do
         ftype[key] = value
@@ -190,11 +191,10 @@ do
     local table_sort = table.sort
 
     local build_type = function(cdef, info)
-        local ftype = struct.make_type(cdef, info)
+        local ftype = make_type(cdef, info)
         if info.signature then
             ftype.signature = info.signature
             ftype.offsets = info.offsets or {}
-            ftype.static_offsets = info.static_offsets or {}
         end
 
         ftype.info = info
@@ -355,12 +355,12 @@ do
         local arranged_index = 0
         local vla = false
         for label, field in pairs(fields) do
-            local position = field[2] and field[1]
+            local position = field[2] and field[1] or field.position
             field.label = label
             field.position = position
             field.offset = field.offset or 0
 
-            local ftype = field[2] or field[1]
+            local ftype = field[2] or field[1] or field.type
             if ftype then
                 local size = info.size
                 if ftype.count == '*' then
@@ -486,7 +486,7 @@ do
         local is_tag = type(base) == 'string'
 
         local base_def = not base and 'void' or is_tag and base or base.name or base.cdef
-        local ftype = struct.make_type(base_def .. '*')
+        local ftype = make_type(base_def .. '*')
 
         ftype.ptr = true
 
@@ -545,22 +545,22 @@ do
 end
 
 struct.tag = function(base, tag)
-    local ftype = struct.copy_type(base)
+    local ftype = copy_type(base)
     ftype.tag = tag
     return ftype
 end
 
-struct.uint8 = struct.make_type('uint8_t')
-struct.uint16 = struct.make_type('uint16_t')
-struct.uint32 = struct.make_type('uint32_t')
-struct.uint64 = struct.make_type('uint64_t')
-struct.int8 = struct.make_type('int8_t')
-struct.int16 = struct.make_type('int16_t')
-struct.int32 = struct.make_type('int32_t')
-struct.int64 = struct.make_type('int64_t')
-struct.float = struct.make_type('float')
-struct.double = struct.make_type('double')
-struct.bool = struct.make_type('bool')
+struct.int8 = make_type('int8_t')
+struct.int16 = make_type('int16_t')
+struct.int32 = make_type('int32_t')
+struct.int64 = make_type('int64_t')
+struct.uint8 = make_type('uint8_t')
+struct.uint16 = make_type('uint16_t')
+struct.uint32 = make_type('uint32_t')
+struct.uint64 = make_type('uint64_t')
+struct.float = make_type('float')
+struct.double = make_type('double')
+struct.bool = make_type('bool')
 
 do
     local bit_band = bit.band
@@ -583,7 +583,7 @@ do
 
         local ftype = cache[size]
         if not ftype then
-            ftype = struct.array(struct.make_type('char'), size)
+            ftype = struct.array(make_type('char'), size)
             ftype.converter = tag
             ftype.tag = tag
 
@@ -718,7 +718,7 @@ do
     local ctype = ffi_typeof('char[?]')
 
     struct.packed_string = function(size, lookup_string)
-        local ftype = struct.array(struct.make_type('char'), size)
+        local ftype = struct.array(make_type('char'), size)
         ftype.converter = 'packed_string'
 
         do
@@ -785,7 +785,7 @@ do
 end
 
 struct.bit = function(base, bits)
-    local ftype = struct.copy_type(base)
+    local ftype = copy_type(base)
 
     ftype.bits = bits
 
