@@ -39,6 +39,7 @@ local data = server.new(struct.struct({
     home_point_zone_id  = {struct.int32},
     job_levels          = {struct.int32[0x18]},
     skills              = {skill_type[0x40]},
+    spells              = {struct.bits(128)},
     race_id             = {struct.int32},
     face_id             = {struct.int32},
     model               = {struct.struct({
@@ -159,6 +160,14 @@ packets.incoming:register_init({
             skill.level = s.level
             skill.rank_id = s.rank_id
             skill.capped = s.capped
+        end
+    end,
+
+    [{0x0AA}] = function(p)
+        local p_spells = p.spells
+        local spells = data.spells
+        for i = 0, 1023 do
+            spells[i] = p_spells[i]
         end
     end,
 
