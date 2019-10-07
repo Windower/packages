@@ -15,7 +15,12 @@ return setmetatable({}, {
         }
     end,
     __pairs = function(t)
-        return function(t, k)
+        return function(t, i)
+            i = i + 1
+            if i == size then
+                return nil, nil
+            end
+            return i, t[i]
         end, t, -1
     end,
     __ipairs = pairs,
