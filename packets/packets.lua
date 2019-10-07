@@ -249,10 +249,10 @@ do
 
         if parent then
             local parent_ftype = type_map[path_cache[parent]]
-            local parent_key = parent_ftype.key
+            local parent_key = parent_ftype.info.key
             if parent_key then
                 local fragments = {
-                    parent_key = fragment,
+                    [parent_key] = fragment,
                 }
 
                 local parent_fragments = fragments_cache[parent]
