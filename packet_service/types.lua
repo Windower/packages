@@ -96,6 +96,7 @@ do
         end
 
         base_info.empty = true
+        base_info.key = ftype.key
         ftype.info = { cache = base_info.cache }
         ftype.base = struct(base_info, base_fields)
         ftype.lookups = nil
@@ -1172,7 +1173,6 @@ types.incoming[0x047] = struct({
     initial_phrase      = {0x04, string(64)},
     translated_phrase   = {0x44, string(64)} -- Will be 00'd if no match was found
 })
-
 
 -- Unknown 0x048 incoming :: Sent when loading linkshell information from the Linkshell Concierge
 -- One per entry, 128 bytes long, mostly empty, does not contain name as far as I can see.
