@@ -190,15 +190,15 @@ do
         injection.id = info.id
 
         local cdata = ffi_cast(ftype.name .. '*', buffer)[0]
-        local cache = ftype.info.cache
+        copy(cdata, values, ftype)
+
         local fragments = fragments_cache[t]
-        if cache then
-            for i = 1, #cache do
-                cdata[cache[i]] = fragments[i]
+        if fragments then
+            for key, value in pairs(fragments) do
+                cdata[key] = value
             end
         end
 
-        copy(cdata, values, ftype)
         packets_client:call(inject)
     end
 end
@@ -247,19 +247,23 @@ do
         end
         path_cache[result] = path
 
-        if ftype.info.cache then
-            fragments_cache[result] = {}
-        end
+        if parent then
+            local parent_ftype = type_map[path_cache[parent]]
+            local parent_key = parent_ftype.key
+            if parent_key then
+                local fragments = {
+                    parent_key = fragment,
+                }
 
-        local cached_fragments = parent and fragments_cache[parent]
-        if cached_fragments then
-            local fragments = {}
-            local cached_fragments_count = #cached_fragments
-            for i = 1, cached_fragments_count do
-                fragments[i] = cached_fragments[i]
+                local parent_fragments = fragments_cache[parent]
+                if parent_fragments then
+                    for key, value in pairs(parent_fragments) do
+                        fragments[key] = value
+                    end
+                end
+
+                fragments_cache[result] = fragments
             end
-            fragments[cached_fragments_count + 1] = fragment
-            fragments_cache[result] = fragments
         end
 
         return result, specific
