@@ -59,7 +59,7 @@ local bool = struct.bool
 
 local bit = struct.bit
 local boolbit = struct.boolbit
-local bits = struct.bits
+local bitfield = struct.bitfield
 
 local time = struct.time
 
@@ -1124,9 +1124,9 @@ types.incoming[0x044] = multiple({
             automaton_head  = {0x04, uint8}, -- Harlequinn 0x01, Valoredge 0x02, Sharpshot 0x03, Stormwaker 0x04, Soulsoother 0x05, Spiritreaver 0x06 (Item ID - 0x2000)
             automaton_frame = {0x05, uint8}, -- Harlequinn 0x20, Valoredge 0x21, Sharpshot 0x22, Stormwaker 0x23 (Item ID - 0x2000)
             attachments     = {0x06, uint8[0x0C]}, -- Attachment assignments are based off their position in the equipment list. 0 is an empty slot, otherwise Item ID - 0x2100, so Strobe is 0x01, etc.
-            available_heads = {0x14, bits(4)}, -- Flags for the available heads. Position corresponds to Item ID shifted down by 0x2000. Harlequinn & 0x02, etc.
-            available_frames= {0x18, bits(4)}, -- #BYRTH# Flags for the available frames. Position corresponds to the item ID shifted down by 0x2020. Harlequinn & 0x01, etc.
-            available_attach= {0x34, bits(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments. Position corresponds to the item ID shifted down by 0x2100.
+            available_heads = {0x14, bitfield(4)}, -- Flags for the available heads. Position corresponds to Item ID shifted down by 0x2000. Harlequinn & 0x02, etc.
+            available_frames= {0x18, bitfield(4)}, -- #BYRTH# Flags for the available frames. Position corresponds to the item ID shifted down by 0x2020. Harlequinn & 0x01, etc.
+            available_attach= {0x34, bitfield(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments. Position corresponds to the item ID shifted down by 0x2100.
             pet_name        = {0x54, string(0x10)},
             hp              = {0x64, uint16},
             hp_max          = {0x66, uint16},
@@ -1984,7 +1984,7 @@ types.incoming[0x0A0] = struct({
 
 -- Player spells known
 types.incoming[0x0AA] = struct({
-    spells              = {0x00, bits(128)} -- 0 indexed bit field where nth bit indicates if that spell_id is known. I.E. bit 1 is Cure, bit 2 is Cure II, etc.
+    spells              = {0x00, bitfield(0x80)} -- 0 indexed bit field where nth bit indicates if that spell_id is known. I.E. bit 1 is Cure, bit 2 is Cure II, etc.
 })
 
 -- 0x0AC, and 0x0AE are bitfields where the lsb indicates whether you have index 0 of the related resource.

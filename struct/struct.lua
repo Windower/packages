@@ -576,7 +576,7 @@ do
 
     local string_cache = {}
     local data_cache = {}
-    local bits_cache = {}
+    local bitfield_cache = {}
 
     local make = function(size, tag, cache)
         size = size or '*'
@@ -629,7 +629,7 @@ do
         ffi_copy(instance[index], value, math_min(ftype.size, #value))
     end
 
-    local bits_mt = {
+    local bitfield_mt = {
         __index = function(t, k)
             local cdata = t._cdata
             local index = math_floor(k / 8)
@@ -659,18 +659,18 @@ do
         end,
     }
 
-    struct.bits = function(size)
-        return make(size, 'bits', bits_cache)
+    struct.bitfield = function(bytes)
+        return make(bytes, 'bitfield', bitfield_cache)
     end
 
-    tolua.bits = function(value, ftype)
+    tolua.bitfield = function(value, ftype)
         return setmetatable({
             _cdata = value,
             _bits = 8 * ftype.size
-        }, bits_mt)
+        }, bitfield_mt)
     end
 
-    toc.bits = function(instance, index, value, ftype)
+    toc.bitfield = function(instance, index, value, ftype)
         local ptr = instance[index]
         for byte_index = 0, ftype.size - 1 do
             local byte = 0
