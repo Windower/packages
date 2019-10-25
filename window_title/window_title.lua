@@ -1,6 +1,6 @@
 local account = require('account')
 local ffi = require('ffi')
-local windower = require('windower')
+local windower = require('core.windower')
 
 local user32 = ffi.load('user32')
 

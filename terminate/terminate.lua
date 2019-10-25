@@ -1,4 +1,4 @@
-local command = require('command')
+local command = require('core.command')
 local ffi = require('ffi')
 
 ffi.cdef[[

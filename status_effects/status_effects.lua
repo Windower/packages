@@ -1,4 +1,4 @@
-local shared = require('shared')
+local shared = require('core.shared')
 local resources = require('resources')
 local enumerable = require('enumerable')
 

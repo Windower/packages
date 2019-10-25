@@ -1,8 +1,8 @@
 local bit = require('bit')
-local event = require('event')
+local event = require('core.event')
 local ffi = require('ffi')
 local table = require('table')
-local windower = require('windower')
+local windower = require('core.windower')
 
 local data_ptr = ffi.typeof[[struct {
     int32_t next_id[1];

@@ -1,8 +1,8 @@
-require('event') -- Required for the serializer
+require('core.event') -- Required for the serializer
 local ffi = require('ffi')
-local shared = require('shared')
+local shared = require('core.shared')
 local struct = require('struct')
-local windower = require('windower')
+local windower = require('core.windower')
 
 ffi.cdef[[
     void* HeapAlloc(void*, uint32_t, size_t);

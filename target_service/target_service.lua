@@ -1,5 +1,5 @@
-local command = require('command')
-local shared = require('shared')
+local command = require('core.command')
+local shared = require('core.shared')
 
 do
     local handling = nil

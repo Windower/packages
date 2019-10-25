@@ -2,7 +2,7 @@ local player = require('player')
 local ui = require('ui')
 local entities = require('entities')
 local string = require('string')
-local windower = require('windower')
+local windower = require('core.windower')
 
 local speedometer = {
     style = 'chromeless',

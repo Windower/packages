@@ -5,14 +5,14 @@ end
 local account = require('account')
 local client = require('shared.client')
 local enumerable = require('enumerable')
-local event = require('event')
+local event = require('core.event')
 local file = require('file')
 local ffi = require('ffi')
-local shared = require('shared')
+local shared = require('core.shared')
 local string = require('string.ext')
 local table = require('table')
 local unicode = require('unicode')
-local windower = require('windower')
+local windower = require('core.windower')
 
 ffi.cdef[[
     bool CreateDirectoryW(wchar_t*, void*);

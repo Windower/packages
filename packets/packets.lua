@@ -1,5 +1,5 @@
 local ffi = require('ffi')
-local shared = require('shared')
+local shared = require('core.shared')
 local string = require('string')
 local client = require('shared.client')
 local table = require('table')

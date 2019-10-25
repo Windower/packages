@@ -1,4 +1,4 @@
-local command = require('command')
+local command = require('core.command')
 local os = require('os')
 local packets = require('packets')
 local set = require('set')

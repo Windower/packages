@@ -4,7 +4,7 @@ local ffi = require('ffi')
 local string = require('string')
 local types = require('client_data.types.items')
 local unicode = require('unicode')
-local windower = require('windower')
+local windower = require('core.windower')
 
 windower.client_language = 'en'
 

@@ -1,5 +1,5 @@
-local shared = require('shared')
-local event = require('event')
+local shared = require('core.shared')
+local event = require('core.event')
 
 local service = shared.get('action_service', 'service')
 

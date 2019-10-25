@@ -1,4 +1,4 @@
-local event = require('event')
+local event = require('core.event')
 local memory = require('memory')
 local packets = require('packets')
 local server = require('shared.server')

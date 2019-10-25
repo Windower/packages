@@ -1,11 +1,11 @@
 local account = require('account')
-local chat = require('chat')
+local chat = require('core.chat')
 local ffi = require('ffi')
 local file = require('file')
 local os = require('os')
 local string = require('string.ext')
 local unicode = require('unicode')
-local windower = require('windower')
+local windower = require('core.windower')
 
 ffi.cdef[[
     bool CreateDirectoryW(wchar_t*, void*);

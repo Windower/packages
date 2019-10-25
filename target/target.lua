@@ -1,11 +1,11 @@
 local bit = require('bit')
-local command = require('command')
+local command = require('core.command')
 local entities = require('entities')
 local memory = require('memory')
 local player = require('player')
-local shared = require('shared')
+local shared = require('core.shared')
 local table = require('table')
-local windower = require('windower')
+local windower = require('core.windower')
 
 local key_fns = {
     t = function() return memory.target_array.targets[memory.target_array.sub_target_mask ~= 0xFFFFFFFF and 1 or 0].entity end,

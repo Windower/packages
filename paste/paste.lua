@@ -1,5 +1,5 @@
 local clipboard = require('clipboard')
-local command = require('command')
+local command = require('core.command')
 local math = require('math')
 local memory = require('memory')
 local unicode = require('unicode')

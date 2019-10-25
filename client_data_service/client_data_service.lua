@@ -1,9 +1,9 @@
 local bit = require('bit')
 local ffi = require('ffi')
 local io = require('io')
-local shared = require('shared')
+local shared = require('core.shared')
 local string = require('string')
-local windower = require('windower')
+local windower = require('core.windower')
 
 id_map = shared.new('id_map')
 
