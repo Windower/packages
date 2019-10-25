@@ -1,4 +1,4 @@
-local command = require('command')
+local command = require('core.command')
 local entities = require('entities')
 local ipc = require('ipc')
 local player = require('player')

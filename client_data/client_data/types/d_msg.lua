@@ -1,6 +1,6 @@
 local ffi = require('ffi')
 local struct = require('struct')
-local unicode = require('unicode')
+local unicode = require('core.unicode')
 
 local ffi_cast = ffi.cast
 local ffi_string = ffi.string

@@ -1,7 +1,7 @@
 local math = require('math')
 local memory = require('memory')
 local settings = require('settings')
-local windower = require('windower')
+local windower = require('core.windower')
 
 local defaults = {
     gameplay = {

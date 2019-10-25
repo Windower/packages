@@ -1,4 +1,4 @@
-local shared = require('shared')
+local shared = require('core.shared')
 
 local id_map = shared.get('client_data_service', 'id_map')
 

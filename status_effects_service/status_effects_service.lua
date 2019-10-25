@@ -1,8 +1,8 @@
 local bit = require('bit')
-local event = require('event')
+local event = require('core.event')
 local os = require('os')
 local packets = require('packets')
-local shared = require('shared')
+local shared = require('core.shared')
 
 status_effects = shared.new('status_effects')
 

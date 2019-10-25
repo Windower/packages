@@ -1,5 +1,5 @@
 local ffi = require('ffi')
-local windower = require('windower')
+local windower = require('core.windower')
 
 ffi.cdef[[
     bool OpenClipboard(void* hWndNewOwner);

@@ -1,6 +1,6 @@
 local bit = require('bit')
 local ffi = require('ffi')
-local scanner = require('scanner')
+local scanner = require('core.scanner')
 
 ffi.cdef[[
     bool VirtualProtect(void*, uint32_t, uint32_t, uint32_t*);

@@ -1,6 +1,6 @@
 local bit = require('bit')
 local ffi = require('ffi')
-local unicode = require('unicode')
+local unicode = require('core.unicode')
 
 ffi.cdef[[
     bool CloseHandle(void*);

@@ -1,6 +1,6 @@
 <package>
   <name>paste</name>
-  <version>1.0.0.8</version>
+  <version>1.0.0.9</version>
   <type>addon</type>
   <dependencies>
     <dependency>clipboard</dependency>

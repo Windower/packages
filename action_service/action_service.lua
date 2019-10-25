@@ -1,7 +1,7 @@
-local event = require('event')
+local event = require('core.event')
 local ffi = require("ffi")
 local packets = require('packets')
-local shared = require('shared')
+local shared = require('core.shared')
 
 service = shared.new('service')
 

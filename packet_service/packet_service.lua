@@ -1,15 +1,15 @@
 local core = {
-    packet = require('packet'),
+    packet = require('core.packet'),
 }
-local event = require('event')
+local event = require('core.event')
 local file = require('file')
 local ffi = require('ffi')
 local os = require('os')
 local server = require('shared.server')
-local shared = require('shared')
+local shared = require('core.shared')
 local string = require('string')
 local struct = require('struct')
-local windower = require('windower')
+local windower = require('core.windower')
 
 local loadstring = loadstring
 local pairs = pairs

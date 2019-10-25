@@ -1,5 +1,5 @@
 local bit = require('bit')
-local chat = require('chat')
+local chat = require('core.chat')
 local list = require('list');
 local os = require('os')
 local settings = require('settings')

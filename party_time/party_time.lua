@@ -1,11 +1,11 @@
-local command = require('command')
+local command = require('core.command')
 local os = require('os')
 local packets = require('packets')
 local set = require('set')
 local settings = require('settings')
 local string = require('string')
 local treasure = require('treasure')
-local ui = require('ui')
+local ui = require('core.ui')
 
 local defaults = {
     ui = {

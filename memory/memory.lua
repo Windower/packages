@@ -1,5 +1,5 @@
 local ffi = require('ffi')
-local scanner = require('scanner')
+local scanner = require('core.scanner')
 local types = require('memory:types')
 
 local modules = {'FFXiMain.dll', 'polcore.dll', 'polcoreEU.dll'}

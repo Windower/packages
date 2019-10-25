@@ -1,6 +1,6 @@
 <package>
   <name>shared</name>
-  <version>3.1.0.0</version>
+  <version>3.1.0.1</version>
   <type>library</type>
   <dependencies>
     <dependency>struct</dependency>

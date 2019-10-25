@@ -1,5 +1,5 @@
-require('event') -- Required for the serializer
-local shared = require('shared')
+require('core.event') -- Required for the serializer
+local shared = require('core.shared')
 local struct = require('struct')
 
 local prepared = {}
