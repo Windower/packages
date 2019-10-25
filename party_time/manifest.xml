@@ -1,6 +1,6 @@
 <package>
   <name>party_time</name>
-  <version>0.7.2.0</version>
+  <version>0.7.2.1</version>
   <type>addon</type>
   <dependencies>
     <dependency>set</dependency>
