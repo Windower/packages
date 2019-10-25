@@ -271,6 +271,10 @@ local map_entry = struct({
 
 local types = {}
 
+types.language_filter = struct({signature = '84C0750333C0C38B0D', offsets = {0x20}}, {
+    disabled                = {0x04, bool},
+})
+
 types.graphics = struct({signature = '83EC205355568BF18B0D'}, {
     gamma                   = {0x000, ptr(gamma)},
     render                  = {0x28C, ptr(render)},
