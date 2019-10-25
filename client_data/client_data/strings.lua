@@ -7,7 +7,7 @@ local resources = require('resources')
 local string = require('string')
 local table = require('table')
 local target = require('target')
-local unicode = require('unicode')
+local unicode = require('core.unicode')
 local world = require('world')
 local client = require('client_data')
 

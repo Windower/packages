@@ -11,7 +11,7 @@ local ffi = require('ffi')
 local shared = require('core.shared')
 local string = require('string.ext')
 local table = require('table')
-local unicode = require('unicode')
+local unicode = require('core.unicode')
 local windower = require('core.windower')
 
 ffi.cdef[[

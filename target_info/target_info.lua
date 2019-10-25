@@ -1,6 +1,6 @@
 local math = require('math')
 local string = require('string')
-local ui = require('ui')
+local ui = require('core.ui')
 local target = require('target')
 
 local text_color = ui.color.grey

@@ -4,7 +4,7 @@ local ffi = require('ffi')
 local file = require('file')
 local os = require('os')
 local string = require('string.ext')
-local unicode = require('unicode')
+local unicode = require('core.unicode')
 local windower = require('core.windower')
 
 ffi.cdef[[

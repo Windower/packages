@@ -5,7 +5,7 @@ local set = require('set')
 local settings = require('settings')
 local string = require('string')
 local treasure = require('treasure')
-local ui = require('ui')
+local ui = require('core.ui')
 
 local defaults = {
     ui = {

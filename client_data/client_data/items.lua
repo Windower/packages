@@ -3,7 +3,7 @@ local files = require('client_data.files')
 local ffi = require('ffi')
 local string = require('string')
 local types = require('client_data.types.items')
-local unicode = require('unicode')
+local unicode = require('core.unicode')
 local windower = require('core.windower')
 
 windower.client_language = 'en'

@@ -2,7 +2,7 @@ local clipboard = require('clipboard')
 local command = require('core.command')
 local math = require('math')
 local memory = require('memory')
-local unicode = require('unicode')
+local unicode = require('core.unicode')
 
 local paste = command.new('paste')
 
