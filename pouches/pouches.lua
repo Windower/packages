@@ -1,8 +1,8 @@
 local string    = require('string')
-
-local command   = require('command')
 local coroutine = require('coroutine')
-local tolog     = require('chat').add_text
+
+local command   = require('core.command')
+local tolog     = require('core.chat').add_text
 
 local inventory = require('items').bags[0]
 local player    = require('player')
