@@ -1,4 +1,4 @@
-local command   = require('command')
+local command   = require('core.command')
 local string    = require('string')
 
 local data      = require('client_data').status_effects
