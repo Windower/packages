@@ -7,46 +7,34 @@ local statuses  = require('status_effects').player
 
 local handler
 do
-    local preprocess = function(buff)
+    local get_id = function(buff)
         local id
         if buff:match('^%d+$') then
             buff = tonumber(buff)
             if statuses[buff] then
-                id, buff = buff, data[buff].name
+                return buff
             end
         else
             for i, t in ipairs(data) do
                 if t.name:lower() == buff then
                     if statuses[i] then
-                        id, buff = i, t.name
-                        break
+                        return i
                     end
                 end
             end
         end
-
-        return buff, id
     end
 
-    handler = function(...)
-        local buffs = {...}
-        if #buffs == 0 then
-            return
-        end
-
-        for _ in ipairs(buffs) do
-            local buff, id = preprocess(buffs[_]:lower())
-            if buff and id then
-                packets.outgoing[0x0f1]:inject({buff = id})
-            end
+    handler = function(buff)
+        local id = get_id(buff:lower())
+        if id then
+            packets.outgoing[0x0f1]:inject({buff = id})
         end
     end
 end
 
-command.arg.register('buff', '<buff:string(.+)>')
-
 local cancel = command.new('cancel')
-cancel:register(handler, '{buff}*')
+cancel:register(handler, '<buff:text>')
 
 --[[
 Copyright © 2019, Windower Dev Team
