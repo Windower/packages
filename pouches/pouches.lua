@@ -1,61 +1,72 @@
-local add_text = require('core.chat').add_text
+local chat = require('core.chat')
 local command = require('core.command')
-local coroutine_schedule = require('coroutine').schedule
-local inventory = require('items').bags[0]
+local coroutine = require('coroutine')
+local items = require('items')
 local player = require('player')
 local string = require('string.ext')
 
+local add_text = chat.add_text
+
 local cycle_pouches
-cycle_pouches = function(item, count, delay)
-    if player.state.id ~= 0 then
-        return
+do
+    local coroutine_schedule = coroutine.schedule
+
+    cycle_pouches = function(item, count, delay)
+        if player.state.id ~= 0 then
+            return
+        end
+
+        command.input('/item "'.. item ..'" <me>')
+        count = count - 1
+
+        if count == 0 or player.state.id ~= 0 then
+            return
+        end
+
+        coroutine_schedule(function()
+            cycle_pouches(item, count, delay)
+        end, delay)
     end
-
-    command.input('/item "'.. item ..'" <me>')
-    count = count - 1
-
-    if count == 0 or player.state.id ~= 0 then
-        return
-    end
-
-    coroutine_schedule(function()
-        cycle_pouches(item, count, delay)
-    end, delay)
 end
 
-local handler = function(item, limit)
-    local slug = item:slug()
-    local count = 0
-    local delay
+local handler
+do
+    local inventory = items.bags[0]
 
-    for _, k in ipairs(inventory) do
-        if k.item then
-            local key = k.item
-            if key.name:slug() == slug or key.enl:slug() == slug then
-                if key.category ~= 'Usable' then
-                    add_text('Error: "'.. item ..'" is not a usable item.', 55)
-                    return
-                end
+    handler = function(item, limit)
+        local slug = item:slug()
+        local count = 0
+        local delay
 
-                count = count + k.count
-                delay = key.cast_time
-                item = key.name
+        for _, k in ipairs(inventory) do
+            if k.item then
+                local key = k.item
+                if key.name:slug() == slug or key.enl:slug() == slug then
+                    if key.category ~= 'Usable' then
+                        add_text('Error: "'.. item ..'" is not a usable item.', 55)
+                        return
+                    end
 
-                if limit and limit <= count then
-                    count = limit
-                    break
+                    count = count + k.count
+                    delay = key.cast_time
+                    item = key.name
+
+                    if limit and limit <= count then
+                        count = limit
+                        break
+                    end
                 end
             end
         end
-    end
 
-    if count == 0 then
-        add_text('Error: Could not find "'.. item ..'".', 55)
-        return
-    end
+        if count == 0 then
+            add_text('Error: Could not find "'.. item ..'".', 55)
+            return
+        end
 
-    add_text('Using '.. count ..' of "'.. item ..'". Type "/heal" to cancel.', 55)
-    cycle_pouches(item, count, delay + 2)
+        add_text('Using '.. count ..' of "'.. item ..'". Type "/heal" to cancel.', 55)
+        cycle_pouches(item, count, delay + 2)
+    end
 end
 
 local pouches = command.new('pouches')

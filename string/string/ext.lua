@@ -4,8 +4,6 @@ local table = require('table')
 local pairs = pairs
 local tostring = tostring
 local string_find = string.find
-local string_gsub = string.gsub
-local string_lower = string.lower
 local string_match = string.match
 local string_rep = string.rep
 local string_sub = string.sub
@@ -71,10 +69,6 @@ string.join = function(str, enumerable)
     end
 
     return table_concat(values, str)
-end
-
-string.slug = function(str)
-    return string_gsub(string_lower(str), '[%W]', '')
 end
 
 return string

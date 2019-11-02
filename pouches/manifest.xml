@@ -1,6 +1,5 @@
 <package>
   <name>pouches</name>
-  <version>1.2.0.0</version>
   <type>addon</type>
   <dependencies>
     <dependency>items</dependency>
