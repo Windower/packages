@@ -1,9 +1,10 @@
 <package>
   <name>pouches</name>
-  <version>1.1.0.0</version>
+  <version>1.2.0.0</version>
   <type>addon</type>
   <dependencies>
     <dependency>items</dependency>
     <dependency>player</dependency>
+    <dependency>string</dependency>
   </dependencies>
 </package>
