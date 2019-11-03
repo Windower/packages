@@ -73,8 +73,8 @@ string.join = function(str, enumerable)
     return table_concat(values, str)
 end
 
-string.slug = function(str)
-    return string_gsub(string_lower(str), '[%W]', '')
+string.normalize = function(str)
+    return string_gsub(string_lower(str), '[%W+]', '')
 end
 
 return string
