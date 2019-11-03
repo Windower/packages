@@ -74,7 +74,7 @@ string.join = function(str, enumerable)
 end
 
 string.normalize = function(str)
-    return string_gsub(string_lower(str), '[%W+]', '')
+    return string_gsub(string_lower(str), '%W+', '')
 end
 
 return string
