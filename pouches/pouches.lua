@@ -34,14 +34,14 @@ do
     local inventory = items.bags[0]
 
     handler = function(item, limit)
-        local slug = item:slug()
+        local item_normalized = item:normalize()
         local count = 0
         local delay
 
         for _, k in ipairs(inventory) do
             if k.item then
                 local key = k.item
-                if key.name:slug() == slug or key.enl:slug() == slug then
+                if key.name:normalize() == item_normalized or key.enl:normalize() == item_normalized then
                     if key.category ~= 'Usable' then
                         add_text('Error: "'.. item ..'" is not a usable item.', 55)
                         return
