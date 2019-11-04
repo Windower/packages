@@ -329,8 +329,8 @@ types.incoming[0x00A] = struct({
     hp_percent          = {0x1A, percent},
     state_id            = {0x1B, state},
     zone_id             = {0x2C, zone},
-    timestamp_1         = {0x34, time},
-    timestamp_2         = {0x38, time},
+    timestamp_1         = {0x34, time()},
+    timestamp_2         = {0x38, time()},
     _dupe_zone          = {0x3E, zone},
     face_model_id       = {0x40, uint8},
     race_id             = {0x41, race},
@@ -344,7 +344,7 @@ types.incoming[0x00A] = struct({
     menu_id             = {0x60, uint16},
     weather_id          = {0x64, weather},
     player_name         = {0x80, pc_name},
-    abyssea_timestamp   = {0x9C, time},
+    abyssea_timestamp   = {0x9C, time()},
     zone_model          = {0xA6, uint16},
     main_job_id         = {0xB0, job},
     sub_job_id          = {0xB3, job},
@@ -1018,7 +1018,7 @@ types.incoming[0x037] = struct({
     pet_index           = {0x30, bit(uint32, 16), offset=3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
     ballista_stuff      = {0x30, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
     time_offset_maybe   = {0x38, uint32}, -- For me, this is the number of seconds in 66 hours
-    timestamp           = {0x3C, time}, -- This is 32 years off of JST at the time the packet is sent.
+    timestamp           = {0x3C, time()}, -- This is 32 years off of JST at the time the packet is sent.
     fish_hook_delay     = {0x46, uint8}, -- number of seconds between casting and hooking a fish, only set when state_id changes to 56
     status_effect_mask  = {0x48, data(8)},
     indi_status_effect  = {0x54, indi},
@@ -1197,7 +1197,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2C, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1221,7 +1221,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2A, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1244,7 +1244,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2C, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1263,7 +1263,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2C, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1282,7 +1282,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2C, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1393,7 +1393,7 @@ types.incoming[0x04C] = multiple({
             price           = {0x28, uint32},
             auction_state   = {0x2E, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
-            auction_start   = {0x34, time}, -- UTC time
+            auction_start   = {0x34, time()}, -- UTC time
         }),
 
         -- Sell item confirmation - Sent twice. On action completion, the second seems to contain updated information
@@ -1410,7 +1410,7 @@ types.incoming[0x04C] = multiple({
             price           = {0x28, uint32},
             auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
-            auction_start   = {0x34, time}, -- UTC time
+            auction_start   = {0x34, time()}, -- UTC time
         }),
 
         -- Remove item confirmation?
@@ -1427,7 +1427,7 @@ types.incoming[0x04C] = multiple({
             price           = {0x28, uint32},
             auction_state   = {0x2C, uint32}, -- 04 00 00 00 in the first packet and 00 00 00 00 when confirmed canceled.
             auction_id      = {0x30, uint32}, -- present in the first packet and blanked in the second.
-            auction_start   = {0x34, time}, -- UTC time
+            auction_start   = {0x34, time()}, -- UTC time
         }),
 
         -- Sales item status - Sent twice. On action completion, the second seems to contain updated information
@@ -1443,7 +1443,7 @@ types.incoming[0x04C] = multiple({
             price           = {0x28, uint32},
             auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
-            auction_start   = {0x34, time}, -- UTC time the auction started
+            auction_start   = {0x34, time()}, -- UTC time the auction started
         }),
 
         -- ??? : I have never seen this one.
@@ -1598,7 +1598,7 @@ types.incoming[0x056] = multiple({ -- #BYRTH# unadjusted for the base offset
 
 -- Weather Change
 types.incoming[0x057] = struct({
-    vanadiel_time       = {0x00, time}, -- Units of minutes.
+    vanadiel_time       = {0x00, time()}, -- Units of minutes.
     weather_id          = {0x04, weather},
 })
 
@@ -1806,7 +1806,7 @@ types.incoming[0x063] = multiple({
 
         [0x09] = struct({
             status_effects  = {0x04, uint16[0x20]},
-            durations       = {0x44, time[0x20]},
+            durations       = {0x44, time(1510890320, 60)[0x20]},
         }),
     },
 })
@@ -1884,8 +1884,8 @@ types.incoming[0x070] = struct({
 -- Only observed being used for Unity fights.
 types.incoming[0x075] = struct({
     fight_designation   = {0x00, uint32}, -- Anything other than 0 makes a timer. 0 deletes the timer.
-    timestamp_offset    = {0x04, time}, -- Number of seconds since 15:00:00 GMT 31/12/2002 (0x3C307D70)
-    fight_duration      = {0x08, time},
+    timestamp_offset    = {0x04, time()}, -- Number of seconds since 15:00:00 GMT 31/12/2002 (0x3C307D70)
+    fight_duration      = {0x08, time()},
     --0x0C~0x17: This packet clearly needs position information, but it's unclear how these bytes carry it.
     battlefield_radius  = {0x18, uint32}, -- Yalms*1000, so a 50 yalm battlefield would have 50,000 for this field
     render_radius       = {0x1C, uint32}, -- Yalms*1000, so a fence that renders when you're 25 yalms away would have 25,000 for this field
@@ -2048,7 +2048,7 @@ types.incoming[0x0CA] = struct({
 types.incoming[0x0CC] = struct({cache = {'linkshell_index'}}, {
     linkshell_index         = {0x00, bit(uint32, 1), offset=14},
     message                 = {0x04, string(0x80)},
-    timestamp               = {0x84, time},
+    timestamp               = {0x84, time()},
     player_name             = {0x88, pc_name},
     permissions             = {0x94, data(4)},
     linkshell_name          = {0x98, ls_name},
@@ -2065,7 +2065,7 @@ types.incoming[0x0D2] = struct({cache = {'pool_index'}}, {
     is_old              = {0x11, bool}, -- This is true if it was already in the pool, but appeared in the pool before you joined a party
     _known1             = {0x12, uint8, const=0},
     -- 0x17: Seemingly random, both 00 and FF observed, as well as many values in between
-    timestamp           = {0x14, time},
+    timestamp           = {0x14, time()},
     -- 28 bytes of 0s?
 })
 
@@ -2529,7 +2529,7 @@ types.outgoing[0x015] = struct({
     heading             = {0x10, uint8},
     _flags1             = {0x11, uint8}, -- Bit 0x04 indicates that maintenance mode is activated
     target_index        = {0x12, entity_index},
-    timestamp           = {0x14, time}, -- Milliseconds
+    timestamp           = {0x14, time()}, -- Milliseconds
 })
 
 -- Update Request
