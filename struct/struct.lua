@@ -687,18 +687,36 @@ do
     end
 end
 
-struct.time = struct.tag(struct.uint32, 'time')
-struct.time.converter = 'time'
 do
-    local now = os.time()
-    local off = os.difftime(now, os.time(os.date('!*t', now)))
+    local time_base = function(offset, factor)
+        local ftype = struct.tag(struct.uint32, 'time')
+
+        ftype.converter = 'time'
+
+        ftype.offset = offset or 0
+        ftype.factor = factor or 1
+
+        return ftype
+    end
 
     tolua.time = function(value, ftype)
-        return value + off
+        return value / ftype.factor + ftype.offset
     end
 
     toc.time = function(instance, index, value, ftype)
-        instance[index] = value - off
+        instance[index] = (value - ftype.offset) * ftype.factor
+    end
+
+    struct.time = function(offset)
+        return time_base(offset, 1)
+    end
+
+    struct.tick = function(offset)
+        return time_base(offset, 60)
+    end
+
+    struct.ms_time = function(offset)
+        return time_base(offset, 1000)
     end
 end
 

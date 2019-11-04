@@ -5,7 +5,7 @@ local struct = require('struct')
 
 local item_type = struct.struct({
     item_id             = {struct.uint16},
-    timestamp           = {struct.time},
+    timestamp           = {struct.time()},
     player_lot          = {struct.uint32},
     highest_lot         = {struct.uint32},
     highest_lotter_id   = {struct.uint32},
@@ -43,9 +43,9 @@ packets.incoming:register_init({
         if p.item_id == 0 then
             pool[p.pool_index] = empty
         else
-            local data = pool[p.pool_index]
-            data.item_id = p.item_id
-            data.timestamp = p.timestamp
+            local data_slot = pool[p.pool_index]
+            data_slot.item_id = p.item_id
+            data_slot.timestamp = p.timestamp
 
             item_found:trigger({
                 pool_index = p.pool_index,
@@ -57,11 +57,11 @@ packets.incoming:register_init({
     [{0x0D3}] = function(p)
         local drop = p.drop
         if drop == 0 then
-            local data = pool[p.pool_index]
-            data.highest_lot = p.highest_lot
-            data.highest_lotter_id = p.highest_lotter_id
-            data.highest_lotter_index = p.highest_lotter_index
-            data.highest_lotter_name = p.highest_lotter_name
+            local data_slot = pool[p.pool_index]
+            data_slot.highest_lot = p.highest_lot
+            data_slot.highest_lotter_id = p.highest_lotter_id
+            data_slot.highest_lotter_index = p.highest_lotter_index
+            data_slot.highest_lotter_name = p.highest_lotter_name
             item_lotted:trigger({
                 pool_index = p.pool_index,
                 lotter_id = p.lotter_id,
