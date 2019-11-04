@@ -6,29 +6,29 @@ local server = require('shared.server')
 local string = require('string')
 local struct = require('struct')
 
-local buff_size = 0x400
+local status_effects_size = 0x400
 
 local data = server.new(struct.struct({
     party               = {struct.struct({
         id                  = {struct.int32},
         index               = {struct.int32},
-        effects             = {struct.int8[buff_size]},
+        effects             = {struct.int8[status_effects_size]},
     })[6]},
     durations           = {struct.struct({
         id                  = {struct.int32},
         timestamp           = {struct.time()},
     })[0x20]},
-    buff_gained         = {data=event.new()},
-    buff_lost           = {data=event.new()},
+    status_effect_gained         = {data=event.new()},
+    status_effect_lost           = {data=event.new()},
 }))
 
 local data_player = data.party[0]
 local data_party = data.party
 local data_durations = data.durations
-local event_buff_gained = data.buff_gained
-local event_buff_lost = data.buff_lost
+local event_status_effect_gained = data.status_effect_gained
+local event_status_effect_lost = data.status_effect_lost
 
-local temp_buffer = struct.new(struct.int8[buff_size])
+local temp_buffer = struct.new(struct.int8[status_effects_size])
 local temp_array = struct.new(struct.int32[0x20])
 
 local bit_band = bit.band
@@ -42,7 +42,7 @@ local process_effects = function(effects_array, data_effects)
     local lost = {}
     local lost_count = 0
 
-    ffi_fill(temp_buffer, buff_size)
+    ffi_fill(temp_buffer, status_effects_size)
 
     for i = 0, 0x1F do
         local status_effect = effects_array[i]
@@ -51,7 +51,7 @@ local process_effects = function(effects_array, data_effects)
         end
     end
 
-    for i = 0, buff_size - 1 do
+    for i = 0, status_effects_size - 1 do
         local array_count = temp_buffer[i]
         local data_count = data_effects[i]
 
@@ -93,11 +93,11 @@ packets.incoming:register_init({
         end
 
         if gained[1] then
-            event_buff_gained:trigger(0, unpack(gained))
+            event_status_effect_gained:trigger(0, unpack(gained))
         end
 
         if lost[1] then
-            event_buff_lost:trigger(0, unpack(lost))
+            event_status_effect_lost:trigger(0, unpack(lost))
         end
     end,
 
@@ -125,15 +125,15 @@ packets.incoming:register_init({
 
                 if trigger then
                     if gained[1] then
-                        event_buff_gained:trigger(i, unpack(gained))
+                        event_status_effect_gained:trigger(i, unpack(gained))
                     end
 
                     if lost[1] then
-                        event_buff_lost:trigger(i, unpack(lost))
+                        event_status_effect_lost:trigger(i, unpack(lost))
                     end
                 end
             else
-                ffi_fill(data_party_member, buff_size)
+                ffi_fill(data_party_member, status_effects_size)
             end
         end
     end,
