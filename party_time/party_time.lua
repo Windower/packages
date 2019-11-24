@@ -1,11 +1,14 @@
-local command = require('core.command')
 local os = require('os')
-local packets = require('packets')
 local set = require('set')
-local settings = require('settings')
+local party = require('party')
+local player = require('player')
 local string = require('string')
+local packets = require('packets')
+local settings = require('settings')
 local treasure = require('treasure')
+
 local ui = require('core.ui')
+local command = require('core.command')
 
 local defaults = {
     ui = {
@@ -35,7 +38,22 @@ local invite_dialog_state = {
     moveable = true,
     closable = true,
 }
+local leader_dialog = {
+    state = {
+        title = 'Party Leader',
+        style = 'normal',
+        x = options.ui.x,
+        y = options.ui.y,
+        width = 136,
+        height = 66,
+        resizable = true,
+        moveable = true,
+        closable = true,
+    },
+}
+
 local unhandled_requests = {}
+local unhandled_leader = false
 local unhandled_invite = false
 
 -- Command Arg Types
@@ -97,6 +115,7 @@ command.arg.register_type('lookup_add_remove', {
         error('Expected one of \'' .. table.concat(arg_lookups.addremove, ',') .. '\', received \'' .. str .. '\'.')
     end
 })
+
 command.arg.register_type('lookup_option', {
     check = function(str)
         local option = arg_lookups.option[str]
@@ -109,7 +128,7 @@ command.arg.register_type('lookup_option', {
 })
 
 -- Addon Command Handlers
--- Seven main commands additoinal sub_commands within
+-- Eleven main commands additoinal sub_commands within
 local pt = command.new('pt')
 
 local invite = function(...)
@@ -171,11 +190,63 @@ pt:register('auto_decline', auto_decline_enable, '<enabled:lookup_boolean>')
 
 
 local default_handler = function(option)
-    options.default = option
+    optio
+    ns.default = option
     settings.save()
 end
 
 pt:register('default', default_handler, '<option:lookup_option>')
+
+
+local kick = function(...)
+    for _, name in pairs({...}) do
+        command.input('/pcmd kick ' .. name)
+    end
+end
+
+pt:register('kick', kick, '{name}*')
+pt:register('k', kick, '{name}*')
+
+
+local leader = function(name)
+    if party.alliance.party_1_leader_id == player.id then
+        if name then
+            --TODO handle if name is in another parrty
+            command.input('/pcmd leader ' .. name)
+        else
+            unhandled_leader = true
+        end
+    else
+        print('You are not the party leader.')
+    end
+end
+
+pt:register('leader', leader, '[name:string(%a+)]')
+pt:register('ldr', leader, '[name:string(%a+)]')
+
+
+local looter = function(name)
+    command.input('/pcmd looter ' .. name)
+end
+
+pt:register('looter', looter, '[name:string(%a+)]')
+pt:register('ltr', looter, '[name:string(%a+)]')
+
+
+local breakup = function(completely)
+    if completely then
+        command.input('/acmd breakup')
+        coroutine.sleep(1)
+        command.input('/pcmd breakup')
+    else
+        local in_alliance = (party.alliance.party_2_leader_id or party.alliance.party_3_leader_id)
+        local cmd = in_alliance and "/acmd" or "/pcmd"
+        command.input(cmd .. ' breakup')
+    end
+end
+
+pt:register('breakup', breakup, '[completely:lookup_boolean]')
+
 
 -- Packet Event Handlers
 -- Recieve Invites & Recieve Requests
@@ -197,7 +268,8 @@ local default_handlers = {
                         return
                     end
                     coroutine.sleep_frame()
-                until(#treasure.pool == 0)
+                --TODO: use treasure pool count once it's implmented.
+                until(true)--#treasure.pool == 0)
                 command.input('/join')
             end)
         end,
@@ -205,7 +277,7 @@ local default_handlers = {
             command.input('/decline')
         end
     },
-    request = { 
+    request = {
         ask = function(name)
             unhandled_requests[name] = {
                 state = {
@@ -240,7 +312,8 @@ packets.incoming[0x0DC]:register(function(p)
                     return
                 end
                 coroutine.sleep_frame()
-            until(#treasure == 0)
+            --TODO: use treasure pool count once it's implmented.
+            until(true)--#treasure.pool == 0)
             command.input('/join')
         end)
     elseif options.auto.decline and options.blacklist:contains(p.player_name) then
@@ -251,10 +324,12 @@ packets.incoming[0x0DC]:register(function(p)
 end)
 
 packets.incoming[0x11D]:register(function(p)
+    print("request received...")
     if options.auto.accept and options.whitelist:contains(p.player_name) then
+        print('/pcmd add '..p.player_name)
         command.input('/pcmd add '..p.player_name)
     elseif options.auto.decline and options.blacklist:contains(p.player_name) then
-        return --ignore request by providing a dialog to user
+        return --ignore request by preventing dialog
     else
         default_handlers.request[options.default](p.player_name)
     end
@@ -264,9 +339,10 @@ packets.outgoing[0x074]:register(function(p)
     unhandled_invite = false
 end)
 
--- User Interface for Accepting|Declining
--- Pop-Up menus Invites & Requests
+-- User Interface Dialogs
+-- Pop-Up menus for Invites, Requests, Kick, Leader, and Looter
 ui.display(function()
+    -- Dialog for accepting|declining a party invite
     if unhandled_invite then
         invite_dialog.state, invite_dialog.closed = ui.window('invite_dialog', invite_dialog.state, function()
             ui.location(11, 5)
@@ -313,6 +389,62 @@ ui.display(function()
         end
     end
 
+    -- Dialog for Selecting new Party|Alliance Leader
+    if unhandled_leader then
+        local height = 36
+        for index, member in pairs(party) do
+            if type(index) == "number" then
+                if index <= 6 and member.id ~= player.id then
+                    height = height + 24
+                elseif party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id) then
+                    height = height + 24
+                end
+            end
+            height = height + 6
+        end
+        leader_dialog.state.height = height
+
+        leader_dialog.state, leader_dialog.closed = ui.window('leader_dialog', leader_dialog.state, function()
+            ui.location(11, 5)
+            ui.text('    Select your new\nparty | alliance leader')
+
+            --loop members
+            local button_y = 50
+            for index, member in pairs(party) do
+                if type(index) == "number" then
+                    if index <= 6 and member.id ~= player.id then
+                        ui.location(23,button_y)
+                        --TODO: Once button text is fixed for custom sizes use -> ui.size(90,25)
+                        if ui.button(member.name, member.name) then
+                            command.input('/pcmd leader ' .. member.name)
+                            unhandled_leader = false
+                        end
+                        button_y = button_y + 24
+                    elseif party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id) then
+                        ui.location(23,button_y)
+                        --TODO: Once button text is fixed for custom sizes use -> ui.size(90,25)
+                        if ui.button(member.name,  member.name) then
+                            command.input('/acmd leader ' .. member.name)
+                            unhandled_leader = false
+                        end
+                        button_y = button_y + 24
+                    end
+                end
+            end
+        end)
+
+        if leader_dialog.closed then
+            leader_dialog.closed = nil
+            unhandled_leader = false
+        end
+        if leader_dialog.state.x ~= options.ui.x or leader_dialog.state.y ~= options.ui.y then
+            options.ui.x = leader_dialog.state.x
+            options.ui.y = leader_dialog.state.y
+            settings.save()
+        end
+    end
+
+    -- Dialog for accepting|declining requests to join your party.
     local closed_dialogs = {}
     for id, request_dialog in pairs(unhandled_requests) do 
         request_dialog.state, request_dialog.close = ui.window(id, request_dialog.state, function()
@@ -362,7 +494,7 @@ ui.display(function()
 end)
 
 --[[
-Copyright © 2018, Windower Dev Team
+Copyright © 2018, 2019 Windower Dev Team
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
