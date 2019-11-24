@@ -128,7 +128,7 @@ command.arg.register_type('lookup_option', {
 })
 
 -- Addon Command Handlers
--- Eleven main commands additoinal sub_commands within
+-- Main commands additoinal sub_commands within
 local pt = command.new('pt')
 
 local invite = function(...)
@@ -190,8 +190,7 @@ pt:register('auto_decline', auto_decline_enable, '<enabled:lookup_boolean>')
 
 
 local default_handler = function(option)
-    optio
-    ns.default = option
+    options.default = option
     settings.save()
 end
 
@@ -240,7 +239,7 @@ local breakup = function(completely)
         command.input('/pcmd breakup')
     else
         local in_alliance = (party.alliance.party_2_leader_id or party.alliance.party_3_leader_id)
-        local cmd = in_alliance and "/acmd" or "/pcmd"
+        local cmd = in_alliance and '/acmd' or '/pcmd'
         command.input(cmd .. ' breakup')
     end
 end
@@ -324,10 +323,8 @@ packets.incoming[0x0DC]:register(function(p)
 end)
 
 packets.incoming[0x11D]:register(function(p)
-    print("request received...")
     if options.auto.accept and options.whitelist:contains(p.player_name) then
-        print('/pcmd add '..p.player_name)
-        command.input('/pcmd add '..p.player_name)
+        command.input('/pcmd add ' .. p.player_name)
     elseif options.auto.decline and options.blacklist:contains(p.player_name) then
         return --ignore request by preventing dialog
     else
@@ -393,10 +390,10 @@ ui.display(function()
     if unhandled_leader then
         local height = 36
         for index, member in pairs(party) do
-            if type(index) == "number" then
-                if index <= 6 and member.id ~= player.id then
-                    height = height + 24
-                elseif party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id) then
+            if type(index) == 'number' then
+                local party_member = index <= 6 and member.id ~= player.id
+                local alliance_leader = party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id)
+                if party_member or alliance_leader then
                     height = height + 24
                 end
             end
@@ -411,20 +408,15 @@ ui.display(function()
             --loop members
             local button_y = 50
             for index, member in pairs(party) do
-                if type(index) == "number" then
-                    if index <= 6 and member.id ~= player.id then
-                        ui.location(23,button_y)
+                if type(index) == 'number' then
+                    local party_member = index <= 6 and member.id ~= player.id
+                    local alliance_leader = party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id)
+                    local prefix = index <= 6 and 'pcmd' or 'acmd'
+                    if party_member or alliance_leader then
+                        ui.location(23, button_y)
                         --TODO: Once button text is fixed for custom sizes use -> ui.size(90,25)
                         if ui.button(member.name, member.name) then
-                            command.input('/pcmd leader ' .. member.name)
-                            unhandled_leader = false
-                        end
-                        button_y = button_y + 24
-                    elseif party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id) then
-                        ui.location(23,button_y)
-                        --TODO: Once button text is fixed for custom sizes use -> ui.size(90,25)
-                        if ui.button(member.name,  member.name) then
-                            command.input('/acmd leader ' .. member.name)
+                            command.input(prefix .. ' leader ' .. member.name)
                             unhandled_leader = false
                         end
                         button_y = button_y + 24
