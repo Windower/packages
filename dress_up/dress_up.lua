@@ -124,7 +124,6 @@ command.arg.register_type('lookup_group', {
 })
 
 -- Addon Command Handlers
--- Five commands
 local du = command.new('du')
 
 local clear = function(target, model)
@@ -165,8 +164,8 @@ local blink = function(group, condition, bool)
         end
     else
         options.blink[group][condition] = bool
-        settings.save()
     end
+    settings.save()
 end
 
 du:register('b', blink, '<group:lookup_group> {condition} <enabled:lookup_boolean>')
