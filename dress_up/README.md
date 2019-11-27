@@ -9,10 +9,10 @@
 
 ----
 
-**Main Command:** No full name command line. only `/do`
+**Main Command:** `/du`
 
 #### Commands: ####
-* 1: (d)ress [name] [model] [id] - Set the model to be used for a given player
+* 1: (d)ress [name] [model] [id] - Set the model to be used for a given player.
 * 2: (c)lear [name] - remove all model settings given player.
 * 3: (b)link [follow|party|other|self] [traget|always] [boolean] - Set weitehr or not to prevent blinking for a givent target type and condition.
 
