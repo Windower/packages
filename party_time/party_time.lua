@@ -77,18 +77,10 @@ local arg_lookups = {
         ['b'] = 'blacklist',
     },
     bool = {
-        ['1'] = true,
         ['true'] = true,
         ['t'] = true,
-        ['yes'] = true,
-        ['y'] = true,
-        ['on'] = true,
-        ['0'] = false,
         ['false'] = false,
         ['f'] = false,
-        ['no'] = false,
-        ['n'] = false,
-        ['off'] = false,
     },
 }
 
@@ -159,7 +151,6 @@ local blacklist = function(sub_cmd, ...)
     settings.save()
 end
 
-pt:register('b', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 pt:register('blacklist', blacklist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
@@ -169,7 +160,6 @@ local whitelist = function(sub_cmd, ...)
     settings.save()
 end
 
-pt:register('w', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
 pt:register('whitelist', whitelist, '<sub_cmd:lookup_add_remove> {name}*')
 
 
@@ -178,7 +168,7 @@ local auto_accept_enable = function(bool)
     settings.save()
 end
 
-pt:register('auto_accept', auto_accept_enable, '<enabled:lookup_boolean>')
+pt:register('auto_accept_enable', auto_accept_enable, '<enabled:lookup_boolean>')
 
 
 local auto_decline_enable = function(bool)
@@ -186,7 +176,7 @@ local auto_decline_enable = function(bool)
     settings.save()
 end
 
-pt:register('auto_decline', auto_decline_enable, '<enabled:lookup_boolean>')
+pt:register('auto_decline_enable', auto_decline_enable, '<enabled:lookup_boolean>')
 
 
 local default_handler = function(option)
@@ -207,6 +197,13 @@ pt:register('kick', kick, '{name}*')
 pt:register('k', kick, '{name}*')
 
 
+local leave = function()
+    command.input('/pcmd leave')
+end
+
+pt:register('leave', leave)
+
+
 local leader = function(name)
     if party.alliance.party_1_leader_id == player.id then
         if name then
@@ -221,7 +218,6 @@ local leader = function(name)
 end
 
 pt:register('leader', leader, '[name:string(%a+)]')
-pt:register('ldr', leader, '[name:string(%a+)]')
 
 
 local looter = function(name)
@@ -229,22 +225,26 @@ local looter = function(name)
 end
 
 pt:register('looter', looter, '[name:string(%a+)]')
-pt:register('ltr', looter, '[name:string(%a+)]')
 
 
-local breakup = function(completely)
-    if completely then
-        command.input('/acmd breakup')
-        coroutine.sleep(1)
-        command.input('/pcmd breakup')
+local breakup = function(target)
+    local in_alliance = party.alliance.party_2_leader_id or party.alliance.party_3_leader_id
+    if target == 'alliance' or in_alliance then
+        if player.id == party.alliance.alliance_leader_id then
+            command.input('/acmd breakup')
+        else
+            command.input('/acmd leave')
+        end
+        if target == 'party' then
+            coroutine.sleep(1)
+            command.input('/pcmd breakup')
+        end
     else
-        local in_alliance = (party.alliance.party_2_leader_id or party.alliance.party_3_leader_id)
-        local cmd = in_alliance and '/acmd' or '/pcmd'
-        command.input(cmd .. ' breakup')
+        command.input('/pcmd breakup')
     end
 end
 
-pt:register('breakup', breakup, '[completely:lookup_boolean]')
+pt:register('breakup', breakup, '[one_of(party,alliance)=party]')
 
 
 -- Packet Event Handlers
@@ -356,7 +356,7 @@ ui.display(function()
                 end
             end
 
-            ui.location(11,72)
+            ui.location(11, 72)
             if ui.button('accept', 'Accept') then
                 command.input('/join')
                 unhandled_invite = false
@@ -366,7 +366,7 @@ ui.display(function()
                 end
             end
 
-            ui.location(93,72)
+            ui.location(93, 72)
             if ui.button('decline', 'Decline') then
                 command.input('/decline')
                 unhandled_invite = false
@@ -436,7 +436,7 @@ ui.display(function()
         end
     end
 
-    -- Dialog for accepting|declining requests to join your party.
+    -- Dialog for accepting|declining requests to join your party
     local closed_dialogs = {}
     for id, request_dialog in pairs(unhandled_requests) do 
         request_dialog.state, request_dialog.close = ui.window(id, request_dialog.state, function()
@@ -454,7 +454,7 @@ ui.display(function()
                 end
             end
 
-            ui.location(11,72)
+            ui.location(11, 72)
             if ui.button('invite', 'Invite') then
                 command.input('/pcmd add ' .. id)
                 closed_dialogs[#closed_dialogs + 1] = id
@@ -463,7 +463,7 @@ ui.display(function()
                     settings.save()
                 end
             end
-            ui.location(93,72)
+            ui.location(93, 72)
             if ui.button('ignore', 'Ignore') then
                 closed_dialogs[#closed_dialogs + 1] = id
             end

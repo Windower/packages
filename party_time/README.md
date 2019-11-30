@@ -1,29 +1,30 @@
 **Author:** Nifim<br>
-**Version:** 0.7.0.0<br>
-**Date:** July. 14, 2018<br>
+**Version:** 0.8.0.0<br>
+**Date:** Nov. 30, 2019<br>
 
 # Party Time #
 
 * Automaticly accept or decline invites.
 * Send party requests which can be automaticly accepted by PT users.
-* Provide dialog for accepting and declining invites or requests.
+* Provide dialog for invites, requests, selecting party leader, etc.
 
 ----
 
-**Main Command:** No full name command line. only `/pt`
+**Main Command:** `/pt`
 
 #### Commands: ####
 * 1: (i)nvite [names] - Invite a player or players to join your party.
 * 2: (r)equest [name] - Send an invite request to a player.
-* 3: (b)reakup [completely] - Disband your party | alliance.
-* 4: leader [name] - Pass party | alliance leader player.
-* 5: looter [name] - Send an invite request to a player.
-* 6: (k)ick [names] - Kick player from your party.
-* 7: (w)hitelist (a)dd|(r)emove [names] - Add or remove player from you auto accept whitelist.
-* 8: (b)lacklist (a)dd|(r)emove [names] - Add or remove player from you auto decline blacklist.
-* 9: auto_accept on|off - Turn on or off the auto accept invite and request function. `default: on`
-* 10: auto_decline on|off - Turn on or off the auto decline invite and request function. `default: off`
-* 11: default (a)sk|(w)hitelist|(b)lacklist - Set the default action for unhandled invites. `default: ask`
+* 3: breakup [party|alliance] - Disband your party | alliance.
+* 4: leave - Leave party or alliance.
+* 5: leader [name] - Pass party | alliance leader player.
+* 6: looter [name] - Send an invite request to a player.
+* 7: (k)ick [names] - Kick player from your party.
+* 8: whitelist (a)dd|(r)emove [names] - Add or remove player from you auto accept whitelist.
+* 9: blacklist (a)dd|(r)emove [names] - Add or remove player from you auto decline blacklist.
+* 10: auto_accept_enable (t)rue|(f)alse - Turn on or off the auto accept invite and request function. `default: true`
+* 11: auto_decline_enable (t)rue|(f)alse - Turn on or off the auto decline invite and request function. `default: false`
+* 12: default (a)sk|(w)hitelist|(b)lacklist - Set the default action for unhandled invites. `default: ask`
 
 ----
 
