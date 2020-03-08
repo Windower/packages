@@ -38,10 +38,6 @@ packets.incoming:register_init({
         end)
     end,
     [{0x00B, 0x01}] = function(p)
-        local logout = p.type == 1
-        if not logout then
-            return
-        end
 
         data.logged_in = false
         data.server_id = 0
