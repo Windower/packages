@@ -42,7 +42,7 @@ do
     end)
 end
 
-local options = settings.load(defaults, true)
+settings.load(defaults, true)
 
 do
     local os_date = os.date

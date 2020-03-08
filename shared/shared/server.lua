@@ -1,6 +1,7 @@
 require('core.event') -- Required for the serializer
 local ffi = require('ffi')
-local shared = require('core.shared')
+local channel = require('core.channel')
+local serializer = require('core.serializer')
 local struct = require('struct')
 local windower = require('core.windower')
 
@@ -14,7 +15,8 @@ ffi.cdef[[
 local C = ffi.C
 local ffi_cast = ffi.cast
 local ffi_gc = ffi.gc
-local shared_new = shared.new
+local channel_new = channel.new
+local serializer_serialize = serializer.serialize
 local struct_name = struct.name
 
 local destroyed = false
@@ -52,13 +54,13 @@ return {
     new = function(name, ftype)
         name, ftype = ftype and name or 'data', ftype or name
 
-        local server = shared_new(service_name .. '_' .. name)
+        local server = channel_new(service_name .. '_' .. name)
         servers[name] = server
 
         local ptr = new_ptr(ftype)
         server.data = {
             address = tonumber(ffi_cast('intptr_t', ptr)),
-            ftype = ftype,
+            ftype = serializer_serialize(ftype, true),
         }
 
         return attach_gc(ptr[0], ptr)

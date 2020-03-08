@@ -1,4 +1,5 @@
-if package.name == nil then
+local package_name = package.name
+if package_name == nil then
     error('Cannot load the settings library in the script environment.')
 end
 
@@ -8,7 +9,7 @@ local enumerable = require('enumerable')
 local event = require('core.event')
 local file = require('file')
 local ffi = require('ffi')
-local shared = require('core.shared')
+local channel = require('core.channel')
 local string = require('string.ext')
 local table = require('table')
 local unicode = require('core.unicode')
@@ -253,7 +254,7 @@ do
     account_logout:register(reparse)
 end
 
-settings.settings_change = event.slim.new()
+settings.settings_change = event.new()
 
 settings.get = function(path, id)
     local setting = info_cache[id or 'settings'].options
@@ -309,14 +310,14 @@ end
 
 do
     local data = client.new('settings_service')
-    local query_client = shared.get('settings_service', 'query')
+    local query_client = channel.get('settings_service', 'query')
 
     local query_response = function(_, path, setting)
         query_response(path, setting)
     end
 
     data.get:register(function(addon, path, id)
-        if addon ~= package.name then
+        if addon ~= package_name then
             return
         end
 
@@ -326,7 +327,7 @@ do
     end)
 
     data.set:register(function(addon, path, value, id)
-        if addon ~= package.name then
+        if addon ~= package_name then
             return
         end
 

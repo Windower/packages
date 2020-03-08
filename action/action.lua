@@ -1,24 +1,28 @@
-local shared = require('core.shared')
+local client = require('shared.client')
+local entities = require('entities')
 local event = require('core.event')
 
-local service = shared.get('action_service', 'service')
+local data, ftype = client.new('action_service')
 
-local get_event = function(name)
-    local slim_event = event.slim.new()
-    service:read(name):register(function(...)
-        slim_event:trigger(...)
+ftype.fields.action.type.fields.target = {
+    get = function(data)
+        return entities[data.target_index]
+    end,
+}
+
+local get_event = function(service_event)
+    local ev = event.new()
+    service_event:register(function()
+        ev:trigger(data.action)
     end)
-    return slim_event
+    return ev
 end
 
 return {
-    filter_action   = get_event('filter_action'),
-    pre_action      = get_event('pre_action'),
-    mid_action      = get_event('mid_action'),
-    post_action     = get_event('post_action'),
-    block           = function()
-        service:call(function() block() end)
-    end,
+    filter_action = get_event(data.filter_action),
+    pre_action = get_event(data.pre_action),
+    mid_action = get_event(data.mid_action),
+    post_action = get_event(data.post_action),
 }
 
 --[[

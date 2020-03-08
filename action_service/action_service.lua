@@ -1,93 +1,102 @@
 local event = require('core.event')
-local ffi = require("ffi")
 local packets = require('packets')
-local shared = require('core.shared')
+local player = require('player')
+local server = require('shared.server')
+local struct = require('struct')
 
-service = shared.new('service')
+local data = server.new(struct.struct({
+    action              = {struct.struct({
+        category        = {struct.int32},
+        id              = {struct.int32},
+        target_index    = {struct.int32},
+        blocked         = {struct.bool},
+    })},
+    filter_action       = {data = event.new()},
+    pre_action          = {data = event.new()},
+    mid_action          = {data = event.new()},
+    post_action         = {data = event.new()},
+    category            = {struct.struct({
+        magic           = {struct.int32, static = 0},
+        job_ability     = {struct.int32, static = 1},
+        weapon_skill    = {struct.int32, static = 2},
+        ranged_attack   = {struct.int32, static = 3},
+        item            = {struct.int32, static = 4},
+        pet_ability     = {struct.int32, static = 5},
+    })},
+}))
 
-service.data = {
-    filter_action   = event.new(),
-    pre_action      = event.new(),
-    mid_action      = event.new(),
-    post_action     = event.new(),
+local filter_action_event = data.filter_action
+local pre_action_event = data.pre_action
+local mid_action_event = data.mid_action
+local post_action_event = data.post_action
+
+local action = data.action
+local category = data.category
+
+local incoming_categories = {
+    [3] = category.magic,
+    [7] = category.weapon_skill,
+    [9] = category.job_ability,
+    [16] = category.ranged_attack,
 }
 
-service.env = {}
+local outgoing_categories = {
+    [2] = category.ranged_attack,
+    [3] = category.weapon_skill,
+    [4] = category.magic,
+    [5] = category.item,
+    [6] = category.job_ability,
+    [13] = category.pet_ability,
+    [14] = category.job_ability,
+    [15] = category.job_ability,
+}
 
-local filter_action_event = service.data.filter_action
-local pre_action_event = service.data.pre_action
-local mid_action_event = service.data.mid_action
-local post_action_event = service.data.post_action
+local handle_outgoing_action = function(packet, info)
+    local action_category = incoming_categories[packet.action_category]
+    if info.injected or info.blocked or not action_category then
+        return
+    end
 
--- Constants
-ffi.cdef[[
-struct outgoing_category_constants {
-    static const int MAGIC_CAST = 3;
-    static const int WEAPON_SKILL = 7;
-    static const int JOB_ABILITY = 9;
-    static const int RANGED_ATTACK = 16;
-};
+    action.target_index = packet.target_index
+    action.category = action_category
+    action.id = packet.param
 
-struct incoming_category_constants {
-    static const int RANGED_ATTACK = 2;
-    static const int WEAPON_SKILL = 3;
-    static const int MAGIC_CAST = 4;
-    static const int ITEM_USE = 5;
-    static const int JOB_ABILITY = 6;
-    static const int PET_WEAPON_SKILL = 13;
-    static const int JOB_ABILITY_2 = 14;
-    static const int JOB_ABILITY_3 = 15;
-};]]
-local cat_out = ffi.new("struct outgoing_category_constants")
-local cat_in = ffi.new("struct incoming_category_constants")
+    filter_action_event:trigger()
+    info.blocked = true
 
-local blocked = false
-service.env.block = function()
-    blocked = true
-end
+    if action.blocked then
+        action.blocked = false
+        return
+    end
 
-local handle_outgoing_action = function(p, info)
-    if not (info.injected or info.blocked) and
-            (p.action_category == cat_out.MAGIC_CAST or
-            p.action_category == cat_out.WEAPON_SKILL or
-            p.action_category == cat_out.JOB_ABILITY or
-            p.action_category == cat_out.RANGED_ATTACK) then
+    pre_action_event:trigger()
 
-        local packet = p
-        packets.block()
+    packets.outgoing[0x01A]:inject({
+        target_id = packet.target_id,
+        target_index = packet.target_index,
+        action_category = packet.action_category,
+        param = packet.param,
+        x_offset = packet.x_offset,
+        y_offset = packet.y_offset,
+        z_offset = packet.z_offset,
+    })
 
-        blocked = false
-
-        filter_action_event:trigger(packet)
-
-        if blocked then
-            return
-        end
-
-        coroutine.schedule(function()
-            pre_action_event:trigger(packet)
-
-            packets.outgoing[0x01A]:inject(packet)
-
-            if  p.action_category == cat_out.MAGIC_CAST or
-                p.action_category == cat_out.RANGED_ATTACK then
-
-                mid_action_event:trigger(packet)
-            end
-        end)
+    if action_category == category.magic or action_category == category.ranged_attack then
+        mid_action_event:trigger()
     end
 end
 
-local handle_incoming_action = function(p)
-    if  (p.category >= cat_in.RANGED_ATTACK and p.category <= cat_in.JOB_ABILITY) or
-        (p.category >= cat_in.PET_WEAPON_SKILL and p.category <= cat_in.JOB_ABILITY_3) then
-
-        local packet = p
-
-        coroutine.schedule(function()
-            post_action_event:trigger(packet)
-        end)
+local handle_incoming_action = function(packet)
+    local action_category = outgoing_categories[packet.category]
+    if not action_category or packet.actor ~= player.id then
+        return
     end
+
+    action.target_id = packet.targets[1].id
+    action.category = action_category
+    action.id = packet.param
+
+    post_action_event:trigger()
 end
 
 packets.outgoing[0x01A]:register(handle_outgoing_action)

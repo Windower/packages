@@ -1,6 +1,13 @@
 require('core.event') -- Required for the serializer
-local shared = require('core.shared')
+local channel = require('core.channel')
+local serializer = require('core.serializer')
 local struct = require('struct')
+
+local channel_get = channel.get
+local serializer_deserialize = serializer.deserialize
+local struct_name = struct.name
+local struct_metatype = struct.metatype
+local struct_from_ptr = struct.from_ptr
 
 local prepared = {}
 
@@ -23,8 +30,8 @@ local configure_ftype = function(ftype)
     end
 
     if count or fields then
-        struct.name(ftype, name)
-        struct.metatype(ftype)
+        struct_name(ftype, name)
+        struct_metatype(ftype)
     end
 
     prepared[name] = true
@@ -52,16 +59,16 @@ prepare_array = function(array)
 end
 
 return {
-    new = function(service_name, name)
-        name = name or 'data'
+    new = function(package_name, data_name)
+        data_name = data_name or 'data'
 
-        local data_client = shared.get(service_name, service_name .. '_' .. name)
+        local data_client = channel_get(package_name, package_name .. '_' .. data_name)
         local data = data_client:read()
 
-        local ftype = data.ftype
+        local ftype = serializer_deserialize(data.ftype)
         configure_ftype(ftype)
 
-        return struct.from_ptr(ftype, data.address), ftype
+        return struct_from_ptr(ftype, data.address), ftype
     end,
     configure = function(ftype)
         configure_ftype(ftype)

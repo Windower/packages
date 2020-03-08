@@ -3,7 +3,7 @@ local command = require('core.command')
 local entities = require('entities')
 local memory = require('memory')
 local player = require('player')
-local shared = require('core.shared')
+local channel = require('core.channel')
 local table = require('table')
 local windower = require('core.windower')
 
@@ -42,18 +42,18 @@ local key_fns = {
 
 local package = windower.package_name
 
--- Changes to the core shared and event libs are required to make this
+-- Changes to the core channel and event libs are required to make this
 -- work in the script environment.
 if package then
     local counter = 0
     local pending = {}
 
     do
-        local channel = shared.new('__sub_target_channel')
+        local st_channel = channel.new('__sub_target_channel')
         -- keep channel alive without polluting globals
-        pending.channel = channel
+        pending.channel = st_channel
 
-        channel.env = {
+        st_channel.env = {
             report_result = function(counter, target_id)
                 while #pending ~= 0 do
                     local descriptor = table.remove(pending, 1)

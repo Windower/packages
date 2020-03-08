@@ -1,6 +1,6 @@
-local shared = require('core.shared')
+local channel = require('core.channel')
 
-resources = shared.new('resources')
+resources = channel.new('resources')
 
 resources.data = setmetatable({}, {
     __index = function(t, k)
