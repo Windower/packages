@@ -1,10 +1,11 @@
 local ffi = require('ffi')
-local shared = require('core.shared')
+local channel = require('core.channel')
+local serializer = require('core.serializer')
 local string = require('string')
 local client = require('shared.client')
 local table = require('table')
 
-local packets_client = shared.get('packet_service', 'packets')
+local packets_client = channel.get('packet_service', 'packets')
 
 local get_ftype = function(_, path)
     return get_ftype(path)
@@ -31,16 +32,22 @@ local setmetatable = setmetatable
 local tonumber = tonumber
 local tostring = tostring
 
-local registry = {}
-local type_map = setmetatable({}, {
-    __index = function(t, k)
-        local ftype = packets_client:call(get_ftype, k)
-        client.configure(ftype)
-        t[k] = ftype
-        return ftype
-    end,
-})
+local type_map
+do
+    local client_configure = client.configure
+    local serializer_deserialize = serializer.deserialize
 
+    type_map = setmetatable({}, {
+        __index = function(t, k)
+            local ftype = serializer_deserialize(packets_client:call(get_ftype, k))
+            client_configure(ftype)
+            t[k] = ftype
+            return ftype
+        end,
+    })
+end
+
+local registry = {}
 local path_cache = {}
 local info_cache = {}
 local fragments_cache = {}

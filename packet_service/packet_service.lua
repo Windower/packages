@@ -5,8 +5,9 @@ local event = require('core.event')
 local file = require('file')
 local ffi = require('ffi')
 local os = require('os')
+local serializer = require('core.serializer')
 local server = require('shared.server')
-local shared = require('core.shared')
+local channel = require('core.channel')
 local string = require('string')
 local struct = require('struct')
 local windower = require('core.windower')
@@ -16,8 +17,8 @@ local pairs = pairs
 local tonumber = tonumber
 local tostring = tostring
 
-packets_server = shared.new('packets')
-types_server = shared.new('types')
+packets_server = channel.new('packets')
+types_server = channel.new('types')
 
 local packet_types
 local parse_types
@@ -51,6 +52,7 @@ local ftype_map = {
         timestamp       = {struct.double},
         blocked         = {struct.bool},
         injected        = {struct.bool},
+        sequence_counter= {struct.int32},
         path            = {struct.string(0x100)},
     }),
     injection = struct.struct({
@@ -64,6 +66,7 @@ local ftype_map = {
 packets_server.env = {}
 
 do
+    local serializer_serialize = serializer.serialize
     local string_sub = string.sub
     local string_find = string.find
 
@@ -103,7 +106,7 @@ do
             ftype_map[path] = ftype
         end
 
-        return ftype
+        return serializer_serialize(ftype, true)
     end
 end
 
@@ -221,6 +224,7 @@ do
         current.direction = direction
         current.blocked = raw.blocked
         current.injected = raw.injected
+        current.sequence_counter = raw.sequence_counter
 
         local ftype = packet_types[direction][id] or empty_ftype
         local types = ftype.types

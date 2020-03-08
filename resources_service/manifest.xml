@@ -1,6 +1,6 @@
 <package>
   <name>resources_service</name>
-  <version>1.1.0.2</version>
+  <version>1.1.0.3</version>
   <type>service</type>
   <dependencies>
     <dependency>resources_data</dependency>

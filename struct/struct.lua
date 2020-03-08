@@ -1,7 +1,6 @@
 local bit = require('bit')
 local ffi = require('ffi')
 local math = require('math')
-local os = require('os')
 local string = require('string')
 local table = require('table')
 
@@ -85,7 +84,12 @@ do
                     bit_type_size = ftype.size
                 end
             else
-                cdefs[cdef_count] = (ftype.name or ftype.cdef) .. ' ' .. field.cname .. ';'
+                local static = field.static
+                if static then
+                    cdefs[cdef_count] = 'static const ' .. (ftype.name or ftype.cdef) .. ' ' .. field.cname .. '=' .. tostring(static) .. ';'
+                else
+                    cdefs[cdef_count] = (ftype.name or ftype.cdef) .. ' ' .. field.cname .. ';'
+                end
 
                 if ftype.size ~= '*' then
                     index = index + ftype.size

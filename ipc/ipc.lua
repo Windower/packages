@@ -36,7 +36,7 @@ local ipc = setmetatable({}, mt)
 
 local pid = c.GetCurrentProcessId()
 
-ipc.received = event.slim.new()
+ipc.received = event.new()
 
 local mutex
 local data

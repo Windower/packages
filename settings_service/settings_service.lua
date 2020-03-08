@@ -2,13 +2,13 @@ local chat = require('core.chat')
 local command = require('core.command')
 local event = require('core.event')
 local math = require('math')
-local shared = require('core.shared')
+local channel = require('core.channel')
 local server = require('shared.server')
 local string = require('string')
 local struct = require('struct')
 local table = require('table')
 
-query_server = shared.new('query')
+query_server = channel.new('query')
 
 local query_result = {}
 

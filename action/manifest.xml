@@ -1,8 +1,10 @@
 <package>
   <name>action</name>
-  <version>1.0.0.1</version>
+  <version>2.0.0.0</version>
   <type>library</type>
   <dependencies>
     <dependency>action_service</dependency>
+    <dependency>entities</dependency>
+    <dependency>shared</dependency>
   </dependencies>
 </package>
