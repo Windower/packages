@@ -9,17 +9,12 @@ local paste = command.new('paste')
 local max_chat_size = 0x96
 
 paste:register(function()
-    local chat = memory.chat_input
-
-    if not chat.open then
-        return
-    end
-
     local text = unicode.to_shift_jis(clipboard.get())
     if text == nil then
         return
     end
 
+    local chat = memory.chat_input
     local original = chat.internal
     text = text:sub(1, math.max(max_chat_size - #original, 0))
 
