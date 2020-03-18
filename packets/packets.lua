@@ -161,7 +161,9 @@ do
     local ffi_cast = ffi.cast
     local ffi_fill = ffi.fill
 
-    local injection_ptr = ffi_cast(type_map.injection.name .. '*', packets_client:call(function() return get_injection_address() end))
+    local injection_ptr = ffi_cast(type_map.injection.name .. '*', packets_client:call(function()
+        return get_injection_address()
+    end))
     local injection = injection_ptr[0]
     local injection_size = type_map.injection.size
     local buffer = ffi_cast('char*', injection_ptr) + type_map.injection.fields.data.position

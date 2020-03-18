@@ -33,7 +33,7 @@ ipc.received:register(function(message)
     end
 end)
 
-command.core.register('send', function(source, message)
+command.core.register('send', function(_, message)
     message = message:gsub('{(%w+)}', '{%1.id}')
 
     local st
