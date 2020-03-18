@@ -17,7 +17,6 @@ local C = ffi.C
 local log_file = nil
 local log_day = nil
 
-local p = function(...) print(...) return ... end
 local base_path = windower.user_path .. '\\'
 C.CreateDirectoryW(unicode.to_utf16(base_path .. '..'), nil)
 C.CreateDirectoryW(unicode.to_utf16(base_path), nil)
@@ -34,8 +33,7 @@ local get_log = function()
 end
 
 chat.text_added:register(function(obj)
-    local date = os.date('*t')
-    if date.day ~= log_day then
+    if log_day ~= os.date('%d') then
         get_log()
     end
 
