@@ -8,7 +8,7 @@ local data = server.new(struct.struct({
     action              = {struct.struct({
         category        = {struct.int32},
         id              = {struct.int32},
-        target_index    = {struct.int32},
+        target_id       = {struct.int32},
         blocked         = {struct.bool},
     })},
     filter_action       = {data = event.new()},
@@ -57,7 +57,7 @@ local handle_outgoing_action = function(packet, info)
         return
     end
 
-    action.target_index = packet.target_index
+    action.target_id = packet.target_id
     action.category = action_category
     action.id = packet.param
 

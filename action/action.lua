@@ -6,7 +6,7 @@ local data, ftype = client.new('action_service')
 
 ftype.fields.action.type.fields.target = {
     get = function(data)
-        return entities[data.target_index]
+        return entities:by_id(data.target_id)
     end,
 }
 
