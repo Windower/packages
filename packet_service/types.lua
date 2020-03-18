@@ -473,7 +473,7 @@ types.incoming[0x00E] = struct({
     run_count           = {0x14, bit(uint16, 13), offset=0},
     -- target index?
     hp_percent          = {0x1A, percent},
-    state               = {0x1B, state},
+    state_id            = {0x1B, state},
     flags               = {0x1C, flags},
     claimer_id          = {0x28, entity},
     model_id            = {0x2E, uint16},
