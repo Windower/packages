@@ -109,6 +109,7 @@ local display = struct({
     moving                  = {0xF8, bool},
     walking                 = {0xFA, bool},
     frozen                  = {0xFC, bool},
+    nameplate_base          = {0x678, world_coord},
 })
 
 local entity = struct({
