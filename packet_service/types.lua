@@ -134,9 +134,8 @@ local roe_quest = tag(bit(uint32, 12), 'roe_quest')
 local pc_name = string(0x10)
 local fourcc = string(0x04)
 
-local ls_name = packed_string(0x0F, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
-local item_inscription = packed_string(0x0C, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
-local ls_name_extdata = packed_string(0x0C, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+local ls_name = packed_string(0x0F, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+-- local item_inscription = packed_string(0x0C, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
 
 local stats = struct({
     str                 = {0x00, int16},
@@ -487,7 +486,7 @@ types.incoming[0x017] = struct({
     formatted           = {0x01, boolbit(uint8), offset=3},
     zone                = {0x02, zone},
     name                = {0x04, pc_name},
-    message             = {0x14, string(0xEC)},
+    message             = {0x14, string()},
 })
 
 -- Job Info
