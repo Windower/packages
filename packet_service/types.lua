@@ -1317,6 +1317,17 @@ types.incoming[0x04B] = multiple({
     },
 })
 
+--[[enums['ah itype'] = {
+    [0x02] = 'Open menu response',
+    [0x03] = 'Unknown Logout',
+    [0x04] = 'Sell item confirmation',
+    [0x05] = 'Open sales status menu',
+    [0x0A] = 'Open menu confirmation',
+    [0x0B] = 'Sell item confirmation',
+    [0x0D] = 'Sales item status',
+    [0x0E] = 'Purchase item result',
+}]]
+
 -- Auction Interaction
 -- All types in here are server responses to the equivalent type in 0x04E
 -- The only exception is type 0x02, which is sent to initiate the AH menu
@@ -1381,7 +1392,7 @@ types.incoming[0x04C] = multiple({
         -- Open menu confirmation
         [0x0A] = struct({
             -- 12 junk bytes?
-            sale_status     = {0x10, uint8}, -- see breakoutabove
+            sale_status     = {0x10, uint8}, -- see breakout above
             -- 0x11 is not a part of sale_status
             bag_index       = {0x12, uint8}, -- From when the item was put on auction
             _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
@@ -1443,6 +1454,24 @@ types.incoming[0x04C] = multiple({
             auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
             auction_start   = {0x34, time()}, -- UTC time the auction started
+        }),
+
+        --[[ buy_status = {
+            [0x01] = 'Success',
+            [0x02] = 'Placing',
+            [0xC5] = 'Failed',
+        } ]]
+
+        [0x0E] = struct({
+            buy_status      = {0x01, uint8},
+            price           = {0x04, uint32},
+            item_id         = {0x08, item},
+            count           = {0x0C, uint16},
+            name            = {0x14, string(0x10)}, -- Character name (pending buy only)
+            pending_item_id = {0x24, uint16}, -- Only filled out during pending packets
+            pending_count   = {0x26, uint16}, -- Only filled out during pending packets
+            pending_price   = {0x28, uint32}, -- Only filled out during pending packets
+            timestamp       = {0x34, time()}, -- Only filled out during pending packets
         }),
 
         -- ??? : I have never seen this one.
@@ -2186,10 +2215,16 @@ types.incoming[0x0F6] = struct({
     type                = {0x00, uint32}, -- 1: Start, 2: End
 })
 
+--[[enums['reraise'] = {
+    [0x01] = 'Raise dialogue',
+    [0x02] = 'Tractor dialogue',
+}]]
+
 -- Reraise Activation
 types.incoming[0x0F9] = struct({
     player_id           = {0x00, entity},
     player_index        = {0x04, entity_index},
+    category            = {0x08, uint8},
 })
 
 -- Furniture Interaction
@@ -2557,6 +2592,7 @@ types.outgoing[0x017] = struct({
     [0x0F] = 'Switch target',
     [0x10] = 'Ranged attack',
     [0x12] = 'Dismount Chocobo',
+    [0x13] = 'Tractor Dialogue',
     [0x14] = 'Zoning/Appear', -- I think, the resource for this is ambiguous.
     [0x19] = 'Monsterskill',
     [0x1A] = 'Mount',
