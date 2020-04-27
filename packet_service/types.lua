@@ -2871,6 +2871,7 @@ types.outgoing[0x05C] = struct({
     menu_id             = {0x16, uint16},
     target_index        = {0x18, entity_index},
     -- 0x1A~0x1B: Not zone ID
+    heading             = {0x1F, float},
 })
 
 -- Outgoing emote
