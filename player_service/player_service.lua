@@ -176,10 +176,6 @@ packets.incoming:register_init({
         data.tp = p.tp
         data.hp_percent = p.hp_percent
         data.mp_percent = p.mp_percent
-        data.main_job_id = p.main_job_id
-        data.main_job_level = p.main_job_level
-        data.sub_job_id = p.sub_job_id
-        data.sub_job_level = p.sub_job_level
     end,
 
     [{0x0E2}] = function(p)
