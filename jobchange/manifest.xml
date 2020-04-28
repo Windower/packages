@@ -1,0 +1,16 @@
+<package>
+  <name>jobchange</name>
+  <version>1.0.0.0</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>packets</dependency>
+    <dependency>client_data</dependency>
+    <dependency>entities</dependency>
+    <dependency>player</dependency>
+    <dependency>set</dependency>
+    <dependency>list</dependency>
+    <dependency>world</dependency>
+    <dependency>string</dependency>
+    <dependency>settings</dependency>
+  </dependencies>
+</package>
