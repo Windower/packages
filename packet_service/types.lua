@@ -342,6 +342,9 @@ types.incoming[0x00A] = struct({
     menu_zone           = {0x5E, uint16},
     menu_id             = {0x60, uint16},
     weather_id          = {0x64, weather},
+    flags               = {0x7C, struct({size = 0x04}, {
+        mog_house           = {0x01, boolbit(uint8), offset=1},
+    })},
     player_name         = {0x80, pc_name},
     abyssea_timestamp   = {0x9C, time()},
     zone_model          = {0xA6, uint16},
