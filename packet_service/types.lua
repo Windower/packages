@@ -2869,7 +2869,7 @@ types.outgoing[0x05C] = struct({
     z                   = {0x04, float},
     y                   = {0x08, float},
     target_id           = {0x0C, entity},
-    -- 0x10~0x13: 01 00 00 00 observed
+    option_index        = {0x10, uint32},
     zone_id             = {0x14, zone},
     menu_id             = {0x16, uint16},
     target_index        = {0x18, entity_index},
