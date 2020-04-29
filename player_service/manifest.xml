@@ -1,6 +1,6 @@
 <package>
   <name>player_service</name>
-  <version>1.2.2.0</version>
+  <version>1.2.3.0</version>
   <type>service</type>
   <dependencies>
     <dependency>packets</dependency>
