@@ -1,4 +1,5 @@
 local event = require('core.event')
+local ffi = require('ffi')
 local packets = require('packets')
 local server = require('shared.server')
 local struct = require('struct')
@@ -168,11 +169,7 @@ packets.incoming:register_init({
     end,
 
     [{0x0AA}] = function(p)
-        local p_spells = p.spells
-        local spells = data.spells
-        for i = 0, 1023 do
-            spells[i] = p_spells[i]
-        end
+        ffi.copy(data._spells, p._spells, 0x80)
     end,
 
     [{0x0DF}] = function(p)
