@@ -1,6 +1,6 @@
 local math = require('math')
 local string = require('string')
-local ui = require('ui')
+local ui = require('core.ui')
 local target = require('target')
 
 local text_color = ui.color.grey
@@ -22,8 +22,7 @@ ui.display(function()
     ui.window('target_info', config_state, function()
         local entity = target.st or target.t
         if entity then
-
-            local entity_speed = ((entity.status == 5 or entity.status == 85) and round(100 * (entity.movement_speed / 4))) or round(100 * (entity.movement_speed / 5 - 1))
+            local entity_speed = ((entity.state_id == 5 or entity.state_id == 85) and round(100 * (entity.movement_speed / 4))) or round(100 * (entity.movement_speed / 5 - 1))
 
             if entity_speed > 0 then
                 text_color = ui.color.lightgreen
@@ -58,8 +57,10 @@ end)
 --[[
 Copyright © 2018, Chiaia
 All rights reserved.
+
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
+
     * Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
     * Redistributions in binary form must reproduce the above copyright
@@ -68,6 +69,7 @@ modification, are permitted provided that the following conditions are met:
     * Neither the name of Chiaia nor the
       names of its contributors may be used to endorse or promote products
       derived from this software without specific prior written permission.
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE

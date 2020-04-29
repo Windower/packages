@@ -1,4 +1,4 @@
-local event = require('event')
+local event = require('core.event')
 local memory = require('memory')
 local packets = require('packets')
 local server = require('shared.server')
@@ -38,10 +38,6 @@ packets.incoming:register_init({
         end)
     end,
     [{0x00B, 0x01}] = function(p)
-        local logout = p.type == 1
-        if not logout then
-            return
-        end
 
         data.logged_in = false
         data.server_id = 0

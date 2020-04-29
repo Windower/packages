@@ -1,7 +1,7 @@
+local math = require('math')
 local memory = require('memory')
 local settings = require('settings')
-local math = require('math')
-local windower = require('windower')
+local windower = require('core.windower')
 
 local defaults = {
     gameplay = {
@@ -36,7 +36,10 @@ local defaults = {
         auto_disconnect = {
             enabled = false,
             time = 60,
-        }
+        },
+        language_filter = {
+            enabled = false,
+        },
     },
 }
 
@@ -70,12 +73,16 @@ coroutine.schedule(function()
 
         do -- system
             local auto_disconnect = memory.auto_disconnect
+            local language_filter = memory.language_filter
 
             local system_options = options.system
             local auto_disconnect_options = system_options.auto_disconnect
+            local language_filter_options = system_options.language_filter
 
             auto_disconnect.enabled = auto_disconnect_options.enabled
             auto_disconnect.timeout_time = auto_disconnect_options.time
+
+            language_filter.disabled = not language_filter_options.enabled
         end
 
         coroutine.sleep_frame()

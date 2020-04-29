@@ -109,6 +109,7 @@ local display = struct({
     moving                  = {0xF8, bool},
     walking                 = {0xFA, bool},
     frozen                  = {0xFC, bool},
+    nameplate_base          = {0x678, world_coord},
 })
 
 local entity = struct({
@@ -144,15 +145,43 @@ local entity = struct({
     face_model_id           = {0x0FC, uint16},
     model                   = {0x0FE, model},
     freeze                  = {0x11C, bool},
-    -- flags                   = {0x120, uint32[0x06]},
     flags                   = {0x120, struct({size = 0x18}, {
+        spawned                 = {0x01, boolbit(uint8), offset=1},
         enemy                   = {0x01, boolbit(uint8), offset=5},
+        hidden                  = {0x01, boolbit(uint8), offset=6},
+        dead                    = {0x02, boolbit(uint8), offset=6},
+        invisible               = {0x05, boolbit(uint8), offset=4},
+        seeking                 = {0x06, boolbit(uint8), offset=4},
+        autogroup               = {0x06, boolbit(uint8), offset=5},
+        away                    = {0x06, boolbit(uint8), offset=6},
+        anonymous               = {0x06, boolbit(uint8), offset=7},
+        help                    = {0x07, boolbit(uint8), offset=0},
+        temp_logged             = {0x07, boolbit(uint8), offset=2},
+        linkshell               = {0x07, boolbit(uint8), offset=3},
+        connection_lost         = {0x07, boolbit(uint8), offset=4},
+        object                  = {0x08, boolbit(uint8), offset=3},
+        bazaar                  = {0x09, boolbit(uint8), offset=1},
+        promotion               = {0x09, boolbit(uint8), offset=3},
+        promotion_2             = {0x09, boolbit(uint8), offset=4},
+        gm                      = {0x09, boolbit(uint8), offset=5},
+        maintenance             = {0x09, boolbit(uint8), offset=6},
+        name_deletion           = {0x0C, boolbit(uint8), offset=7},
+        charmed                 = {0x0D, boolbit(uint8), offset=5},
+        attackable              = {0x0F, boolbit(uint8), offset=1},
+        name_hidden             = {0x10, boolbit(uint8), offset=7},
+        mentor                  = {0x11, boolbit(uint8), offset=4},
+        new_player              = {0x11, boolbit(uint8), offset=5},
+        trial_account           = {0x11, boolbit(uint8), offset=6},
+        visible_distance        = {0x11, boolbit(uint8), offset=7},
+        transparent             = {0x12, boolbit(uint8), offset=3},
+        hp_cloak                = {0x12, boolbit(uint8), offset=4},
+        level_sync              = {0x12, boolbit(uint8), offset=7},
     })},
     _unkonwn_ptr_2          = {0x150, ptr()}, -- Sometimes same as _unknown_1
     _unknown_float_1        = {0x158, float}, -- Always 4?
     _unknown_short_1        = {0x15C, uint16}, -- Flags?
     _unknown_short_2        = {0x15E, uint16}, -- Duplicate of _unknown_short_1
-    status                  = {0x168, uint32}, -- Is this type correct?
+    state_id                = {0x168, uint32}, -- Is this type correct?
     claim_id                = {0x184, entity_id},
     animation               = {0x18C, fourcc[0x0A]},
     animation_time          = {0x1B4, uint16},
@@ -270,6 +299,10 @@ local map_entry = struct({
 })
 
 local types = {}
+
+types.language_filter = struct({signature = '84C0750333C0C38B0D', offsets = {0x20}}, {
+    disabled                = {0x04, bool},
+})
 
 types.graphics = struct({signature = '83EC205355568BF18B0D'}, {
     gamma                   = {0x000, ptr(gamma)},

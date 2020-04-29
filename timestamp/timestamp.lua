@@ -1,5 +1,5 @@
 local bit = require('bit')
-local chat = require('chat')
+local chat = require('core.chat')
 local list = require('list');
 local os = require('os')
 local settings = require('settings')
@@ -42,7 +42,7 @@ do
     end)
 end
 
-local options = settings.load(defaults, true)
+settings.load(defaults, true)
 
 do
     local os_date = os.date

@@ -1,4 +1,4 @@
-local event = require('event')
+local event = require('core.event')
 local packets = require('packets')
 local server = require('shared.server')
 local struct = require('struct')
@@ -61,6 +61,22 @@ local skills = data.skills
 local job_levels = data.job_levels
 
 packets.incoming:register_init({
+    [{0x00A}] = function(p)
+        data.id = p.player_id
+        data.index = p.player_index
+        data.name = p.player_name
+        data.main_job_id = p.main_job_id
+        data.sub_job_id = p.sub_job_id
+        data.hp_max = p.hp_max
+        data.mp_max = p.mp_max
+        data.hp_percent = p.hp_percent
+    end,
+
+    [{0x00B, 0x01}] = function(p)
+        data.id = 0
+        data.index = 0
+    end,
+
     [{0x00D}] = function(p)
         if p.player_id ~= data.id then
             return
@@ -96,17 +112,6 @@ packets.incoming:register_init({
         end
     end,
 
-    [{0x00A}] = function(p)
-        data.id = p.player_id
-        data.index = p.player_index
-        data.name = p.player_name
-        data.main_job_id = p.main_job_id
-        data.sub_job_id = p.sub_job_id
-        data.hp_max = p.hp_max
-        data.mp_max = p.mp_max
-        data.hp_percent = p.hp_percent
-    end,
-
     [{0x01B}] = function(p)
         data.race_id = p.race_id
         data.hp_max = p.hp_max
@@ -117,7 +122,6 @@ packets.incoming:register_init({
     end,
 
     [{0x037}] = function(p)
-        data.id = p.player_id
         data.hp_percent = p.hp_percent
         data.pet_index = p.pet_index
         if data.state_id ~= p.state_id then
@@ -176,8 +180,6 @@ packets.incoming:register_init({
             return
         end
 
-        data.id = p.id
-        data.index = p.index
         data.hp = p.hp
         data.mp = p.mp
         data.tp = p.tp
@@ -194,8 +196,6 @@ packets.incoming:register_init({
             return
         end
 
-        data.id = p.id
-        data.index = p.index
         data.hp = p.hp
         data.mp = p.mp
         data.tp = p.tp

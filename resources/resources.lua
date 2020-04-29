@@ -1,7 +1,7 @@
 local enumerable = require('enumerable')
-local shared = require('shared')
+local channel = require('core.channel')
 
-local fetch = shared.get('resources_service', 'resources')
+local fetch = channel.get('resources_service', 'resources')
 
 local iterate = function(data, resource_name, index)
     return next(data[resource_name], index)

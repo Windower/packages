@@ -1,7 +1,6 @@
 local bit = require('bit')
 local ffi = require('ffi')
 local math = require('math')
-local os = require('os')
 local string = require('string')
 local table = require('table')
 
@@ -85,7 +84,12 @@ do
                     bit_type_size = ftype.size
                 end
             else
-                cdefs[cdef_count] = (ftype.name or ftype.cdef) .. ' ' .. field.cname .. ';'
+                local static = field.static
+                if static then
+                    cdefs[cdef_count] = 'static const ' .. (ftype.name or ftype.cdef) .. ' ' .. field.cname .. '=' .. tostring(static) .. ';'
+                else
+                    cdefs[cdef_count] = (ftype.name or ftype.cdef) .. ' ' .. field.cname .. ';'
+                end
 
                 if ftype.size ~= '*' then
                     index = index + ftype.size
@@ -576,7 +580,7 @@ do
 
     local string_cache = {}
     local data_cache = {}
-    local bits_cache = {}
+    local bitfield_cache = {}
 
     local make = function(size, tag, cache)
         size = size or '*'
@@ -629,7 +633,7 @@ do
         ffi_copy(instance[index], value, math_min(ftype.size, #value))
     end
 
-    local bits_mt = {
+    local bitfield_mt = {
         __index = function(t, k)
             local cdata = t._cdata
             local index = math_floor(k / 8)
@@ -659,18 +663,18 @@ do
         end,
     }
 
-    struct.bits = function(size)
-        return make(size, 'bits', bits_cache)
+    struct.bitfield = function(bytes)
+        return make(bytes, 'bitfield', bitfield_cache)
     end
 
-    tolua.bits = function(value, ftype)
+    tolua.bitfield = function(value, ftype)
         return setmetatable({
             _cdata = value,
             _bits = 8 * ftype.size
-        }, bits_mt)
+        }, bitfield_mt)
     end
 
-    toc.bits = function(instance, index, value, ftype)
+    toc.bitfield = function(instance, index, value, ftype)
         local ptr = instance[index]
         for byte_index = 0, ftype.size - 1 do
             local byte = 0
@@ -687,18 +691,36 @@ do
     end
 end
 
-struct.time = struct.tag(struct.uint32, 'time')
-struct.time.converter = 'time'
 do
-    local now = os.time()
-    local off = os.difftime(now, os.time(os.date('!*t', now)))
+    local time_base = function(offset, factor)
+        local ftype = struct.tag(struct.uint32, 'time')
+
+        ftype.converter = 'time'
+
+        ftype.offset = offset or 0
+        ftype.factor = factor or 1
+
+        return ftype
+    end
 
     tolua.time = function(value, ftype)
-        return value + off
+        return value / ftype.factor + ftype.offset
     end
 
     toc.time = function(instance, index, value, ftype)
-        instance[index] = value - off
+        instance[index] = (value - ftype.offset) * ftype.factor
+    end
+
+    struct.time = function(offset)
+        return time_base(offset, 1)
+    end
+
+    struct.tick = function(offset)
+        return time_base(offset, 60)
+    end
+
+    struct.ms_time = function(offset)
+        return time_base(offset, 1000)
     end
 end
 

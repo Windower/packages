@@ -1,4 +1,4 @@
-local chat = require('chat')
+local chat = require('core.chat')
 local set = require('set')
 local string = require('string')
 local target = require('target')

@@ -1,10 +1,11 @@
 local ffi = require('ffi')
-local shared = require('shared')
+local channel = require('core.channel')
+local serializer = require('core.serializer')
 local string = require('string')
 local client = require('shared.client')
 local table = require('table')
 
-local packets_client = shared.get('packet_service', 'packets')
+local packets_client = channel.get('packet_service', 'packets')
 
 local get_ftype = function(_, path)
     return get_ftype(path)
@@ -31,16 +32,22 @@ local setmetatable = setmetatable
 local tonumber = tonumber
 local tostring = tostring
 
-local registry = {}
-local type_map = setmetatable({}, {
-    __index = function(t, k)
-        local ftype = packets_client:call(get_ftype, k)
-        client.configure(ftype)
-        t[k] = ftype
-        return ftype
-    end,
-})
+local type_map
+do
+    local client_configure = client.configure
+    local serializer_deserialize = serializer.deserialize
 
+    type_map = setmetatable({}, {
+        __index = function(t, k)
+            local ftype = serializer_deserialize(packets_client:call(get_ftype, k))
+            client_configure(ftype)
+            t[k] = ftype
+            return ftype
+        end,
+    })
+end
+
+local registry = {}
 local path_cache = {}
 local info_cache = {}
 local fragments_cache = {}
@@ -154,7 +161,9 @@ do
     local ffi_cast = ffi.cast
     local ffi_fill = ffi.fill
 
-    local injection_ptr = ffi_cast(type_map.injection.name .. '*', packets_client:call(function() return get_injection_address() end))
+    local injection_ptr = ffi_cast(type_map.injection.name .. '*', packets_client:call(function()
+        return get_injection_address()
+    end))
     local injection = injection_ptr[0]
     local injection_size = type_map.injection.size
     local buffer = ffi_cast('char*', injection_ptr) + type_map.injection.fields.data.position
@@ -190,15 +199,15 @@ do
         injection.id = info.id
 
         local cdata = ffi_cast(ftype.name .. '*', buffer)[0]
-        local cache = ftype.info.cache
+        copy(cdata, values, ftype)
+
         local fragments = fragments_cache[t]
-        if cache then
-            for i = 1, #cache do
-                cdata[cache[i]] = fragments[i]
+        if fragments then
+            for key, value in pairs(fragments) do
+                cdata[key] = value
             end
         end
 
-        copy(cdata, values, ftype)
         packets_client:call(inject)
     end
 end
@@ -247,19 +256,23 @@ do
         end
         path_cache[result] = path
 
-        if ftype.info.cache then
-            fragments_cache[result] = {}
-        end
+        if parent then
+            local parent_ftype = type_map[path_cache[parent]]
+            local parent_key = parent_ftype.info.key
+            if parent_key then
+                local fragments = {
+                    [parent_key] = fragment,
+                }
 
-        local cached_fragments = parent and fragments_cache[parent]
-        if cached_fragments then
-            local fragments = {}
-            local cached_fragments_count = #cached_fragments
-            for i = 1, cached_fragments_count do
-                fragments[i] = cached_fragments[i]
+                local parent_fragments = fragments_cache[parent]
+                if parent_fragments then
+                    for key, value in pairs(parent_fragments) do
+                        fragments[key] = value
+                    end
+                end
+
+                fragments_cache[result] = fragments
             end
-            fragments[cached_fragments_count + 1] = fragment
-            fragments_cache[result] = fragments
         end
 
         return result, specific

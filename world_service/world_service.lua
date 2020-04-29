@@ -1,4 +1,4 @@
-local event = require('event')
+local event = require('core.event')
 local packets = require('packets')
 local server = require('shared.server')
 local struct = require('struct')
@@ -6,6 +6,7 @@ local struct = require('struct')
 local data = server.new(struct.struct({
     zone_id             = {struct.int32},
     weather_id          = {struct.int32},
+    mog_house           = {struct.bool},
     music               = {struct.struct({
         day                 = {struct.int32},
         night               = {struct.int32},
@@ -43,6 +44,7 @@ packets.incoming:register_init({
     [{0x00A}] = function(p)
         data.zone_id = p.zone_id
         data.weather_id = p.weather_id
+        data.mog_house = p.flags.mog_house
         music.day = p.day_music
         music.night = p.night_music
         music.solo_combat = p.solo_combat_music

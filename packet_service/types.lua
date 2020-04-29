@@ -59,7 +59,7 @@ local bool = struct.bool
 
 local bit = struct.bit
 local boolbit = struct.boolbit
-local bits = struct.bits
+local bitfield = struct.bitfield
 
 local time = struct.time
 
@@ -96,6 +96,7 @@ do
         end
 
         base_info.empty = true
+        base_info.key = ftype.key
         ftype.info = { cache = base_info.cache }
         ftype.base = struct(base_info, base_fields)
         ftype.lookups = nil
@@ -133,9 +134,8 @@ local roe_quest = tag(bit(uint32, 12), 'roe_quest')
 local pc_name = string(0x10)
 local fourcc = string(0x04)
 
-local ls_name = packed_string(0x0F, '\x00abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
-local item_inscription = packed_string(0x0C, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
-local ls_name_extdata = packed_string(0x0C, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+local ls_name = packed_string(0x0F, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
+-- local item_inscription = packed_string(0x0C, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
 
 local stats = struct({
     str                 = {0x00, int16},
@@ -328,8 +328,8 @@ types.incoming[0x00A] = struct({
     hp_percent          = {0x1A, percent},
     state_id            = {0x1B, state},
     zone_id             = {0x2C, zone},
-    timestamp_1         = {0x34, time},
-    timestamp_2         = {0x38, time},
+    timestamp_1         = {0x34, time()},
+    timestamp_2         = {0x38, time()},
     _dupe_zone          = {0x3E, zone},
     face_model_id       = {0x40, uint8},
     race_id             = {0x41, race},
@@ -342,8 +342,11 @@ types.incoming[0x00A] = struct({
     menu_zone           = {0x5E, uint16},
     menu_id             = {0x60, uint16},
     weather_id          = {0x64, weather},
+    flags               = {0x7C, struct({size = 0x04}, {
+        mog_house           = {0x01, boolbit(uint8), offset=1},
+    })},
     player_name         = {0x80, pc_name},
-    abyssea_timestamp   = {0x9C, time},
+    abyssea_timestamp   = {0x9C, time()},
     zone_model          = {0xA6, uint16},
     main_job_id         = {0xB0, job},
     sub_job_id          = {0xB3, job},
@@ -472,7 +475,7 @@ types.incoming[0x00E] = struct({
     run_count           = {0x14, bit(uint16, 13), offset=0},
     -- target index?
     hp_percent          = {0x1A, percent},
-    state               = {0x1B, state},
+    state_id            = {0x1B, state},
     flags               = {0x1C, flags},
     claimer_id          = {0x28, entity},
     model_id            = {0x2E, uint16},
@@ -486,7 +489,7 @@ types.incoming[0x017] = struct({
     formatted           = {0x01, boolbit(uint8), offset=3},
     zone                = {0x02, zone},
     name                = {0x04, pc_name},
-    message             = {0x14, string(0xEC)},
+    message             = {0x14, string()},
 })
 
 -- Job Info
@@ -1017,7 +1020,7 @@ types.incoming[0x037] = struct({
     pet_index           = {0x30, bit(uint32, 16), offset=3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
     ballista_stuff      = {0x30, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
     time_offset_maybe   = {0x38, uint32}, -- For me, this is the number of seconds in 66 hours
-    timestamp           = {0x3C, time}, -- This is 32 years off of JST at the time the packet is sent.
+    timestamp           = {0x3C, time()}, -- This is 32 years off of JST at the time the packet is sent.
     fish_hook_delay     = {0x46, uint8}, -- number of seconds between casting and hooking a fish, only set when state_id changes to 56
     status_effect_mask  = {0x48, data(8)},
     indi_status_effect  = {0x54, indi},
@@ -1123,9 +1126,9 @@ types.incoming[0x044] = multiple({
             automaton_head  = {0x04, uint8}, -- Harlequinn 0x01, Valoredge 0x02, Sharpshot 0x03, Stormwaker 0x04, Soulsoother 0x05, Spiritreaver 0x06 (Item ID - 0x2000)
             automaton_frame = {0x05, uint8}, -- Harlequinn 0x20, Valoredge 0x21, Sharpshot 0x22, Stormwaker 0x23 (Item ID - 0x2000)
             attachments     = {0x06, uint8[0x0C]}, -- Attachment assignments are based off their position in the equipment list. 0 is an empty slot, otherwise Item ID - 0x2100, so Strobe is 0x01, etc.
-            available_heads = {0x14, bits(4)}, -- Flags for the available heads. Position corresponds to Item ID shifted down by 0x2000. Harlequinn & 0x02, etc.
-            available_frames= {0x18, bits(4)}, -- #BYRTH# Flags for the available frames. Position corresponds to the item ID shifted down by 0x2020. Harlequinn & 0x01, etc.
-            available_attach= {0x34, bits(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments. Position corresponds to the item ID shifted down by 0x2100.
+            available_heads = {0x14, bitfield(4)}, -- Flags for the available heads. Position corresponds to Item ID shifted down by 0x2000. Harlequinn & 0x02, etc.
+            available_frames= {0x18, bitfield(4)}, -- #BYRTH# Flags for the available frames. Position corresponds to the item ID shifted down by 0x2020. Harlequinn & 0x01, etc.
+            available_attach= {0x34, bitfield(32)}, -- #BYRTH# This used to be broken out into 8 INTs. Need to confirm. Flags for the available attachments. Position corresponds to the item ID shifted down by 0x2100.
             pet_name        = {0x54, string(0x10)},
             hp              = {0x64, uint16},
             hp_max          = {0x66, uint16},
@@ -1173,7 +1176,6 @@ types.incoming[0x047] = struct({
     translated_phrase   = {0x44, string(64)} -- Will be 00'd if no match was found
 })
 
-
 -- Unknown 0x048 incoming :: Sent when loading linkshell information from the Linkshell Concierge
 -- One per entry, 128 bytes long, mostly empty, does not contain name as far as I can see.
 -- Likely contributes to that information.
@@ -1197,7 +1199,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2C, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1221,7 +1223,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2A, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1244,7 +1246,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2C, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1263,7 +1265,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2C, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1282,7 +1284,7 @@ types.incoming[0x04B] = multiple({
             packet_number   = {0x08, uint8},
             player_name     = {0x0A, pc_name}, -- This is used for sender (in inbox) and recipient (in outbox)
             -- 0x18: 46 32 00 00 and 42 32 00 00 observed - Possibly flags. Rare vs. Rare/Ex.?
-            timestamp       = {0x24, time},
+            timestamp       = {0x24, time()},
             item_id         = {0x2C, item},
             -- 0x26: Fiendish Tome: Chapter 11 had it, but Oneiros Pebble was just 00 00. May well be junked, 38 38 observed.
             -- 0x28: Flags? 01/04 00 00 00 observed
@@ -1317,6 +1319,17 @@ types.incoming[0x04B] = multiple({
         }),
     },
 })
+
+--[[enums['ah itype'] = {
+    [0x02] = 'Open menu response',
+    [0x03] = 'Unknown Logout',
+    [0x04] = 'Sell item confirmation',
+    [0x05] = 'Open sales status menu',
+    [0x0A] = 'Open menu confirmation',
+    [0x0B] = 'Sell item confirmation',
+    [0x0D] = 'Sales item status',
+    [0x0E] = 'Purchase item result',
+}]]
 
 -- Auction Interaction
 -- All types in here are server responses to the equivalent type in 0x04E
@@ -1382,7 +1395,7 @@ types.incoming[0x04C] = multiple({
         -- Open menu confirmation
         [0x0A] = struct({
             -- 12 junk bytes?
-            sale_status     = {0x10, uint8}, -- see breakoutabove
+            sale_status     = {0x10, uint8}, -- see breakout above
             -- 0x11 is not a part of sale_status
             bag_index       = {0x12, uint8}, -- From when the item was put on auction
             _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
@@ -1393,7 +1406,7 @@ types.incoming[0x04C] = multiple({
             price           = {0x28, uint32},
             auction_state   = {0x2E, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
-            auction_start   = {0x34, time}, -- UTC time
+            auction_start   = {0x34, time()}, -- UTC time
         }),
 
         -- Sell item confirmation - Sent twice. On action completion, the second seems to contain updated information
@@ -1410,7 +1423,7 @@ types.incoming[0x04C] = multiple({
             price           = {0x28, uint32},
             auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
-            auction_start   = {0x34, time}, -- UTC time
+            auction_start   = {0x34, time()}, -- UTC time
         }),
 
         -- Remove item confirmation?
@@ -1427,7 +1440,7 @@ types.incoming[0x04C] = multiple({
             price           = {0x28, uint32},
             auction_state   = {0x2C, uint32}, -- 04 00 00 00 in the first packet and 00 00 00 00 when confirmed canceled.
             auction_id      = {0x30, uint32}, -- present in the first packet and blanked in the second.
-            auction_start   = {0x34, time}, -- UTC time
+            auction_start   = {0x34, time()}, -- UTC time
         }),
 
         -- Sales item status - Sent twice. On action completion, the second seems to contain updated information
@@ -1443,7 +1456,25 @@ types.incoming[0x04C] = multiple({
             price           = {0x28, uint32},
             auction_state   = {0x2C, uint32}, -- Always 04 00 00 00 after the auction has been accepted by the server
             auction_id      = {0x30, uint32}, -- Server seems to increment this counter 1 per auction
-            auction_start   = {0x34, time}, -- UTC time the auction started
+            auction_start   = {0x34, time()}, -- UTC time the auction started
+        }),
+
+        --[[ buy_status = {
+            [0x01] = 'Success',
+            [0x02] = 'Placing',
+            [0xC5] = 'Failed',
+        } ]]
+
+        [0x0E] = struct({
+            buy_status      = {0x01, uint8},
+            price           = {0x04, uint32},
+            item_id         = {0x08, item},
+            count           = {0x0C, uint16},
+            name            = {0x14, string(0x10)}, -- Character name (pending buy only)
+            pending_item_id = {0x24, uint16}, -- Only filled out during pending packets
+            pending_count   = {0x26, uint16}, -- Only filled out during pending packets
+            pending_price   = {0x28, uint32}, -- Only filled out during pending packets
+            timestamp       = {0x34, time()}, -- Only filled out during pending packets
         }),
 
         -- ??? : I have never seen this one.
@@ -1598,7 +1629,7 @@ types.incoming[0x056] = multiple({ -- #BYRTH# unadjusted for the base offset
 
 -- Weather Change
 types.incoming[0x057] = struct({
-    vanadiel_time       = {0x00, time}, -- Units of minutes.
+    vanadiel_time       = {0x00, time()}, -- Units of minutes.
     weather_id          = {0x04, weather},
 })
 
@@ -1806,7 +1837,7 @@ types.incoming[0x063] = multiple({
 
         [0x09] = struct({
             status_effects  = {0x04, uint16[0x20]},
-            durations       = {0x44, time[0x20]},
+            durations       = {0x44, time(1510890320, 60)[0x20]},
         }),
     },
 })
@@ -1884,8 +1915,8 @@ types.incoming[0x070] = struct({
 -- Only observed being used for Unity fights.
 types.incoming[0x075] = struct({
     fight_designation   = {0x00, uint32}, -- Anything other than 0 makes a timer. 0 deletes the timer.
-    timestamp_offset    = {0x04, time}, -- Number of seconds since 15:00:00 GMT 31/12/2002 (0x3C307D70)
-    fight_duration      = {0x08, time},
+    timestamp_offset    = {0x04, time()}, -- Number of seconds since 15:00:00 GMT 31/12/2002 (0x3C307D70)
+    fight_duration      = {0x08, time()},
     --0x0C~0x17: This packet clearly needs position information, but it's unclear how these bytes carry it.
     battlefield_radius  = {0x18, uint32}, -- Yalms*1000, so a 50 yalm battlefield would have 50,000 for this field
     render_radius       = {0x1C, uint32}, -- Yalms*1000, so a fence that renders when you're 25 yalms away would have 25,000 for this field
@@ -1984,7 +2015,7 @@ types.incoming[0x0A0] = struct({
 
 -- Player spells known
 types.incoming[0x0AA] = struct({
-    spells              = {0x00, bits(128)} -- 0 indexed bit field where nth bit indicates if that spell_id is known. I.E. bit 1 is Cure, bit 2 is Cure II, etc.
+    spells              = {0x00, bitfield(0x80)} -- 0 indexed bit field where nth bit indicates if that spell_id is known. I.E. bit 1 is Cure, bit 2 is Cure II, etc.
 })
 
 -- 0x0AC, and 0x0AE are bitfields where the lsb indicates whether you have index 0 of the related resource.
@@ -2048,7 +2079,7 @@ types.incoming[0x0CA] = struct({
 types.incoming[0x0CC] = struct({cache = {'linkshell_index'}}, {
     linkshell_index         = {0x00, bit(uint32, 1), offset=14},
     message                 = {0x04, string(0x80)},
-    timestamp               = {0x84, time},
+    timestamp               = {0x84, time()},
     player_name             = {0x88, pc_name},
     permissions             = {0x94, data(4)},
     linkshell_name          = {0x98, ls_name},
@@ -2065,7 +2096,7 @@ types.incoming[0x0D2] = struct({cache = {'pool_index'}}, {
     is_old              = {0x11, bool}, -- This is true if it was already in the pool, but appeared in the pool before you joined a party
     _known1             = {0x12, uint8, const=0},
     -- 0x17: Seemingly random, both 00 and FF observed, as well as many values in between
-    timestamp           = {0x14, time},
+    timestamp           = {0x14, time()},
     -- 28 bytes of 0s?
 })
 
@@ -2187,10 +2218,16 @@ types.incoming[0x0F6] = struct({
     type                = {0x00, uint32}, -- 1: Start, 2: End
 })
 
+--[[enums['reraise'] = {
+    [0x01] = 'Raise dialogue',
+    [0x02] = 'Tractor dialogue',
+}]]
+
 -- Reraise Activation
 types.incoming[0x0F9] = struct({
     player_id           = {0x00, entity},
     player_index        = {0x04, entity_index},
+    category            = {0x08, uint8},
 })
 
 -- Furniture Interaction
@@ -2529,7 +2566,7 @@ types.outgoing[0x015] = struct({
     heading             = {0x10, uint8},
     _flags1             = {0x11, uint8}, -- Bit 0x04 indicates that maintenance mode is activated
     target_index        = {0x12, entity_index},
-    timestamp           = {0x14, time}, -- Milliseconds
+    timestamp           = {0x14, time()}, -- Milliseconds
 })
 
 -- Update Request
@@ -2558,6 +2595,7 @@ types.outgoing[0x017] = struct({
     [0x0F] = 'Switch target',
     [0x10] = 'Ranged attack',
     [0x12] = 'Dismount Chocobo',
+    [0x13] = 'Tractor Dialogue',
     [0x14] = 'Zoning/Appear', -- I think, the resource for this is ambiguous.
     [0x19] = 'Monsterskill',
     [0x1A] = 'Mount',
@@ -2836,6 +2874,7 @@ types.outgoing[0x05C] = struct({
     menu_id             = {0x16, uint16},
     target_index        = {0x18, entity_index},
     -- 0x1A~0x1B: Not zone ID
+    heading             = {0x1B, uint8},
 })
 
 -- Outgoing emote

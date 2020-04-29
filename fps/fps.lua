@@ -1,5 +1,5 @@
 local settings = require('settings')
-local ui = require('ui')
+local ui = require('core.ui')
 local os = require('os')
 local table = require('table')
 local string = require('string')

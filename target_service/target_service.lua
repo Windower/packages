@@ -1,14 +1,14 @@
-local command = require('command')
-local shared = require('shared')
+local command = require('core.command')
+local channel = require('core.channel')
 
 do
     local handling = nil
     local channels = setmetatable({}, {
         __mode = 'v',
         __index = function(t, package)
-            local channel = shared.get(package, '__sub_target_channel')
-            rawset(t, package, channel)
-            return channel
+            local st_channel = channel.get(package, '__sub_target_channel')
+            rawset(t, package, st_channel)
+            return st_channel
         end,
     })
 
@@ -20,9 +20,9 @@ do
                 local tag = package .. ':' .. counter
                 if handling == tag then
                     handling = nil
-                    local channel = channels[package]
-                    if channel then
-                        channel:pcall(function(_, ...)
+                    local package_channel = channels[package]
+                    if package_channel then
+                        package_channel:pcall(function(_, ...)
                             report_result(...)
                         end, tonumber(counter), tonumber(target_id))
                     end

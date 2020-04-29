@@ -1,11 +1,11 @@
 local bit = require('bit')
 local ffi = require('ffi')
 local io = require('io')
-local shared = require('shared')
+local channel = require('core.channel')
 local string = require('string')
-local windower = require('windower')
+local windower = require('core.windower')
 
-id_map = shared.new('id_map')
+id_map = channel.new('id_map')
 
 local rom_map
 local id_count
