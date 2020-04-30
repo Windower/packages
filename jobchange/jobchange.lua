@@ -105,7 +105,7 @@ end
 
 local find_temp_job = function()
     for _, job_id in pairs(temp_jobs) do -- check temp jobs (nin, dnc, war, mnk, whm, blm, rdm, thf)
-        if not find_conflict(job_id) then 
+        if not find_conflict(job_id) and player.job_levels[job_id] > 0 then 
             return job_id
         end
     end
