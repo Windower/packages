@@ -9,5 +9,7 @@
     <dependency>packets</dependency>
     <dependency>entities</dependency>
     <dependency>settings</dependency>
+    <dependency>set</dependency>
+    <dependency>resources</dependency>
   </dependencies>
 </package>

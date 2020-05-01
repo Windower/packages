@@ -50,6 +50,13 @@ local defaults = {
             },
             name_font = 'Roboto bold italic 12pt color:white stroke:"10% #000000BB"', 
             percent_font = 'Roboto bold italic 10pt color:white stroke:"10% #000000BB"', 
+
+            hide_action = false,
+            complete_action_hold_time = 7,
+            flash_cycle = { 0.3, 0.3 },
+            action_font = 'Roboto bold 11pt color:white stroke:"10% #000000BB"', 
+            complete_action_font = 'Roboto bold italic 11pt color:gray stroke:"10% #000000BB"',
+            interrupted_action_font = 'Roboto bold italic strikethrough 11pt color:gray stroke:"10% #000000BB"',
         },
         subtarget = {
             pos = { x = -250, y = -325},
@@ -60,16 +67,32 @@ local defaults = {
             },
             name_font = 'Roboto bold italic 11pt color:white stroke:"10% #000000BB"', 
             percent_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            hide_action = false,
+            complete_action_hold_time = 7,
+            flash_cycle = { 0.3, 0.3 },
+            action_font = 'Roboto bold 10pt color:white stroke:"10% #000000BB"', 
+            complete_action_font = 'Roboto bold italic 10pt color:gray stroke:"10% #000000BB"',
+            interrupted_action_font = 'Roboto bold italic strikethrough 10pt color:gray stroke:"10% #000000BB"',
         },
         focustarget = {
             pos = { x = -250, y = -350},
             width = 250,
             hide = false,
+            complete_action_hold_time = 7,
+            flash_cycle = { 0.3, 0.3 },
             colors = {
                 { v = 1, r = 97, g = 25, b = 232, a = 255}, 
             },
             name_font = 'Roboto bold italic 11pt color:white stroke:"10% #000000BB"', 
             percent_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            hide_action = false,
+            complete_action_hold_time = 7,
+            flash_cycle = { 0.3, 0.3 },
+            action_font = 'Roboto bold 10pt color:white stroke:"10% #000000BB"', 
+            complete_action_font = 'Roboto bold italic 10pt color:gray stroke:"10% #000000BB"',
+            interrupted_action_font = 'Roboto bold italic strikethrough 10pt color:gray stroke:"10% #000000BB"',
         },
     },
 }

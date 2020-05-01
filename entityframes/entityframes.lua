@@ -13,6 +13,7 @@ local settings = require('settings')
 
 local helpers = require('helpers')
 local frame_ui = require('frame_ui')
+local actions = require('action_handling')
 
 local options = require('options')
 
@@ -20,13 +21,15 @@ local state = {
     layout = false,
 }
 
+local frame_height = 35
+
 local frames = {
     player = {
         title = 'Player',
         style = 'normal',
         width = options.frames.player.width,
-        min_height = 30,
-        max_height = 30,
+        min_height = frame_height,
+        max_height = frame_height,
         resizable = true,
         moveable = true,
         closeable = false,
@@ -36,8 +39,8 @@ local frames = {
         title = 'Target',
         style = 'normal',
         width = options.frames.target.width,
-        min_height = 30,
-        max_height = 30,
+        min_height = frame_height,
+        max_height = frame_height,
         resizable = true,
         moveable = true,
         closeable = false,
@@ -47,8 +50,8 @@ local frames = {
         title = 'Sub Target',
         style = 'normal',
         width = options.frames.subtarget.width,
-        min_height = 30,
-        max_height = 30,
+        min_height = frame_height,
+        max_height = frame_height,
         resizable = true,
         moveable = true,
         closeable = false,
@@ -58,8 +61,8 @@ local frames = {
         title = 'Focus Target',
         style = 'normal',
         width = options.frames.focustarget.width,
-        min_height = 30,
-        max_height = 30,
+        min_height = frame_height,
+        max_height = frame_height,
         resizable = true,
         moveable = true,
         closeable = false,
@@ -90,7 +93,7 @@ ui.display(function()
     for name, frame in pairs(frames) do
         if not options.frames[name].hide or state.layout then
             frames[name], options.frames[name].hide = ui.window(name, frames[name], function()
-                frame_ui[name](helpers, options.frames[name], frame)
+                frame_ui[name](helpers, options.frames[name], frame, actions)
             end)
         end
     end
