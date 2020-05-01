@@ -68,9 +68,86 @@ local target_frame_ui = function(targ, target_type, helpers, options, state)
     end
 end
 
+local options_state = {
+    selection = nil,
+}
+local options_frame_ui = function(helpers, options, window_state)
+    -- frame selection
+    ui.location(0, 0)
+    options_state.selection = ui.radio('player', 'Player', options_state.selection == 'player') and 'player' or nil
+    ui.location(50, 0)
+    options_state.selection = ui.radio('target', 'Target', options_state.selection == 'target') and 'target' or nil
+    ui.location(100, 0)
+    options_state.selection = ui.radio('subtarget', 'Subtarget', options_state.selection == 'subtarget') and 'subtarget' or nil
+    ui.location(170, 0)
+    options_state.selection = ui.radio('focustarget', 'Focustarget', options_state.selection == 'focustarget') and 'focustarget' or nil
+
+    -- display options
+    ui.location(0, 30)
+    ui.text(options_state.selection or 'Unselected')
+
+end
+
+local position_options_ui = function(helpers, options, x_offset, y_offset)
+    ui.location(x_offset, y_offset)
+    ui.text('Position:  x: ')
+    ui.location(x_offset + 65, y_offset)
+    ui.size(60, 20)
+    options.x = tonumber(ui.edit('pos_x', tostring(options.x)))
+
+    ui.location(x_offset + 130, y_offset)
+    ui.text('y: ')
+    ui.location(x_offset + 150, y_offset)
+    ui.size(60, 20)
+    options.y = tonumber(ui.edit('pos_y', tostring(options.y)))
+
+    return options, x_offset, y_offset + 24
+end
+
+local player_options_ui = function(helpers, options, x_offset, y_offset)
+    ui.location(x_offset, y_offset)
+    if ui.check('hide', 'Hide', options.hide) then
+        options.hide = not options.hide
+    end
+    y_offset = y_offset + 24
+
+    ui.location(x_offset, y_offset)
+    ui.text('Width: ')
+    ui.location(x_offset + 40, y_offset)
+    ui.size(60, 20)
+    options.width = tonumber(ui.edit('width', tostring(options.width)))
+    y_offset = y_offset + 24
+
+    options.pos, x_offset, y_offset = position_options_ui(helpers, options.pos, x_offset, y_offset)
+    return options, x_offset, y_offset
+end
+
+local target_options_ui = function(helpers, options, x_offset, y_offset)
+    ui.location(x_offset, y_offset)
+    if ui.check('hide', 'Hide', options.hide) then
+        options.hide = not options.hide
+    end
+    y_offset = y_offset + 24
+
+    ui.location(x_offset, y_offset)
+    ui.text('Width: ')
+    ui.location(x_offset + 40, y_offset)
+    ui.size(60, 20)
+    options.width = tonumber(ui.edit('width', tostring(options.width)))
+    y_offset = y_offset + 24
+
+    options.pos, x_offset, y_offset = position_options_ui(helpers, options.pos, x_offset, y_offset)
+    return options, x_offset, y_offset
+end
+
 return {
     player = player_frame_ui,
     target = function(h, o, s) return target_frame_ui(target.t, 'Target', h, o, s) end,
     subtarget = function(h, o, s) return target_frame_ui(target.st, 'Subtarget', h, o, s) end,
     focustarget = function(h, o, s) return target_frame_ui(target.focusst, 'Focustarget', h, o, s) end,
+    options = options_frame_ui,
+    player_options = player_options_ui,
+    target_options = target_options_ui,
+    subtarget_options = target_options_ui,
+    focustarget_options = target_options_ui,
 }

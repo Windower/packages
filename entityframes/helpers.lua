@@ -42,9 +42,40 @@ local color_from_value = function(value, colors)
     return color
 end
 
+function ui_table(t, x_offset, y_offset)
+    for key, value in pairs(t) do
+        if type(value) == 'boolean' then
+            ui.location(x_offset, y_offset)
+            t[key] = ui.check(key, tostring(key), value)
+            y_offset = y_offset + 24
+        elseif type(value) == 'string' then
+            ui.location(x_offset, y_offset)
+            ui.text(tostring(key))
+            ui.location(x_offset + 70, y_offset)
+            t[key] = ui.edit(key, value)
+            y_offset = y_offset + 24
+        elseif type(value) == 'number' then
+            ui.location(x_offset, y_offset)
+            ui.text(tostring(key))
+            ui.location(x_offset + 70, y_offset)
+            t[key] = tonumber(ui.edit(key, tostring(value)))
+            y_offset = y_offset + 24
+        elseif type(value) == 'table' then
+            ui.location(x_offset, y_offset)
+            ui.text(tostring(key))
+            x_offset = x_offset + 25
+            t[key], x_offset, y_offset = ui_table(value, x_offset, y_offset)
+            x_offset = x_offset - 25
+        end
+    end
+
+    return t, x_offset, y_offset
+end
+
 return {
     convert_to_pixel_space = convert_to_pixel_space,
     init_frame_positions = init_frame_positions,
     to_color = to_color,
     color_from_value = color_from_value,
+    ui_table = ui_table,
 }
