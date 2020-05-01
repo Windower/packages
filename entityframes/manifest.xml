@@ -1,0 +1,13 @@
+<package>
+  <name>entityframes</name>
+  <version>0.1.0.0</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>party</dependency>
+    <dependency>player</dependency>
+    <dependency>target</dependency>
+    <dependency>packets</dependency>
+    <dependency>entities</dependency>
+    <dependency>settings</dependency>
+  </dependencies>
+</package>
