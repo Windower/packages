@@ -25,18 +25,12 @@ local init_frame_positions = function(frames, options)
     end
 end
 
-local to_color = function (color_settings)
-    return ui.color.rgb(color_settings.r,
-                        color_settings.g,
-                        color_settings.b,
-                        color_settings.a)
-end
-
 local color_from_value = function(value, colors)
-    local max = 0, color
-    for _, c in ipairs(colors) do
-        if c.v >= value and c.v > max then
+    local max = 99999, color
+    for v, c in pairs(colors) do
+        if value <= v and max > v - value then
             color = c
+            max = v - value
         end
     end
     return color

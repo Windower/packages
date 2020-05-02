@@ -2,7 +2,7 @@ local string = require('string')
 local ui = require('core.ui')
 local player = require('player')
 local party = require('party')
-local memory = require('memory')
+local entities = require('entities')
 local target = require('target')
 local windower = require('windower')
 local math = require('math')
@@ -27,7 +27,7 @@ local get_cycle = function(cycles, start)
 end
 
 local short_letters = 'liI1 -\'".,'
-local wide_letters = 'wWmM'
+local wide_letters = 'wWmMAKk'
 -- TODO: nuke this from orbit when the new UI stuff comes out
 local calculate_text_size_terribly = function(s, font)
     local pt = tonumber(string.sub(string.match(font, ' (%d+)pt'), 0, -1)) / 12.0
@@ -63,12 +63,12 @@ local player_frame_ui = function(helpers, options, state)
         end
 
         ui.location(x_offset, 0)
-        ui.size(bar_width - 12, 10)
+        ui.size(bar_width - 8, 10)
         if bar_settings.type == 'tp' and value_p > 1 then
             -- special handling for TP because it can overfill the bar.
 
             -- base bar, previous color + slight dim from top bar's unfilled section
-            ui.progress(1, { color = helpers.to_color(helpers.color_from_value(value_p-1, bar_settings.colors)) })
+            ui.progress(1, { color = helpers.color_from_value(value_p-1, bar_settings.colors) })
 
             -- top bar, we want this to be a higher color, and fill the expected amount. 1000, 2000 and 3000 = 100%, values in between should be a percent.
             local mod_p = 0
@@ -77,10 +77,10 @@ local player_frame_ui = function(helpers, options, state)
             end
 
             ui.location(x_offset, 0)
-            ui.size(bar_width - 12, 10)
-            ui.progress(mod_p, { color = helpers.to_color(helpers.color_from_value(value_p, bar_settings.colors)) })            
+            ui.size(bar_width - 8, 10)
+            ui.progress(mod_p, { color = helpers.color_from_value(value_p, bar_settings.colors) })            
         else
-            ui.progress(value_p, { color = helpers.to_color(helpers.color_from_value(value_p, bar_settings.colors)) })
+            ui.progress(value_p, { color = helpers.color_from_value(value_p, bar_settings.colors) })
         end
 
         ui.location(x_offset + 6, 2)
@@ -90,8 +90,11 @@ local player_frame_ui = function(helpers, options, state)
             ui.text(string.format('[%s  %s]{%s}',bar_settings.type:upper(), value, bar_settings.value_font))
         end
 
-        x_offset = x_offset + bar_width
+        x_offset = x_offset + bar_width + 4
     end
+end
+
+local player_frame_decoration = function(...)
 end
 
 local get_party_member = function(entity)
@@ -111,37 +114,19 @@ local entity_frame_ui = function(entity, target_type, helpers, options, state)
     end
     if (entity and (not entity.flags.hidden or party_member)) or in_layout then
         local x_offset = 0
-
-        local dist_str_width, dist_str_height = calculate_text_size_terribly('00.0\'', options.distance_font)
-        ui.location(x_offset, 15 - dist_str_height / 2)
-        local dist = in_layout and 15.72 or math.sqrt(entity.distance)
-        local dist_str = string.format('%0.1f', dist)
-        if dist > 0 and (not options.hide_distance or in_layout) then
-            ui.text(string.format('[%s\']{%s}', dist_str, options.distance_font))
-        end
-
-        x_offset = x_offset + dist_str_width + 4
-        local is_targeted = entity and target.t and target.t.id == entity.id
-        ui.location(x_offset, 13)
-        if not options.hide_targeted and (in_layout or is_targeted) then
-            ui.size(12, 12)
-            ui.image(windower.package_path..'\\target.png', { color = helpers.to_color(options.target_color), })
-        end
-
-        x_offset = x_offset + 16
         ui.location(x_offset, 14)
         local value_p = in_layout and 0.73 or (party_member and party_member.hp_percent / 100 or entity.hp_percent / 100)
-        ui.size(options.width - x_offset, 10)
-        ui.progress(value_p, { color = helpers.to_color(helpers.color_from_value(value_p, options.colors)) })
+        ui.size(state.width - x_offset, 10)
+        ui.progress(value_p, { color = helpers.color_from_value(value_p, options.colors) })
 
         if party_member and not options.hide_party_resources then
-            ui.location(options.width * 2 / 3 - 2, 23 - (options.party_resources_height / 2))
-            ui.size(options.width / 6, options.party_resources_height)
-            ui.progress(party_member.mp_percent / 100, { color = helpers.to_color(options.mp_color)})
+            ui.location(state.width * 2 / 3 - 12, 23 - (options.party_resources_height / 2))
+            ui.size(state.width / 6, options.party_resources_height)
+            ui.progress(party_member.mp_percent / 100, { color = options.mp_color})
 
-            ui.location(options.width * 5 / 6,  23 - (options.party_resources_height / 2))
-            ui.size(options.width / 6, options.party_resources_height)
-            ui.progress(party_member.tp / 1000, { color = helpers.to_color(options.tp_color)})
+            ui.location(state.width * 5 / 6 - 10,  23 - (options.party_resources_height / 2))
+            ui.size(state.width / 6, options.party_resources_height)
+            ui.progress(party_member.tp / 1000, { color = options.tp_color})
         end
 
         x_offset = x_offset + 6
@@ -157,42 +142,77 @@ local entity_frame_ui = function(entity, target_type, helpers, options, state)
             if in_layout or current_actions[entity.id] then
                 local action = in_layout and 'Casting Action' or current_actions[entity.id].action.en
                 local width, height = calculate_text_size_terribly(action, options.action_font)
-                ui.location(options.width - width - 20, 14 - height)
+                ui.location(state.width - width - 20, 13 - height)
                 ui.text(string.format('[%s]{%s}', action, options.action_font))
             elseif previous_actions[entity.id] and os.clock() < previous_actions[entity.id].time + options.complete_action_hold_time then
                 local action = previous_actions[entity.id]
                 if not action.interrupted or get_cycle(options.flash_cycle, action.time) then
                     local font = action.interrupted and options.interrupted_action_font or options.complete_action_font
                     local width, height = calculate_text_size_terribly(action.action.en, font)
-                    ui.location(options.width - width - 20, 14 - height)
+                    ui.location(state.width - width - 20, 13 - height)
                     ui.text(string.format('[%s]{%s}', action.action.en, font))
                 end
             end
         end
+    end
+end
 
-        if not options.hide_target_target and entity.target_index then
-            x_offset = options.width + 4
-            ui.location(x_offset, 13)
+local entity_frame_decorations = function(entity, name, helpers, options, state)
+    local in_layout = state.style == 'layout'
+    local party_member
+    if entity then
+        party_member = get_party_member(entity)
+    end
+    if (entity and (not entity.flags.hidden or party_member)) or in_layout then
+
+        -- left side ornaments
+        x_offset = state.x
+        y_offset = state.y + 13
+        local dist_str_width, dist_str_height = calculate_text_size_terribly('00.0\'', options.distance_font)
+        x_offset = x_offset - dist_str_width - 20
+        ui.location(x_offset, y_offset + 2 - dist_str_height / 2)
+        local dist = in_layout and 15.72 or math.sqrt(entity.distance)
+        local dist_str = string.format('%0.1f', dist)
+        if dist > 0 and (not options.hide_distance or in_layout) then
+            ui.text(string.format('[%s\']{%s}', dist_str, options.distance_font))
+        end
+
+        x_offset = x_offset + dist_str_width + 4
+        local is_targeted = entity and target.t and target.t.id == entity.id
+        if not options.hide_targeted and (in_layout or is_targeted) then
+            ui.location(x_offset, y_offset)
             ui.size(12, 12)
+            ui.image(windower.package_path..'\\target.png', { color = options.target_color, })
+        end
 
-            local target_entity 
-            for _, e in ipairs(memory.entities) do
-                if e ~= nil and e.index == entity.target_index then
-                    target_entity = e
-                    break
-                end
+        -- right side ornaments
+        x_offset = state.x + state.width + 4
+        if not options.hide_target_target and in_layout or entity.target_index then
+            local target_name = nil
+            if in_layout then
+                target_name = 'Target\'s target'
+            else
+                local target_entity = entities[entity.target_index]
+                target_name = target_entity and target_entity.name or nil
+                --for _, e in ipairs(memory.entities) do
+                --    if e ~= nil and e.index == entity.target_index then
+                --        target_name = e.name
+                --        break
+                --    end
+                --end
             end
-            if target_entity then
+
+            if target_name ~= nil and target_name ~= '' then
+                ui.location(x_offset, y_offset)
+                ui.size(12, 12)
                 ui.image(windower.package_path..'\\attention.png')
 
                 x_offset = x_offset + 12 + 4
-                ui.location(x_offset, 13)
-                ui.text(string.format('[%s]{%s}', target_entity.name, options.target_target_font))
-                text_width, text_height = calculate_text_size_terribly(target_entity.name, options.target_target_font)
+                text_width, text_height = calculate_text_size_terribly(target_name, options.target_target_font)
+                ui.location(x_offset, y_offset - text_height / 2)
+                ui.text(string.format('[%s]{%s}', target_name, options.target_target_font))
                 x_offset = x_offset + text_width + 5
             end
-
-            state.width = x_offset
         end
     end
 end
@@ -270,10 +290,22 @@ local target_options_ui = function(helpers, options, x_offset, y_offset)
 end
 
 return {
-    player = player_frame_ui,
-    target = function(h, o, s, a) return entity_frame_ui(target.t, 'Target', h, o, s, a) end,
-    subtarget = function(h, o, s, a) return entity_frame_ui(target.st, 'Subtarget', h, o, s, a) end,
-    focustarget = function(h, o, s, a) return entity_frame_ui(target.focusst, 'Focustarget', h, o, s, a) end,
+    player = { 
+        draw_window = player_frame_ui,
+        draw_decoration = player_frame_decoration,
+    },
+    target = { 
+        draw_window = function(h, o, s) return entity_frame_ui(target.t, 'Target', h, o, s) end,
+        draw_decoration = function(n, h, o, s) return entity_frame_decorations(target.t, n, h, o, s) end,
+    },
+    subtarget = {
+        draw_window = function(h, o, s) return entity_frame_ui(target.st, 'Subtarget', h, o, s) end,
+        draw_decoration = function(n, h, o, s) return entity_frame_decorations(target.st, n, h, o, s) end,
+    },
+    focustarget = { 
+        draw_window = function(h, o, s) return entity_frame_ui(target.focusst, 'Focustarget', h, o, s) end,
+        draw_decoration = function(n, h, o, s) return entity_frame_decorations(target.focusst, n, h, o, s) end,
+    },        
     options = options_frame_ui,
     player_options = player_options_ui,
     target_options = target_options_ui,
