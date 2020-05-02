@@ -1,6 +1,7 @@
 local packets = require('packets')
 local set = require('set')
 local client_data = require('resources')
+local entities = require('entities')
 local os = require('os')
 
 local starting_categories = set(8,7,9,14,15)
@@ -61,10 +62,10 @@ local handle_incoming_action = function(action, info)
     local interrupted = (action.targets[1].actions[1].message == 0 and action.targets[1].id == action.actor)
     if interrupted or complete then
         -- cast was interrupted or completed
-        previous_actions[action.actor] = {actor_id=action.actor, target_id=action.targets[1].id, action=action_data, interrupted=interrupted, time=os.clock()}
+        previous_actions[action.actor] = {actor=entities:by_id(action.actor), target=entities:by_id(action.targets[1].id), action=action_data, interrupted=interrupted, time=os.clock()}
         current_actions[action.actor] = nil;
     else
-        current_actions[action.actor] = {actor_id=action.actor, target_id=action.targets[1].id, action=action_data, time=os.clock()}
+        current_actions[action.actor] = {actor=entities:by_id(action.actor), target=entities:by_id(action.targets[1].id), action=action_data, time=os.clock()}
     end
 end
 

@@ -189,17 +189,17 @@ local entity_frame_decorations = function(entity, name, helpers, options, state)
         x_offset = state.x + state.width + 4
         if not options.hide_target_target and in_layout or entity.target_index then
             local target_name = nil
+            local target_name_font = options.target_target_font
             if in_layout then
                 target_name = 'Target\'s target'
-            else
+            elseif current_actions[entity.id] and not options.hide_action then
+                target_name = current_actions[entity.id].target and current_actions[entity.id].target.name or nil
+            elseif entity.target_index ~= 0 then
                 local target_entity = entities[entity.target_index]
                 target_name = target_entity and target_entity.name or nil
-                --for _, e in ipairs(memory.entities) do
-                --    if e ~= nil and e.index == entity.target_index then
-                --        target_name = e.name
-                --        break
-                --    end
-                --end
+            elseif previous_actions[entity.id] and not options.hide_action and os.clock() < previous_actions[entity.id].time + options.complete_action_hold_time then
+                target_name = previous_actions[entity.id].target and previous_actions[entity.id].target.name or nil
+                target_name_font = options.complete_action_font
             end
 
             if target_name ~= nil and target_name ~= '' then
@@ -208,9 +208,9 @@ local entity_frame_decorations = function(entity, name, helpers, options, state)
                 ui.image(windower.package_path..'\\attention.png')
 
                 x_offset = x_offset + 12 + 4
-                text_width, text_height = calculate_text_size_terribly(target_name, options.target_target_font)
+                text_width, text_height = calculate_text_size_terribly(target_name, target_name_font)
                 ui.location(x_offset, y_offset - text_height / 2)
-                ui.text(string.format('[%s]{%s}', target_name, options.target_target_font))
+                ui.text(string.format('[%s]{%s}', target_name, target_name_font))
                 x_offset = x_offset + text_width + 5
             end
         end
