@@ -1,14 +1,7 @@
 local ui = require('core.ui')
 local command = require('core.command')
-local string = require('string')
 local math = require('math')
-local table = require('table')
 
-local party = require('party')
-local player = require('player')
-local target = require('target')
-local packets = require('packets')
-local entities = require('entities')
 local settings = require('settings')
 
 local helpers = require('helpers')

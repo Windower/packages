@@ -42,14 +42,28 @@ local defaults = {
             },
         },
         target = {
-            pos = { x = -250, y = -300},
-            width = 488,
+            pos = { x = -297, y = -320},
+            width = 535,
             hide = false,
             colors = {
                 { v = 1, r = 255, g = 20, b = 20, a = 255}, 
             },
             name_font = 'Roboto bold italic 12pt color:white stroke:"10% #000000BB"', 
             percent_font = 'Roboto bold italic 10pt color:white stroke:"10% #000000BB"', 
+
+            hide_distance = false,
+            distance_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            hide_targeted = false,
+            target_color = {r = 255, g = 50, b = 50, a = 255},
+
+            hide_target_target = false,
+            target_target_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            mp_color = { v = 1, r = 184, g = 084, b = 121, a = 255}, 
+            tp_color = { v = 3, r = 255, g = 236, b = 35, a = 255}, 
+            hide_party_resources = true,
+            party_resources_height = 2,
 
             hide_action = false,
             complete_action_hold_time = 7,
@@ -59,14 +73,28 @@ local defaults = {
             interrupted_action_font = 'Roboto bold italic strikethrough 11pt color:gray stroke:"10% #000000BB"',
         },
         subtarget = {
-            pos = { x = -250, y = -325},
-            width = 250,
+            pos = { x = -297, y = -345},
+            width = 297,
             hide = false,
             colors = {
                 { v = 1, r = 14, g = 87, b = 183, a = 255}, 
             },
             name_font = 'Roboto bold italic 11pt color:white stroke:"10% #000000BB"', 
             percent_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            hide_distance = false,
+            distance_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            hide_targeted = false,
+            target_color = {r = 255, g = 50, b = 50, a = 255},
+
+            hide_target_target = false,
+            target_target_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            mp_color = { v = 1, r = 184, g = 084, b = 121, a = 255}, 
+            tp_color = { v = 3, r = 255, g = 236, b = 35, a = 255}, 
+            hide_party_resources = true,
+            party_resources_height = 2,
 
             hide_action = false,
             complete_action_hold_time = 7,
@@ -76,8 +104,8 @@ local defaults = {
             interrupted_action_font = 'Roboto bold italic strikethrough 10pt color:gray stroke:"10% #000000BB"',
         },
         focustarget = {
-            pos = { x = -250, y = -350},
-            width = 250,
+            pos = { x = -297, y = -370},
+            width = 297,
             hide = false,
             complete_action_hold_time = 7,
             flash_cycle = { 0.3, 0.3 },
@@ -86,6 +114,20 @@ local defaults = {
             },
             name_font = 'Roboto bold italic 11pt color:white stroke:"10% #000000BB"', 
             percent_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            hide_distance = false,
+            distance_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            hide_targeted = false,
+            target_color = {r = 255, g = 50, b = 50, a = 255},
+
+            hide_target_target = false,
+            target_target_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+            mp_color = { v = 1, r = 184, g = 084, b = 121, a = 255}, 
+            tp_color = { v = 3, r = 255, g = 236, b = 35, a = 255}, 
+            hide_party_resources = true,
+            party_resources_height = 2,
 
             hide_action = false,
             complete_action_hold_time = 7,

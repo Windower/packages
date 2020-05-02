@@ -1,7 +1,9 @@
 local string = require('string')
 local ui = require('core.ui')
 local player = require('player')
+local party = require('party')
 local target = require('target')
+local windower = require('windower')
 local math = require('math')
 local os = require('os')
 
@@ -23,7 +25,7 @@ local get_cycle = function(cycles, start)
     return s
 end
 
-local short_letters = 'liI1 -'
+local short_letters = 'liI1 -\'".,'
 local wide_letters = 'wWmM'
 -- TODO: nuke this from orbit when the new UI stuff comes out
 local calculate_text_size_terribly = function(s, font)
@@ -91,28 +93,73 @@ local player_frame_ui = function(helpers, options, state)
     end
 end
 
-local target_frame_ui = function(targ, target_type, helpers, options, state)
+local get_party_member = function(entity)
+    for i = 1, 18 do
+        local member = party[i]
+        if member ~= nil and member.id == entity.id then
+            return member
+        end
+    end
+end
+
+local entity_frame_ui = function(entity, target_type, helpers, options, state)
     local in_layout = state.style == 'layout'
-    if targ or in_layout then
-        ui.location(0, 14)
-        ui.size(state.width, 10)
+    local party_member
+    if entity then
+        party_member = get_party_member(entity)
+    end
+    if (entity and (not entity.flags.hidden or party_member)) or in_layout then
+        local x_offset = 0
 
-        local value_p = in_layout and 0.73 or targ.hp_percent / 100
+        local dist_str_width, dist_str_height = calculate_text_size_terribly('00.0\'', options.distance_font)
+        ui.location(x_offset, 15 - dist_str_height / 2)
+        local dist = in_layout and 15.72 or math.sqrt(entity.distance)
+        local dist_str = string.format('%0.1f', dist)
+        if dist > 0 and (not options.hide_distance or in_layout) then
+            ui.text(string.format('[%s\']{%s}', dist_str, options.distance_font))
+        end
 
+        x_offset = x_offset + dist_str_width + 4
+        local is_targeted = entity and target.t and target.t.id == entity.id
+        ui.location(x_offset, 13)
+        if not options.hide_targeted and (in_layout or is_targeted) then
+            ui.size(12, 12)
+            ui.image(windower.package_path..'\\target.png', { color = helpers.to_color(options.target_color), })
+        end
+
+        x_offset = x_offset + 16
+        ui.location(x_offset, 14)
+        local value_p = in_layout and 0.73 or (party_member and party_member.hp_percent / 100 or entity.hp_percent / 100)
+        ui.size(state.width - x_offset, 10)
         ui.progress(value_p, { color = helpers.to_color(helpers.color_from_value(value_p, options.colors)) })
 
-        local t_name = in_layout and target_type..' Name' or targ.name
-        ui.location(6, 14)
-        ui.text(string.format('[%s]{%s}[: %s%%]{%s}', t_name, options.name_font, value_p * 100, options.percent_font))
+        if party_member and not options.hide_party_resources then
+            ui.location(state.width * 2 / 3 - 2, 23 - (options.party_resources_height / 2))
+            ui.size(state.width / 6, options.party_resources_height)
+            ui.progress(party_member.mp_percent / 100, { color = helpers.to_color(options.mp_color)})
+
+            ui.location(state.width * 5 / 6,  23 - (options.party_resources_height / 2))
+            ui.size(state.width / 6, options.party_resources_height)
+            ui.progress(party_member.tp / 1000, { color = helpers.to_color(options.tp_color)})
+        end
+
+        x_offset = x_offset + 6
+        local t_name = in_layout and target_type..' Name' or entity.name
+        ui.location(x_offset , 14)
+        if party_member then
+            ui.text(string.format('[%s  %i]{%s}[: %s%%]{%s}', t_name, party_member.hp, options.name_font, party_member.hp_percent, options.percent_font))
+        else
+            ui.text(string.format('[%s]{%s}[: %s%%]{%s}', t_name, options.name_font, value_p * 100, options.percent_font))
+        end
 
         if not options.hide_action then
-            if in_layout or current_actions[targ.id] then
-                local action = in_layout and 'Casting Action' or current_actions[targ.id].action.en
+            if in_layout or current_actions[entity.id] then
+                local action = in_layout and 'Casting Action' or current_actions[entity.id].action.en
                 local width, height = calculate_text_size_terribly(action, options.action_font)
                 ui.location(state.width - width - 20, 14 - height)
                 ui.text(string.format('[%s]{%s}', action, options.action_font))
-            elseif previous_actions[targ.id] and os.clock() < previous_actions[targ.id].time + options.complete_action_hold_time then
-                local action = previous_actions[targ.id]
+            elseif previous_actions[entity.id] and os.clock() < previous_actions[entity.id].time + options.complete_action_hold_time then
+                local action = previous_actions[entity.id]
                 if not action.interrupted or get_cycle(options.flash_cycle, action.time) then
                     local font = action.interrupted and options.interrupted_action_font or options.complete_action_font
                     local width, height = calculate_text_size_terribly(action.action.en, font)
@@ -198,9 +245,9 @@ end
 
 return {
     player = player_frame_ui,
-    target = function(h, o, s, a) return target_frame_ui(target.t, 'Target', h, o, s, a) end,
-    subtarget = function(h, o, s, a) return target_frame_ui(target.st, 'Subtarget', h, o, s, a) end,
-    focustarget = function(h, o, s, a) return target_frame_ui(target.focusst, 'Focustarget', h, o, s, a) end,
+    target = function(h, o, s, a) return entity_frame_ui(target.t, 'Target', h, o, s, a) end,
+    subtarget = function(h, o, s, a) return entity_frame_ui(target.st, 'Subtarget', h, o, s, a) end,
+    focustarget = function(h, o, s, a) return entity_frame_ui(target.focusst, 'Focustarget', h, o, s, a) end,
     options = options_frame_ui,
     player_options = player_options_ui,
     target_options = target_options_ui,
