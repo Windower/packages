@@ -7,7 +7,7 @@
     <dependency>player</dependency>
     <dependency>target</dependency>
     <dependency>packets</dependency>
-    <dependency>entities</dependency>
+    <dependency>memory</dependency>
     <dependency>settings</dependency>
     <dependency>set</dependency>
     <dependency>resources</dependency>

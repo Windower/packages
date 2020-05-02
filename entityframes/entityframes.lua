@@ -85,9 +85,13 @@ ui.display(function()
 
     for name, frame in pairs(frames) do
         if not options.frames[name].hide or state.layout then
-            frames[name], options.frames[name].hide = ui.window(name, frames[name], function()
+            local temp_frame_state = frames[name]
+            temp_frame_state, options.frames[name].hide = ui.window(name, frames[name], function()
                 frame_ui[name](helpers, options.frames[name], frame, actions)
             end)
+            if state.layout then
+                frames[name] = temp_frame_state
+            end
         end
     end
 

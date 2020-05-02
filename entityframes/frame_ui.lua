@@ -2,6 +2,7 @@ local string = require('string')
 local ui = require('core.ui')
 local player = require('player')
 local party = require('party')
+local memory = require('memory')
 local target = require('target')
 local windower = require('windower')
 local math = require('math')
@@ -130,16 +131,16 @@ local entity_frame_ui = function(entity, target_type, helpers, options, state)
         x_offset = x_offset + 16
         ui.location(x_offset, 14)
         local value_p = in_layout and 0.73 or (party_member and party_member.hp_percent / 100 or entity.hp_percent / 100)
-        ui.size(state.width - x_offset, 10)
+        ui.size(options.width - x_offset, 10)
         ui.progress(value_p, { color = helpers.to_color(helpers.color_from_value(value_p, options.colors)) })
 
         if party_member and not options.hide_party_resources then
-            ui.location(state.width * 2 / 3 - 2, 23 - (options.party_resources_height / 2))
-            ui.size(state.width / 6, options.party_resources_height)
+            ui.location(options.width * 2 / 3 - 2, 23 - (options.party_resources_height / 2))
+            ui.size(options.width / 6, options.party_resources_height)
             ui.progress(party_member.mp_percent / 100, { color = helpers.to_color(options.mp_color)})
 
-            ui.location(state.width * 5 / 6,  23 - (options.party_resources_height / 2))
-            ui.size(state.width / 6, options.party_resources_height)
+            ui.location(options.width * 5 / 6,  23 - (options.party_resources_height / 2))
+            ui.size(options.width / 6, options.party_resources_height)
             ui.progress(party_member.tp / 1000, { color = helpers.to_color(options.tp_color)})
         end
 
@@ -156,17 +157,42 @@ local entity_frame_ui = function(entity, target_type, helpers, options, state)
             if in_layout or current_actions[entity.id] then
                 local action = in_layout and 'Casting Action' or current_actions[entity.id].action.en
                 local width, height = calculate_text_size_terribly(action, options.action_font)
-                ui.location(state.width - width - 20, 14 - height)
+                ui.location(options.width - width - 20, 14 - height)
                 ui.text(string.format('[%s]{%s}', action, options.action_font))
             elseif previous_actions[entity.id] and os.clock() < previous_actions[entity.id].time + options.complete_action_hold_time then
                 local action = previous_actions[entity.id]
                 if not action.interrupted or get_cycle(options.flash_cycle, action.time) then
                     local font = action.interrupted and options.interrupted_action_font or options.complete_action_font
                     local width, height = calculate_text_size_terribly(action.action.en, font)
-                    ui.location(state.width - width - 20, 14 - height)
+                    ui.location(options.width - width - 20, 14 - height)
                     ui.text(string.format('[%s]{%s}', action.action.en, font))
                 end
             end
+        end
+
+        if not options.hide_target_target and entity.target_index then
+            x_offset = options.width + 4
+            ui.location(x_offset, 13)
+            ui.size(12, 12)
+
+            local target_entity 
+            for _, e in ipairs(memory.entities) do
+                if e ~= nil and e.index == entity.target_index then
+                    target_entity = e
+                    break
+                end
+            end
+            if target_entity then
+                ui.image(windower.package_path..'\\attention.png')
+
+                x_offset = x_offset + 12 + 4
+                ui.location(x_offset, 13)
+                ui.text(string.format('[%s]{%s}', target_entity.name, options.target_target_font))
+                text_width, text_height = calculate_text_size_terribly(target_entity.name, options.target_target_font)
+                x_offset = x_offset + text_width + 5
+            end
+
+            state.width = x_offset
         end
     end
 end
