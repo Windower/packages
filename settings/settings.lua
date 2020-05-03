@@ -128,10 +128,6 @@ end
 
 local parse
 do
-    local file_exists = file.exists
-    local file_read = file.read
-    local file_write = file.write
-
     local amend
     amend = function(parsed, defaults)
         for key, value in pairs(defaults) do
@@ -157,10 +153,10 @@ do
     parse = function(defaults, id, global)
         local options_file = get_file(id, global)
         local options
-        if file_exists(options_file) then
-            options = loadstring(file_read(options_file))()
+        if options_file:exists() then
+            options = loadstring(options_file:read())()
         else
-            file_write(options_file, 'return ' .. format_table(defaults))
+            options_file:write('return ' .. format_table(defaults))
             options = {}
         end
 
@@ -195,11 +191,9 @@ settings.load = function(defaults, id, global)
 end
 
 do
-    local file_write = file.write
-
     settings.save = function(id)
         local info = info_cache[id or 'settings']
-        file_write(get_file(info.id, info.global), 'return ' .. format_table(info.options))
+        get_file(info.id, info.global):write('return ' .. format_table(info.options))
     end
 end
 
