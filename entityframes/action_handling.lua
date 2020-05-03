@@ -3,6 +3,7 @@ local set = require('set')
 local client_data = require('resources')
 local entities = require('entities')
 local world = require('world')
+local party = require('party')
 local os = require('os')
 
 local starting_categories = set(8,7,9,14,15)
@@ -44,27 +45,37 @@ local handle_incoming_action = function(action, info)
         return 
     end
 
+    local party = get_party_ids()
     if is_npc(action.actor) then
         -- track aggro
         local a = aggro[action.actor]
         if a == nil then
-            a = { targets = set(), }
+            a = { actor = entities.npcs:by_id(action.actor), }
         end
-        a.last_action_time = os.clock()
+        if party:contains(action.targets[1].id) then
+            a.primary_target = entities:by_id(action.targets[1].id)
+        else
+            a.primary_target = nil
+        end
 
-        a.actor = entities.npcs:by_id(action.actor)
-        local party = get_party_ids
-        for i = 1, action.target_count do
-            if party:contains(action.targets[i].id) then
-                if i == 1 then
-                    a.primary_target = entities:by_id(action.targets[i].id)
-                end
-                if not a.targets:contains(action.targets[i].id) then
-                    a.targets:add(action.targets[i].id)
-                end
-            end
+        if a.primary_target ~= nil then
+            a.last_action_time = os.clock()
+
+            aggro[action.actor] = a
+        else
+            aggro[action.actor] = nil
         end
-        aggro[action.actor] = a
+    elseif party:contains(action.actor) then
+        for i = 1, action.target_count do
+            local a = aggro[action.targets[i].id]
+            if a == nil then
+                a = { actor = entities.npcs:by_id(action.targets[i].id) }
+            end
+            a.last_action_time = os.clock()
+            a.primary_target = entities.pcs:by_id(action.actor)
+            
+            aggro[action.targets[i].id] = a
+        end        
     end
 
     if not starting_categories:contains(action.category) and not completed_categories:contains(action.category) then
