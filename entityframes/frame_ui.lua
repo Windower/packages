@@ -102,7 +102,7 @@ local entity_frame_ui = function(entity, target_type, helpers, options, state, x
         ui.size(state.width - x_offset, 10)
         ui.progress(value_p, { color = helpers.color_from_value(value_p, options.colors) })
 
-        if not options.hide_party_resources and options.party_resources_height ~= nil then
+        if options.show_party_resources and options.party_resources_height ~= nil then
             local mp = in_layout and 67 or (party_member and party_member.mp_percent or nil)
             local tp = in_layout and 700 or (party_member and party_member.tp or nil)
 
@@ -128,7 +128,7 @@ local entity_frame_ui = function(entity, target_type, helpers, options, state, x
             ui.text(string.format('[%s]{%s}[: %s%%]{%s}', t_name, options.name_font, value_p * 100, options.percent_font))
         end
 
-        if not options.hide_action then
+        if options.show_action then
             if in_layout or current_actions[entity.id] then
                 local action = in_layout and 'Casting Action' or current_actions[entity.id].action.en
                 local width, height = helpers.calculate_text_size_terribly(action, options.action_font)
@@ -163,13 +163,13 @@ local entity_frame_decorations = function(entity, target_type, helpers, options,
         ui.location(x_offset, y_offset + 2 - dist_str_height / 2)
         local dist = in_layout and 15.72 or math.sqrt(entity.distance)
         local dist_str = string.format('%0.1f', dist)
-        if dist > 0 and not options.hide_distance then
+        if dist > 0 and options.show_distance then
             ui.text(string.format('[%s\']{%s}', dist_str, options.distance_font))
         end
 
         x_offset = x_offset + dist_str_width + 4
         local is_targeted = entity and target.t and target.t.id == entity.id
-        if not options.hide_targeted and (in_layout or is_targeted) then
+        if options.show_targeted and (in_layout or is_targeted) then
             ui.location(x_offset, y_offset)
             ui.size(12, 12)
             ui.image(windower.package_path..'\\target.png', { color = options.target_color, })
@@ -177,20 +177,20 @@ local entity_frame_decorations = function(entity, target_type, helpers, options,
 
         -- right side ornaments
         x_offset = state.x + state.width + 4
-        if not options.hide_target_target then
+        if options.show_target_target then
             local target_name = nil
             local target_name_font = options.target_target_font
             if in_layout then
                 target_name = target_type..'\'s target'
-            elseif entity and current_actions[entity.id] and not options.hide_action then
+            elseif entity and current_actions[entity.id] and options.show_action then
                 target_name = current_actions[entity.id].target and current_actions[entity.id].target.name or nil
             elseif entity and entity.target_index ~= 0 then
                 local target_entity = entities[entity.target_index]
                 target_name = target_entity and target_entity.name or nil
-            elseif entity and previous_actions[entity.id] and not options.hide_action and os.clock() < previous_actions[entity.id].time + options.complete_action_hold_time then
+            elseif entity and previous_actions[entity.id] and options.show_action and os.clock() < previous_actions[entity.id].time + options.complete_action_hold_time then
                 target_name = previous_actions[entity.id].target and previous_actions[entity.id].target.name or nil
                 target_name_font = options.complete_action_font
-            elseif entity and not options.hide_aggro and aggro[entity.id] and os.clock() < aggro[entity.id].last_action_time + options.aggro_degrade_time then
+            elseif entity and options.show_aggro and aggro[entity.id] and os.clock() < aggro[entity.id].last_action_time + options.aggro_degrade_time then
                 target_name = aggro[entity.id].primary_target.name
             end
 
@@ -282,8 +282,8 @@ end
 
 local player_options_ui = function(id, helpers, options, x_offset, y_offset)
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_frame', 'Hide', options.hide) then
-        options.hide = not options.hide
+    if ui.check(id..'show_frame', 'Show', options.show) then
+        options.show = options.show
     end
 
     y_offset = y_offset + 24
@@ -301,44 +301,44 @@ end
 
 local target_options_ui = function(id, helpers, options, x_offset, y_offset)
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_frame', 'Hide', options.hide) then
-        options.hide = not options.hide
+    if ui.check(id..'show_frame', 'Show', options.show) then
+        options.show = not options.show
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_action', 'Hide Action', options.hide_action) then
-        options.hide_action = not options.hide_action
+    if ui.check(id..'show_action', 'Show Action', options.show_action) then
+        options.show_action = not options.show_action
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_targeted', 'Hide Targeted', options.hide_targeted) then
-        options.hide_targeted = not options.hide_targeted
+    if ui.check(id..'show_targeted', 'Show Targeted', options.show_targeted) then
+        options.show_targeted = not options.show_targeted
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_target_target', 'Hide Target\'s Target', options.hide_target_target) then
-        options.hide_target_target = not options.hide_target_target
+    if ui.check(id..'show_target_target', 'Show Target\'s Target', options.show_target_target) then
+        options.show_target_target = not options.show_target_target
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_distance', 'Hide Distance', options.hide_distance) then
-        options.hide_distance = not options.hide_distance
+    if ui.check(id..'show_distance', 'Show Distance', options.show_distance) then
+        options.show_distance = not options.show_distance
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_party_resources', 'Hide Party MP/TP', options.hide_party_resources) then
-        options.hide_party_resources = not options.hide_party_resources
+    if ui.check(id..'show_party_resources', 'Show Party MP/TP', options.show_party_resources) then
+        options.show_party_resources = not options.show_party_resources
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_aggro', 'Hide Aggro', options.hide_aggro) then
-        options.hide_aggro = not options.hide_aggro
+    if ui.check(id..'show_aggro', 'Detect Aggro (experimental)', options.show_aggro) then
+        options.show_aggro = not options.show_aggro
     end
     y_offset = y_offset + 24
 
@@ -355,38 +355,38 @@ end
 
 local aggro_options_ui = function(id, helpers, options, x_offset, y_offset)
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_frame', 'Hide', options.hide) then
-        options.hide = not options.hide
+    if ui.check(id..'show_frame', 'Show', options.show) then
+        options.show = not options.show
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_action', 'Hide Action', options.entity_frame.hide_action) then
-        options.entity_frame.hide_action = not options.entity_frame.hide_action
+    if ui.check(id..'show_action', 'Show Action', options.entity_frame.show_action) then
+        options.entity_frame.show_action = not options.entity_frame.show_action
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_targeted', 'Hide Targeted', options.entity_frame.hide_targeted) then
-        options.entity_frame.hide_targeted = not options.entity_frame.hide_targeted
+    if ui.check(id..'show_targeted', 'Show Targeted', options.entity_frame.show_targeted) then
+        options.entity_frame.show_targeted = not options.entity_frame.show_targeted
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_target_target', 'Hide Target\'s Target', options.entity_frame.hide_target_target) then
-        options.entity_frame.hide_target_target = not options.entity_frame.hide_target_target
+    if ui.check(id..'show_target_target', 'Show Target\'s Target', options.entity_frame.show_target_target) then
+        options.entity_frame.show_target_target = not options.entity_frame.show_target_target
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_distance', 'Hide Distance', options.entity_frame.hide_distance) then
-        options.entity_frame.hide_distance = not options.entity_frame.hide_distance
+    if ui.check(id..'show_distance', 'Show Distance', options.entity_frame.show_distance) then
+        options.entity_frame.show_distance = not options.entity_frame.show_distance
     end
     y_offset = y_offset + 24
 
     ui.location(x_offset, y_offset)
-    if ui.check(id..'hide_aggro', 'Hide Aggro', options.entity_frame.hide_aggro) then
-        options.entity_frame.hide_aggro = not options.entity_frame.hide_aggro
+    if ui.check(id..'show_aggro', 'Detect Aggro (experimental)', options.entity_frame.show_aggro) then
+        options.entity_frame.show_aggro = not options.entity_frame.show_aggro
     end
     y_offset = y_offset + 24
 

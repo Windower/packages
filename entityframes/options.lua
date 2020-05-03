@@ -5,8 +5,8 @@ local defaults = {
     frames = {
         player = {
             pos = { x = 0, y = -260, x_anchor = 'center', y_anchor = 'bottom'},
-            width = 500,
-            hide = false,
+            width = 450,
+            show = true,
             bars = {
                 { 
                     type = 'hp', 
@@ -45,75 +45,75 @@ local defaults = {
         target = {
             pos = { x = 0, y = -320, x_anchor = 'center', y_anchor = 'bottom'},
             width = 500,
-            hide = false,
+            show = true,
             colors = {
                 [1] = ui.color.rgb(255, 20, 20, 255), 
             },
             name_font = 'Roboto bold italic 12pt color:white stroke:"10% #000000BB"', 
             percent_font = 'Roboto bold italic 10pt color:white stroke:"10% #000000BB"', 
 
-            hide_distance = false,
+            show_distance = true,
             distance_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
 
-            hide_targeted = true,
+            show_targeted = false,
             target_color = ui.color.rgb(255, 50, 50, 255),
 
-            hide_target_target = false,
+            show_target_target = true,
             target_target_font = 'Roboto bold italic 11pt color:white stroke:"10% #000000BB"', 
 
             mp_color = ui.color.rgb(184, 084, 121, 255), 
             tp_color = ui.color.rgb(255, 236, 35, 255), 
-            hide_party_resources = true,
+            show_party_resources = false,
             party_resources_height = 2,
 
-            hide_action = false,
+            show_action = true,
             complete_action_hold_time = 7,
             flash_cycle = { 0.3, 0.3 },
             action_font = 'Roboto bold 11pt color:white stroke:"10% #000000BB"', 
             complete_action_font = 'Roboto bold italic 11pt color:gray stroke:"10% #000000BB"',
             interrupted_action_font = 'Roboto bold italic strikethrough 11pt color:gray stroke:"10% #000000BB"',
 
-            hide_aggro = false,
+            show_aggro = false,
             aggro_degrade_time = 10,
         },
         subtarget = {
             pos = { x = -125, y = -345, x_anchor = 'center', y_anchor = 'bottom'},
             width = 250,
-            hide = false,
+            show = false,
             colors = {
                 [1] = ui.color.rgb(14, 87, 183, 255), 
             },
             name_font = 'Roboto bold italic 11pt color:white stroke:"10% #000000BB"', 
             percent_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
 
-            hide_distance = false,
+            show_distance = false,
             distance_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
 
-            hide_targeted = false,
+            show_targeted = false,
             target_color = ui.color.rgb(255, 50, 50, 255),
 
-            hide_target_target = false,
+            show_target_target = false,
             target_target_font = 'Roboto bold italic 10pt color:white stroke:"10% #000000BB"', 
 
             mp_color = ui.color.rgb(184, 084, 121, 255), 
             tp_color = ui.color.rgb(255, 236, 35, 255), 
-            hide_party_resources = true,
+            show_party_resources = false,
             party_resources_height = 2,
 
-            hide_action = false,
+            show_action = false,
             complete_action_hold_time = 7,
             flash_cycle = { 0.3, 0.3 },
             action_font = 'Roboto bold 10pt color:white stroke:"10% #000000BB"', 
             complete_action_font = 'Roboto bold italic 10pt color:gray stroke:"10% #000000BB"',
             interrupted_action_font = 'Roboto bold italic strikethrough 10pt color:gray stroke:"10% #000000BB"',
 
-            hide_aggro = false,
+            show_aggro = false,
             aggro_degrade_time = 10,
         },
         focustarget = {
             pos = { x = -125, y = -370, x_anchor = 'center', y_anchor = 'bottom'},
             width = 250,
-            hide = false,
+            show = false,
             complete_action_hold_time = 7,
             colors = {
                 [1] = ui.color.rgb(97, 25, 232, 255), 
@@ -121,38 +121,37 @@ local defaults = {
             name_font = 'Roboto bold italic 11pt color:white stroke:"10% #000000BB"', 
             percent_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
 
-            hide_distance = false,
+            show_distance = false,
             distance_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
 
-            hide_targeted = false,
+            show_targeted = false,
             target_color = ui.color.rgb(255, 50, 50, 255),
 
-            hide_target_target = false,
+            show_target_target = false,
             target_target_font = 'Roboto bold italic 10pt color:white stroke:"10% #000000BB"', 
 
             mp_color = ui.color.rgb(184, 084, 121, 255), 
             tp_color = ui.color.rgb(255, 236, 35, 255), 
-            hide_party_resources = true,
+            show_party_resources = false,
             party_resources_height = 2,
 
-            hide_action = false,
+            show_action = false,
             complete_action_hold_time = 7,
             flash_cycle = { 0.3, 0.3 },
             action_font = 'Roboto bold 10pt color:white stroke:"10% #000000BB"', 
             complete_action_font = 'Roboto bold italic 10pt color:gray stroke:"10% #000000BB"',
             interrupted_action_font = 'Roboto bold italic strikethrough 10pt color:gray stroke:"10% #000000BB"',
 
-            hide_aggro = false,
+            show_aggro = false,
             aggro_degrade_time = 10,
         },
         aggro = {
             pos = { x = 320, y = -360, x_anchor = 'center', y_anchor = 'bottom'},
             width = 170,
-            hide = false,
+            show = false,
             entity_count = 8,
             entity_padding = 24,
             entity_order = 'low-high', -- 'high-low', 'near-far', 'far-near'
-            stack_top_down = true,
             entity_frame = {
                 complete_action_hold_time = 7,
                 colors = {
@@ -161,23 +160,23 @@ local defaults = {
                 name_font = 'Roboto bold italic 10pt color:white stroke:"10% #000000BB"', 
                 percent_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
 
-                hide_distance = false,
+                show_distance = false,
                 distance_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
 
-                hide_targeted = false,
+                show_targeted = false,
                 target_color = ui.color.rgb(255, 50, 50, 255),
 
-                hide_target_target = false,
+                show_target_target = false,
                 target_target_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
 
-                hide_action = false,
+                show_action = false,
                 complete_action_hold_time = 7,
                 flash_cycle = { 0.3, 0.3 },
                 action_font = 'Roboto bold 9pt color:white stroke:"10% #000000BB"', 
                 complete_action_font = 'Roboto bold italic 9pt color:gray stroke:"10% #000000BB"',
                 interrupted_action_font = 'Roboto bold italic strikethrough 9pt color:gray stroke:"10% #000000BB"',
 
-                hide_aggro = false,
+                show_aggro = false,
                 aggro_degrade_time = 10,
             }
         }

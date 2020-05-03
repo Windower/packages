@@ -71,10 +71,9 @@ local handle_incoming_action = function(action, info)
             if a == nil then
                 a = { actor = entities.npcs:by_id(action.targets[i].id) }
                 a.primary_target = entities.pcs:by_id(action.actor)
+                a.last_action_time = os.clock()
+                aggro[action.targets[i].id] = a
             end
-            a.last_action_time = os.clock()
-
-            aggro[action.targets[i].id] = a
         end        
     end
 

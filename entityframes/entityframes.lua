@@ -81,7 +81,7 @@ local options_window = {
     height = 200,
     resizable = false,
     moveable = true,
-    closeable = true, 
+    closable = true, 
     selection = 'player',
 }
 
@@ -100,7 +100,7 @@ ui.display(function()
     end
 
     for name, frame in pairs(frames) do
-        if not options.frames[name].hide then
+        if options.frames[name].show then
             frames[name] = ui.window(name, frames[name], function()
                 frame_ui[name].draw_window(helpers, options.frames[name], frame)
             end)
