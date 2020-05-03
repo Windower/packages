@@ -18,12 +18,10 @@ local convert_to_pixel_space = function(pos, width, height)
     return x, y
 end
 
-local init_frame_positions = function(frames, options)
-    for name, frame in pairs(frames) do
-        local width = options.frames[name].width or frames[name].width or frames[name].max_width
-        local height = options.frames[name].height or frames[name].height or frames[name].max_height
-        frame.x, frame.y = convert_to_pixel_space(options.frames[name].pos, width, height)
-    end
+local init_frame_position = function(frame, options)
+    local width = options.width or frame.width or frame.max_width
+    local height = options.height or frame.height or frame.max_height
+    frame.x, frame.y = convert_to_pixel_space(options.pos, width, height)
 end
 
 local color_from_value = function(value, colors)
@@ -88,7 +86,7 @@ end
 
 return {
     convert_to_pixel_space = convert_to_pixel_space,
-    init_frame_positions = init_frame_positions,
+    init_frame_position = init_frame_position,
     to_color = to_color,
     color_from_value = color_from_value,
     ui_table = ui_table,

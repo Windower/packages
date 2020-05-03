@@ -5,6 +5,7 @@ local party = require('party')
 local entities = require('entities')
 local target = require('target')
 local windower = require('windower')
+local settings = require('settings')
 local list = require('list')
 local math = require('math')
 local os = require('os')
@@ -222,6 +223,7 @@ local sort_fns = {
         return a.distance > b.distance
     end,
 }
+local aggro_cache = nil
 
 local aggro_frame_ui = function(helpers, options, state)
     local in_layout = state.style == 'layout'
@@ -234,6 +236,7 @@ local aggro_frame_ui = function(helpers, options, state)
 
     local sort_fn = options.entity_order or 'low-high'
     table.sort(aggrod_entities, sort_fns[sort_fn])
+    aggro_cache = aggrod_entities
 
     local x_offset = 0
     local y_offset = 0
@@ -248,15 +251,7 @@ end
 
 local aggro_frame_decoration = function (helpers, options, state)
     local in_layout = state.style == 'layout'
-    local aggrod_entities = list()
-    for id, a in pairs(aggro) do
-        if a.actor.hp_percent > 0 then
-            aggrod_entities:add(a.actor)
-        end
-    end
-
-    local sort_fn = options.entity_order or 'low-high'
-    table.sort(aggrod_entities, sort_fns[sort_fn])
+    local aggrod_entities = aggro_cache
 
     local x_offset = 0
     local y_offset = 0
@@ -267,26 +262,6 @@ local aggro_frame_decoration = function (helpers, options, state)
 
         y_offset = y_offset + options.entity_padding
     end
-end
-
-local options_state = {
-    selection = nil,
-}
-local options_frame_ui = function(helpers, options, window_state)
-    -- frame selection
-    ui.location(0, 0)
-    options_state.selection = ui.radio('player', 'Player', options_state.selection == 'player') and 'player' or nil
-    ui.location(50, 0)
-    options_state.selection = ui.radio('target', 'Target', options_state.selection == 'target') and 'target' or nil
-    ui.location(100, 0)
-    options_state.selection = ui.radio('subtarget', 'Subtarget', options_state.selection == 'subtarget') and 'subtarget' or nil
-    ui.location(170, 0)
-    options_state.selection = ui.radio('focustarget', 'Focustarget', options_state.selection == 'focustarget') and 'focustarget' or nil
-
-    -- display options
-    ui.location(0, 30)
-    ui.text(options_state.selection or 'Unselected')
-
 end
 
 local position_options_ui = function(id, helpers, options, x_offset, y_offset)
@@ -433,6 +408,52 @@ local aggro_options_ui = function(id, helpers, options, x_offset, y_offset)
     return options, x_offset, y_offset
 end
 
+local frame_options = {
+    player = player_options_ui,
+    target = target_options_ui,
+    subtarget = target_options_ui,
+    focustarget = target_options_ui,
+    aggro = aggro_options_ui,
+}
+local options_font = 'Roboto 10pt color:white'
+
+local options_frame_ui = function(helpers, frames, options, window_state)
+        -- frame selection
+        local y_offset = 4
+        local x_offset = 4
+        ui.location(x_offset, y_offset)
+        for name, frame in pairs(frames) do
+            if ui.radio(name, string.format('[%s]{%s}', frame.title, options_font), window_state.selection == name) then
+                window_state.selection = name
+            end
+            local name_width, name_height = helpers.calculate_text_size_terribly(frame.title, options_font)
+            x_offset = x_offset + name_width + 20
+            ui.location(x_offset, y_offset)
+        end
+
+        local title_offset = x_offset
+        x_offset = 4
+
+        -- display options
+        y_offset = y_offset + 40
+
+        if window_state.selection then
+            options.frames[window_state.selection], x_offset, y_offset = frame_options[window_state.selection](window_state.selection, helpers, options.frames[window_state.selection], x_offset, y_offset)
+        end
+
+        frames.aggro.min_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12
+        frames.aggro.max_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12
+
+        x_offset = 4
+        ui.location(x_offset, y_offset)
+        if ui.button('save', 'Save') then
+            settings.save()
+        end
+        y_offset = y_offset + 30
+
+        return options, math.max(title_offset, x_offset), y_offset
+end
+
 return {
     player = { 
         draw_window = player_frame_ui,
@@ -455,9 +476,4 @@ return {
         draw_decoration = aggro_frame_decoration,
     },
     options = options_frame_ui,
-    player_options = player_options_ui,
-    target_options = target_options_ui,
-    subtarget_options = target_options_ui,
-    focustarget_options = target_options_ui,
-    aggro_options = aggro_options_ui,
 }

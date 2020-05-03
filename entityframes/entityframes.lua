@@ -77,15 +77,18 @@ local frames = {
 local options_window = {
     title = 'Entity Frame Options',
     style = 'normal',
-    width = 10,
-    height = 10,
+    width = 400,
+    height = 200,
     resizable = false,
     moveable = true,
     closeable = true, 
+    selection = 'player',
 }
-local options_font = 'Roboto 10pt color:white'
 
-helpers.init_frame_positions(frames, options)
+for name, frame in pairs(frames) do
+    helpers.init_frame_position(frame, options.frames[name])
+end
+helpers.init_frame_position(options_window, { pos = { x = -50, y = -200, x_anchor = 'center', y_anchor = 'center' } } )
 
 ui.display(function()
     for name, frame in pairs(frames) do
@@ -108,40 +111,7 @@ ui.display(function()
 
     if state.layout then
         local temp_options, options_closed = ui.window('options', options_window, function()
-            -- frame selection
-            local y_offset = 4
-            local x_offset = 4
-            ui.location(x_offset, y_offset)
-            for name, frame in pairs(frames) do
-                if ui.radio(name, string.format('[%s]{%s}', frame.title, options_font), options_window.selection == name) then
-                    options_window.selection = name
-                end
-                local name_width, name_height = helpers.calculate_text_size_terribly(frame.title, options_font)
-                x_offset = x_offset + name_width + 20
-                ui.location(x_offset, y_offset)
-            end
-
-            options_window.width = math.max(options_window.width, x_offset)
-            x_offset = 4
-
-            -- display options
-            y_offset = y_offset + 40
-
-            if options_window.selection then
-                options.frames[options_window.selection], x_offset, y_offset = frame_ui[options_window.selection..'_options'](options_window.selection, helpers, options.frames[options_window.selection], x_offset, y_offset)
-            end
-
-            frames.aggro.min_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12
-            frames.aggro.max_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12
-
-            x_offset = 4
-            ui.location(x_offset, y_offset)
-            if ui.button('save', 'Save') then
-                settings.save()
-            end
-            y_offset = y_offset + 30
-
-            options_window.height = y_offset
+            options, options_window.width, options_window.height = frame_ui.options(helpers, frames, options, options_window)
         end)
         options_window.x = temp_options.x
         options_window.y = temp_options.y

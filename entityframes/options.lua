@@ -55,7 +55,7 @@ local defaults = {
             hide_distance = false,
             distance_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
 
-            hide_targeted = false,
+            hide_targeted = true,
             target_color = ui.color.rgb(255, 50, 50, 255),
 
             hide_target_target = false,

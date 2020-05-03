@@ -28,6 +28,17 @@ local is_npc = function(mob_id)
     return true
 end
 
+local get_party_ids = function()
+    local s = set()
+    for i = 1, 18 do
+        local member = party[i]
+        if member ~= nil then
+            s:add(member.id)
+        end
+    end
+    return s
+end
+
 local handle_incoming_action = function(action, info)
     if not action.category then 
         return 
@@ -42,12 +53,15 @@ local handle_incoming_action = function(action, info)
         a.last_action_time = os.clock()
 
         a.actor = entities.npcs:by_id(action.actor)
+        local party = get_party_ids
         for i = 1, action.target_count do
-            if i == 1 then
-                a.primary_target = entities:by_id(action.targets[i].id)
-            end
-            if not a.targets:contains(action.targets[i].id) then
-                a.targets:add(action.targets[i].id)
+            if party:contains(action.targets[i].id) then
+                if i == 1 then
+                    a.primary_target = entities:by_id(action.targets[i].id)
+                end
+                if not a.targets:contains(action.targets[i].id) then
+                    a.targets:add(action.targets[i].id)
+                end
             end
         end
         aggro[action.actor] = a
