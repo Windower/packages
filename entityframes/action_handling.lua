@@ -45,9 +45,9 @@ local handle_incoming_action = function(action, info)
         return 
     end
 
+    -- track aggro
     local party = get_party_ids()
     if is_npc(action.actor) then
-        -- track aggro
         local a = aggro[action.actor]
         if a == nil then
             a = { actor = entities.npcs:by_id(action.actor), }
@@ -70,10 +70,10 @@ local handle_incoming_action = function(action, info)
             local a = aggro[action.targets[i].id]
             if a == nil then
                 a = { actor = entities.npcs:by_id(action.targets[i].id) }
+                a.primary_target = entities.pcs:by_id(action.actor)
             end
             a.last_action_time = os.clock()
-            a.primary_target = entities.pcs:by_id(action.actor)
-            
+
             aggro[action.targets[i].id] = a
         end        
     end
@@ -121,10 +121,29 @@ local handle_incoming_action = function(action, info)
     end
 end
 
+local handle_incoming_animation = function(packet, info)
+    if packet.fourcc == 'deru' or packet.fourcc == 'kesu' then
+        -- clear out any leftover stuff on appear/disappear in case we missed it somewhere.
+        aggro[packet.npc_id] = nil
+        current_actions[packet.npc_id] = nil
+        previous_actions[packet.npc_id] = nil
+    end
+end
+
+local handle_incoming_npc_update = function(packet, info)
+    if packet.update_vitals and packet.hp_percent == 0 then
+        -- clear out any leftover stuff on vitals update in case we missed it somewhere.
+        aggro[packet.npc_id] = nil
+        current_actions[packet.npc_id] = nil
+        previous_actions[packet.npc_id] = nil
+    end
+end
+
 packets.incoming[0x028]:register(handle_incoming_action)
+packets.incoming[0x038]:register(handle_incoming_animation)
+packets.incoming[0x00E]:register(handle_incoming_npc_update)
 world.zone_change:register(function(...)
     current_actions = {}
     previous_actions = {}
-
     aggro = {}
 end)
