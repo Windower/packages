@@ -61,6 +61,17 @@ local frames = {
         closeable = false,
         color = ui.color.rgb(0,0,0,0),
     },
+    aggro = {
+        title = 'Aggro Mobs',
+        style = 'normal',
+        width = options.frames.aggro.width,
+        min_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count,
+        max_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count,
+        resizable = true,
+        moveable = true,
+        closeable = false,
+        color = ui.color.rgb(0,0,0,0),
+    }
 }
 local options_window = {
     title = 'Entity Frame Options',
@@ -89,7 +100,7 @@ ui.display(function()
                 frame_ui[name].draw_window(helpers, options.frames[name], frame)
             end)
 
-            frame_ui[name].draw_decoration(name, helpers, options.frames[name], frames[name])
+            frame_ui[name].draw_decoration(helpers, options.frames[name], frames[name])
         end
     end
 

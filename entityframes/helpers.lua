@@ -2,7 +2,7 @@ local windower = require('windower')
 local ui = require('core.ui')
 
 local convert_to_pixel_space = function(x, y, width, height)
-    if x < 0 then
+    if x < 0 or x > 1 then
         x = windower.settings.ui_size.width / 2 + x
     elseif x <= 1 then
         x = windower.settings.ui_size.width * x - width / 2

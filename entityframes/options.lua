@@ -72,6 +72,9 @@ local defaults = {
             action_font = 'Roboto bold 11pt color:white stroke:"10% #000000BB"', 
             complete_action_font = 'Roboto bold italic 11pt color:gray stroke:"10% #000000BB"',
             interrupted_action_font = 'Roboto bold italic strikethrough 11pt color:gray stroke:"10% #000000BB"',
+
+            hide_aggro = false,
+            aggro_degrade_time = 10,
         },
         subtarget = {
             pos = { x = -250, y = -345},
@@ -103,13 +106,15 @@ local defaults = {
             action_font = 'Roboto bold 10pt color:white stroke:"10% #000000BB"', 
             complete_action_font = 'Roboto bold italic 10pt color:gray stroke:"10% #000000BB"',
             interrupted_action_font = 'Roboto bold italic strikethrough 10pt color:gray stroke:"10% #000000BB"',
+
+            hide_aggro = false,
+            aggro_degrade_time = 10,
         },
         focustarget = {
             pos = { x = -250, y = -370},
             width = 250,
             hide = false,
             complete_action_hold_time = 7,
-            flash_cycle = { 0.3, 0.3 },
             colors = {
                 [1] = ui.color.rgb(97, 25, 232, 255), 
             },
@@ -136,7 +141,45 @@ local defaults = {
             action_font = 'Roboto bold 10pt color:white stroke:"10% #000000BB"', 
             complete_action_font = 'Roboto bold italic 10pt color:gray stroke:"10% #000000BB"',
             interrupted_action_font = 'Roboto bold italic strikethrough 10pt color:gray stroke:"10% #000000BB"',
+
+            hide_aggro = false,
+            aggro_degrade_time = 10,
         },
+        aggro = {
+            pos = { x = 320, y = -360},
+            width = 170,
+            entity_count = 8,
+            entity_padding = 24,
+            entity_order = 'low-high', -- 'high-low', 'near-far', 'far-near'
+            stack_top_down = true,
+            entity_frame = {
+                complete_action_hold_time = 7,
+                colors = {
+                    [1] = ui.color.rgb(0, 150, 50, 255), 
+                },
+                name_font = 'Roboto bold italic 10pt color:white stroke:"10% #000000BB"', 
+                percent_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+                hide_distance = false,
+                distance_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+                hide_targeted = false,
+                target_color = ui.color.rgb(255, 50, 50, 255),
+
+                hide_target_target = false,
+                target_target_font = 'Roboto bold italic 9pt color:white stroke:"10% #000000BB"', 
+
+                hide_action = false,
+                complete_action_hold_time = 7,
+                flash_cycle = { 0.3, 0.3 },
+                action_font = 'Roboto bold 9pt color:white stroke:"10% #000000BB"', 
+                complete_action_font = 'Roboto bold italic 9pt color:gray stroke:"10% #000000BB"',
+                interrupted_action_font = 'Roboto bold italic strikethrough 9pt color:gray stroke:"10% #000000BB"',
+
+                hide_aggro = false,
+                aggro_degrade_time = 10,
+            }
+        }
     },
 }
 

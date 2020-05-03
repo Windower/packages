@@ -2,6 +2,7 @@ local packets = require('packets')
 local set = require('set')
 local client_data = require('resources')
 local entities = require('entities')
+local world = require('world')
 local os = require('os')
 
 local starting_categories = set(8,7,9,14,15)
@@ -14,6 +15,8 @@ local job_ability_categories = set(6,14,15)
 
 current_actions = {}
 previous_actions = {}
+
+aggro = {}
 
 local is_npc = function(mob_id)
     local is_pc = mob_id < 0x01000000
@@ -30,7 +33,31 @@ local handle_incoming_action = function(action, info)
         return 
     end
 
-    -- if it's a starting packet, the id is in param2
+    if is_npc(action.actor) then
+        -- track aggro
+        local a = aggro[action.actor]
+        if a == nil then
+            a = { targets = set(), }
+        end
+        a.last_action_time = os.clock()
+
+        a.actor = entities.npcs:by_id(action.actor)
+        for i = 1, action.target_count do
+            if i == 1 then
+                a.primary_target = entities:by_id(action.targets[i].id)
+            end
+            if not a.targets:contains(action.targets[i].id) then
+                a.targets:add(action.targets[i].id)
+            end
+        end
+        aggro[action.actor] = a
+    end
+
+    if not starting_categories:contains(action.category) and not completed_categories:contains(action.category) then
+        return 
+    end
+
+    -- if it's a starting packet, the action id is in param2
     local action_id = action.param
     if starting_categories:contains(action.category) then
         action_id = action.targets[1].actions[1].param
@@ -45,10 +72,10 @@ local handle_incoming_action = function(action, info)
         action_data = client_data.spells[action_id]
     elseif job_ability_categories:contains(action.category) then
         action_data = client_data.job_abilities[action_id]
-    elseif weapon_skill_categories:contains(action.category) then
-        action_data = client_data.weapon_skills[action_id]
     elseif is_npc(action.actor) then
         action_data = client_data.monster_abilities[action_id]
+    elseif weapon_skill_categories:contains(action.category) then
+        action_data = client_data.weapon_skills[action_id]
     elseif item_categories:contains(action.category) then
         action_data = client_data.items[action_id]
     end
@@ -70,3 +97,9 @@ local handle_incoming_action = function(action, info)
 end
 
 packets.incoming[0x028]:register(handle_incoming_action)
+world.zone_change:register(function(...)
+    current_actions = {}
+    previous_actions = {}
+
+    aggro = {}
+end)

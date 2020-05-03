@@ -10,6 +10,8 @@
     <dependency>entities</dependency>
     <dependency>settings</dependency>
     <dependency>set</dependency>
+    <dependency>list</dependency>
+    <dependency>world</dependency>
     <dependency>resources</dependency>
   </dependencies>
 </package>
