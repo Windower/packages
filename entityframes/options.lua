@@ -4,7 +4,7 @@ local ui = require('core.ui')
 local defaults = {
     frames = {
         player = {
-            pos = { x = 0.5, y = -260},
+            pos = { x = 0, y = -260, x_anchor = 'center', y_anchor = 'bottom'},
             width = 500,
             hide = false,
             bars = {
@@ -43,7 +43,7 @@ local defaults = {
             },
         },
         target = {
-            pos = { x = -250, y = -320},
+            pos = { x = 0, y = -320, x_anchor = 'center', y_anchor = 'bottom'},
             width = 500,
             hide = false,
             colors = {
@@ -77,7 +77,7 @@ local defaults = {
             aggro_degrade_time = 10,
         },
         subtarget = {
-            pos = { x = -250, y = -345},
+            pos = { x = -125, y = -345, x_anchor = 'center', y_anchor = 'bottom'},
             width = 250,
             hide = false,
             colors = {
@@ -111,7 +111,7 @@ local defaults = {
             aggro_degrade_time = 10,
         },
         focustarget = {
-            pos = { x = -250, y = -370},
+            pos = { x = -125, y = -370, x_anchor = 'center', y_anchor = 'bottom'},
             width = 250,
             hide = false,
             complete_action_hold_time = 7,
@@ -146,8 +146,9 @@ local defaults = {
             aggro_degrade_time = 10,
         },
         aggro = {
-            pos = { x = 320, y = -360},
+            pos = { x = 320, y = -360, x_anchor = 'center', y_anchor = 'bottom'},
             width = 170,
+            hide = false,
             entity_count = 8,
             entity_padding = 24,
             entity_order = 'low-high', -- 'high-low', 'near-far', 'far-near'

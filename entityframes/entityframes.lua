@@ -1,5 +1,6 @@
 local ui = require('core.ui')
 local command = require('core.command')
+local string = require('string')
 local math = require('math')
 
 local settings = require('settings')
@@ -65,8 +66,8 @@ local frames = {
         title = 'Aggro Mobs',
         style = 'normal',
         width = options.frames.aggro.width,
-        min_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count,
-        max_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count,
+        min_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12,
+        max_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12,
         resizable = true,
         moveable = true,
         closeable = false,
@@ -80,8 +81,9 @@ local options_window = {
     height = 10,
     resizable = false,
     moveable = true,
-    closeable = false, 
+    closeable = true, 
 }
+local options_font = 'Roboto 10pt color:white'
 
 helpers.init_frame_positions(frames, options)
 
@@ -95,8 +97,8 @@ ui.display(function()
     end
 
     for name, frame in pairs(frames) do
-        if not options.frames[name].hide or state.layout then
-            frames[name], options.frames[name].hide = ui.window(name, frames[name], function()
+        if not options.frames[name].hide then
+            frames[name] = ui.window(name, frames[name], function()
                 frame_ui[name].draw_window(helpers, options.frames[name], frame)
             end)
 
@@ -111,10 +113,11 @@ ui.display(function()
             local x_offset = 4
             ui.location(x_offset, y_offset)
             for name, frame in pairs(frames) do
-                if ui.radio(name, frame.title, options_window.selection == name) then
+                if ui.radio(name, string.format('[%s]{%s}', frame.title, options_font), options_window.selection == name) then
                     options_window.selection = name
                 end
-                x_offset = x_offset + (#name * 10)
+                local name_width, name_height = helpers.calculate_text_size_terribly(frame.title, options_font)
+                x_offset = x_offset + name_width + 20
                 ui.location(x_offset, y_offset)
             end
 
@@ -125,10 +128,11 @@ ui.display(function()
             y_offset = y_offset + 40
 
             if options_window.selection then
-                local frame_options = options.frames[options_window.selection]
-                frame_options, x_offset, y_offset = frame_ui[options_window.selection..'_options'](helpers, frame_options, x_offset, y_offset)
-                options.frames[options_window.selection] = frame_options
+                options.frames[options_window.selection], x_offset, y_offset = frame_ui[options_window.selection..'_options'](options_window.selection, helpers, options.frames[options_window.selection], x_offset, y_offset)
             end
+
+            frames.aggro.min_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12
+            frames.aggro.max_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12
 
             x_offset = 4
             ui.location(x_offset, y_offset)
