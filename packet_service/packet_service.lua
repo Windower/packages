@@ -24,9 +24,9 @@ local packet_types
 local parse_types
 do
     local file_new = file.new
-    local file_read = file.read
 
     local type_file = file_new(windower.package_path .. '\\types.lua')
+    local file_read = type_file.read
 
     parse_types = function()
         packet_types = loadstring(file_read(type_file))()

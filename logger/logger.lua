@@ -21,7 +21,7 @@ local base_path = windower.user_path .. '\\'
 C.CreateDirectoryW(unicode.to_utf16(base_path .. '..'), nil)
 C.CreateDirectoryW(unicode.to_utf16(base_path), nil)
 
-local get_log = function()
+local update_log = function()
     local dir = base_path .. account.name
     C.CreateDirectoryW(unicode.to_utf16(dir), nil)
 
@@ -34,7 +34,7 @@ end
 
 chat.text_added:register(function(obj)
     if log_day ~= os.date('%d') then
-        get_log()
+        update_log()
     end
 
     log_file:log(obj.text:trim())

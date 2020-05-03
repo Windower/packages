@@ -17,8 +17,10 @@ local paths = {}
 
 local file = {}
 
+local file_fns = {}
+
 local file_mt = {
-    __index = file,
+    __index = file_fns,
 }
 
 do
@@ -35,7 +37,7 @@ end
 do
     local bit_band = bit.band
 
-    file.exists = function(f)
+    file_fns.exists = function(f)
         local attr = C.GetFileAttributesW(paths[f])
         return attr ~= 0xFFFFFFFF and bit_band(attr, 0x10) == 0
     end
@@ -49,7 +51,7 @@ do
     local buffer_type = ffi_typeof('char[?]')
     local read_ptr = ffi_new('int[1]')
 
-    file.read = function(f)
+    file_fns.read = function(f)
         local handle = C.CreateFileW(paths[f], 0x00000001, 0x00000003, nil, 3, 0x00000080, nil)
         local size = C.GetFileSize(handle, nil)
         local buffer = buffer_type(size)
@@ -68,7 +70,7 @@ do
     local buffer_type = ffi_typeof('char[?]')
     local read_ptr = ffi_new('int[1]')
 
-    file.write = function(f, str)
+    file_fns.write = function(f, str)
         local handle = C.CreateFileW(paths[f], 0x40000000, 0x00000000, nil, 2, 0x00000080, nil)
         local size = #str
         local buffer = buffer_type(size)
@@ -96,7 +98,7 @@ do
         end,
     })
 
-    file.log = function(f, str)
+    file_fns.log = function(f, str)
         local line = str .. '\n'
         local handle = logs[f]
         local size = #line
