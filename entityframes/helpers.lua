@@ -24,6 +24,28 @@ local init_frame_position = function(frame, options)
     frame.x, frame.y = convert_to_pixel_space(options.pos, width, height)
 end
 
+local convert_from_pixel_space = function(x, y, x_anchor, y_anchor, width, height)
+    if x_anchor == 'center' then
+        x = x - (windower.settings.ui_size.width / 2) + (width / 2) 
+    elseif x_anchor == 'right' then
+        x = x - windower.settings.ui_size.width + width
+    end
+
+    if y_anchor == 'center' then
+        y = y - (windower.settings.ui_size.height / 2) + (height / 2)
+    elseif y_anchor == 'bottom' then
+        y = y - windower.settings.ui_size.height + height
+    end
+    return x, y
+end
+
+local save_frame_position = function(frame, options)
+    local width = frame.width
+    local height = frame.height
+    local x, y = convert_from_pixel_space(frame.x, frame.y, options.pos.x_anchor, options.pos.y_anchor, width, height)
+    return { x = x, y = y, x_anchor = options.x_anchor, y_anchor = options.y_anchor}
+end
+
 local color_from_value = function(value, colors)
     local max = 99999, color
     for v, c in pairs(colors) do
@@ -87,6 +109,7 @@ end
 return {
     convert_to_pixel_space = convert_to_pixel_space,
     init_frame_position = init_frame_position,
+    save_frame_position = save_frame_position,
     to_color = to_color,
     color_from_value = color_from_value,
     ui_table = ui_table,

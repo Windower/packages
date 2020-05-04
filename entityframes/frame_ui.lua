@@ -295,7 +295,7 @@ local player_options_ui = function(id, helpers, options, x_offset, y_offset)
     options.width = tonumber(ui.edit(id..'width', tostring(options.width)))
     y_offset = y_offset + 24
 
-    options.pos, x_offset, y_offset = position_options_ui(id, helpers, options.pos, x_offset, y_offset)
+    --options.pos, x_offset, y_offset = position_options_ui(id, helpers, options.pos, x_offset, y_offset)
     return options, x_offset, y_offset
 end
 
@@ -349,7 +349,7 @@ local target_options_ui = function(id, helpers, options, x_offset, y_offset)
     options.width = tonumber(ui.edit(id..'width', tostring(options.width)))
     y_offset = y_offset + 24
 
-    options.pos, x_offset, y_offset = position_options_ui(id, helpers, options.pos, x_offset, y_offset)
+    --options.pos, x_offset, y_offset = position_options_ui(id, helpers, options.pos, x_offset, y_offset)
     return options, x_offset, y_offset
 end
 
@@ -404,7 +404,7 @@ local aggro_options_ui = function(id, helpers, options, x_offset, y_offset)
     options.width = tonumber(ui.edit(id..'width', tostring(options.width)))
     y_offset = y_offset + 24
 
-    options.pos, x_offset, y_offset = position_options_ui(id, helpers, options.pos, x_offset, y_offset)
+    --options.pos, x_offset, y_offset = position_options_ui(id, helpers, options.pos, x_offset, y_offset)
     return options, x_offset, y_offset
 end
 
@@ -447,6 +447,11 @@ local options_frame_ui = function(helpers, frames, options, window_state)
         x_offset = 4
         ui.location(x_offset, y_offset)
         if ui.button('save', 'Save') then
+            for name, frame in pairs(frames) do
+                options.frames[name].pos = helpers.save_frame_position(frame, options.frames[name])
+                options.frames[name].width = frame.width
+            end
+
             settings.save()
         end
         y_offset = y_offset + 30

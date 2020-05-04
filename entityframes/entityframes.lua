@@ -22,6 +22,7 @@ local frames = {
         title = 'Player',
         style = 'normal',
         width = options.frames.player.width,
+        height = frame_height,
         min_height = frame_height,
         max_height = frame_height,
         resizable = true,
@@ -33,6 +34,7 @@ local frames = {
         title = 'Target',
         style = 'normal',
         width = options.frames.target.width,
+        height = frame_height,
         min_height = frame_height,
         max_height = frame_height,
         resizable = true,
@@ -44,6 +46,7 @@ local frames = {
         title = 'Sub Target',
         style = 'normal',
         width = options.frames.subtarget.width,
+        height = frame_height,
         min_height = frame_height,
         max_height = frame_height,
         resizable = true,
@@ -55,6 +58,7 @@ local frames = {
         title = 'Focus Target',
         style = 'normal',
         width = options.frames.focustarget.width,
+        height = frame_height,
         min_height = frame_height,
         max_height = frame_height,
         resizable = true,
@@ -66,6 +70,7 @@ local frames = {
         title = 'Aggro Mobs',
         style = 'normal',
         width = options.frames.aggro.width,
+        height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12,
         min_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12,
         max_height = options.frames.aggro.entity_padding * options.frames.aggro.entity_count + 12,
         resizable = true,
@@ -115,6 +120,15 @@ ui.display(function()
         end)
         options_window.x = temp_options.x
         options_window.y = temp_options.y
+
+        if options_closed then
+            state.layout = false
+
+            for name, frame in pairs(frames) do
+                --helpers.init_frame_position(frame, options.frames[name])
+                frames[name].width = options.frames[name].width
+            end
+        end
     end
 end)
 
