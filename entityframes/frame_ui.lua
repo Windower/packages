@@ -11,7 +11,7 @@ local math = require('math')
 local os = require('os')
 local table = require('table')
 
-require('action_handling')
+local actions = require('action_handling')
 
 local get_cycle = function(cycles, start)
     local now = os.clock()
@@ -129,13 +129,13 @@ local entity_frame_ui = function(entity, target_type, helpers, options, state, x
         end
 
         if options.show_action then
-            if in_layout or current_actions[entity.id] then
-                local action = in_layout and 'Casting Action' or current_actions[entity.id].action.en
+            if in_layout or actions.current[entity.id] then
+                local action = in_layout and 'Casting Action' or actions.current[entity.id].action.en
                 local width, height = helpers.calculate_text_size_terribly(action, options.action_font)
                 ui.location(state.width - width - 20, y_offset + 13 - height)
                 ui.text(string.format('[%s]{%s}', action, options.action_font))
-            elseif previous_actions[entity.id] and os.clock() < previous_actions[entity.id].time + options.complete_action_hold_time then
-                local action = previous_actions[entity.id]
+            elseif actions.previous[entity.id] and os.clock() < actions.previous[entity.id].time + options.complete_action_hold_time then
+                local action = actions.previous[entity.id]
                 if not action.interrupted or get_cycle(options.flash_cycle, action.time) then
                     local font = action.interrupted and options.interrupted_action_font or options.complete_action_font
                     local width, height = helpers.calculate_text_size_terribly(action.action.en, font)
@@ -182,16 +182,16 @@ local entity_frame_decorations = function(entity, target_type, helpers, options,
             local target_name_font = options.target_target_font
             if in_layout then
                 target_name = target_type..'\'s target'
-            elseif entity and current_actions[entity.id] and options.show_action then
-                target_name = current_actions[entity.id].target and current_actions[entity.id].target.name or nil
+            elseif entity and actions.current[entity.id] and options.show_action then
+                target_name = actions.current[entity.id].target and actions.current[entity.id].target.name or nil
             elseif entity and entity.target_index ~= 0 then
                 local target_entity = entities[entity.target_index]
                 target_name = target_entity and target_entity.name or nil
-            elseif entity and previous_actions[entity.id] and options.show_action and os.clock() < previous_actions[entity.id].time + options.complete_action_hold_time then
-                target_name = previous_actions[entity.id].target and previous_actions[entity.id].target.name or nil
+            elseif entity and actions.previous[entity.id] and options.show_action and os.clock() < actions.previous[entity.id].time + options.complete_action_hold_time then
+                target_name = actions.previous[entity.id].target and actions.previous[entity.id].target.name or nil
                 target_name_font = options.complete_action_font
-            elseif entity and options.show_aggro and aggro[entity.id] and os.clock() < aggro[entity.id].last_action_time + options.aggro_degrade_time then
-                target_name = aggro[entity.id].primary_target.name
+            elseif entity and options.show_aggro and actions.aggro[entity.id] and os.clock() < actions.aggro[entity.id].last_action_time + options.aggro_degrade_time then
+                target_name = actions.aggro[entity.id].primary_target.name
             end
 
             if target_name ~= nil and target_name ~= '' then
@@ -228,8 +228,8 @@ local aggro_cache = nil
 local aggro_frame_ui = function(helpers, options, state)
     local in_layout = state.style == 'layout'
     local aggrod_entities = list()
-    for id, a in pairs(aggro) do
-        if a.actor.hp_percent > 0 then
+    for id, a in pairs(actions.aggro) do
+        if a.actor and a.actor.hp_percent > 0 then
             aggrod_entities:add(a.actor)
         end
     end

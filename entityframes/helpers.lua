@@ -87,10 +87,14 @@ function ui_table(t, x_offset, y_offset)
     return t, x_offset, y_offset
 end
 
+-- TODO: nuke this from orbit when the new UI stuff comes out
 local short_letters = 'liI1 -\'".,'
 local wide_letters = 'wWmMAKkgG'
--- TODO: nuke this from orbit when the new UI stuff comes out
+local text_size_cache = {}
 local calculate_text_size_terribly = function(s, font)
+    if text_size_cache[font] and text_size_cache[font][s] then
+        return text_size_cache[font][s].w, text_size_cache[font][s].h
+    end
     local pt = tonumber(string.sub(string.match(font, ' (%d+)pt'), 0, -1)) / 12.0
     local n_short, n_wide, n = 0, 0, 0
     for i = 1, #s do
@@ -103,7 +107,12 @@ local calculate_text_size_terribly = function(s, font)
             n = n + 1
         end
     end
-    return (n * 8 + n_short * 6 + n_wide * 11) * pt, pt * 14
+    local w, h = (n * 8 + n_short * 6 + n_wide * 11) * pt, pt * 14
+    if not text_size_cache[font] then
+        text_size_cache[font] = {}
+    end
+    text_size_cache[font][s] = { w = w, h = h}
+    return w, h
 end
 
 return {

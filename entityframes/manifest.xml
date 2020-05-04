@@ -1,6 +1,6 @@
 <package>
   <name>entityframes</name>
-  <version>0.1.0.0</version>
+  <version>0.8.0.0</version>
   <type>addon</type>
   <dependencies>
     <dependency>party</dependency>

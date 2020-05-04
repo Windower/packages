@@ -12,11 +12,15 @@ local actions = require('action_handling')
 local options = require('options')
 
 local state = {
-    layout = false,
+    layout = options.setup,
 }
 
-local frame_height = 35
+if options.setup then
+    options.setup = false
+    settings.save()
+end
 
+local frame_height = 35
 local frames = {
     player = {
         title = 'Player',
@@ -135,8 +139,4 @@ end)
 local ef = command.new('ef')
 ef:register('layout', function()
     state.layout = not state.layout
-
-    if not state.layout then
-        -- save_frames()
-    end
 end)

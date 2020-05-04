@@ -2,6 +2,7 @@ local settings = require('settings')
 local ui = require('core.ui')
 
 local defaults = {
+    setup = true,
     frames = {
         player = {
             pos = { x = 0, y = -260, x_anchor = 'center', y_anchor = 'bottom'},
