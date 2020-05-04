@@ -4,6 +4,9 @@ local string = require('string')
 local math = require('math')
 
 local settings = require('settings')
+local account = require('account')
+local packets = require('packets')
+local player = require('player')
 
 local helpers = require('helpers')
 local frame_ui = require('frame_ui')
@@ -13,6 +16,7 @@ local options = require('options')
 
 local state = {
     layout = options.setup,
+    in_cutscene = false,
 }
 
 if options.setup then
@@ -100,6 +104,10 @@ end
 helpers.init_frame_position(options_window, { pos = { x = -50, y = -200, x_anchor = 'center', y_anchor = 'center' } } )
 
 ui.display(function()
+    if not account.logged_in or state.in_cutscene then 
+        return
+    end
+
     for name, frame in pairs(frames) do
         if state.layout then
             frame.style = 'layout'
@@ -134,6 +142,10 @@ ui.display(function()
             end
         end
     end
+end)
+
+player.state_change:register(function()
+    state.in_cutscene = player.state_id == 4
 end)
 
 local ef = command.new('ef')

@@ -5,6 +5,7 @@
   <dependencies>
     <dependency>party</dependency>
     <dependency>player</dependency>
+    <dependency>account</dependency>
     <dependency>target</dependency>
     <dependency>packets</dependency>
     <dependency>entities</dependency>
