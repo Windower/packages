@@ -1648,7 +1648,7 @@ types.incoming[0x05A] = struct({
     target_index        = {0x0A, entity_index},
     emote_id            = {0x0C, uint16},
     _known1             = {0x0E, uint16, const=0x0002},
-    motion              = {0x12, boolbit(uint8), offset=2},
+    motion              = {0x12, boolbit(uint8), offset=1},
 })
 
 -- Spawn
