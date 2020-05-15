@@ -10,7 +10,38 @@ local setmetatable = setmetatable
 local tostring = tostring
 local type = type
 
-local struct = {}
+local struct_metatype
+local struct_array
+local struct_struct
+local struct_name
+local struct_declare
+local struct_ptr
+local struct_typedefs
+local struct_from_ptr
+local struct_new
+local struct_tag
+local struct_int8
+local struct_int16
+local struct_int32
+local struct_int64
+local struct_uint8
+local struct_uint16
+local struct_uint32
+local struct_uint64
+local struct_float
+local struct_double
+local struct_bool
+local struct_string
+local struct_data
+local struct_bitfield
+local struct_time
+local struct_tick
+local struct_ms_time
+local struct_packed_string
+local struct_bit
+local struct_boolbit
+local struct_copy
+
 local tolua = {}
 local toc = {}
 
@@ -129,7 +160,7 @@ do
                 return nil
             end
 
-            return struct.array(base, count)
+            return struct_array(base, count)
         end,
     }
 
@@ -206,7 +237,7 @@ do
         return ftype
     end
 
-    local array_metatype = function(ftype)
+    local make_array_metatype = function(ftype)
         local base = ftype.base
         local count = ftype.count
 
@@ -253,7 +284,7 @@ do
         })
     end
 
-    local struct_metatype = function(ftype)
+    local make_struct_metatype = function(ftype)
         local fields = ftype.fields
 
         ffi_metatype(ftype.name, {
@@ -321,15 +352,15 @@ do
         })
     end
 
-    struct.metatype = function(ftype)
+    struct_metatype = function(ftype)
         if ftype.count == nil then
-            struct_metatype(ftype)
+            make_struct_metatype(ftype)
         else
-            array_metatype(ftype)
+            make_array_metatype(ftype)
         end
     end
 
-    struct.array = function(info, base, count)
+    struct_array = function(info, base, count)
         info, base, count = count and info or {}, count and base or info, count or base
 
         local ftype = build_type(base.cdef, info)
@@ -343,16 +374,18 @@ do
 
         ftype.cdef = 'struct{' .. (base.name or base.cdef) .. ' array[' .. count .. '];}'
 
-        struct.name(ftype, info.name)
+        struct_name(ftype, info.name)
+
+        ftype.converter = 'array'
 
         ftype.size = ffi_sizeof(ftype.name)
 
-        struct.metatype(ftype)
+        struct_metatype(ftype)
 
         return ftype
     end
 
-    struct.struct = function(info, fields)
+    struct_struct = function(info, fields)
         info, fields = fields and info or {}, fields or info
 
         local arranged = {}
@@ -369,7 +402,7 @@ do
                 local size = info.size
                 if ftype.count == '*' then
                     local base = ftype.base
-                    local fixed_ftype = struct.array(base, math_floor((size - position) / base.size))
+                    local fixed_ftype = struct_array(base, math_floor((size - position) / base.size))
                     ftype.base = nil
                     ftype.cdef = nil
                     ftype.count = nil
@@ -397,7 +430,7 @@ do
                 position = info.size,
                 offset = 0,
                 cname = '__size',
-                type = struct.int32,
+                type = struct_int32,
                 internal = true,
             }
         end
@@ -421,15 +454,58 @@ do
         local cdef = make_struct_cdef(arranged, info.size)
         local ftype = build_type(cdef, info)
 
-        struct.name(ftype, info.name)
+        ftype.converter = 'struct'
+
+        struct_name(ftype, info.name)
 
         ftype.size = ffi_sizeof(ftype.name)
         ftype.fields = fields
         ftype.arranged = arranged
 
-        struct.metatype(ftype)
+        struct_metatype(ftype)
 
         return ftype
+    end
+
+    tolua.array = function(value, ftype)
+        return value
+    end
+
+    toc.array = function(instance, index, value, ftype)
+        if type(value) == 'table' then
+            local cdata = struct_new(ftype)
+            local length = #value
+            for i = 0, length - 1 do
+                cdata[i] = value[i + 1]
+            end
+            value = cdata
+        end
+
+        if type(value) ~= 'cdata' then
+            error('Cannot assign ' .. type(value) .. ' to array.')
+        end
+
+        instance[index] = value
+    end
+
+    tolua.struct = function(value, ftype)
+        return value
+    end
+
+    toc.struct = function(instance, index, value, ftype)
+        if type(value) == 'table' then
+            local cdata = struct_new(ftype)
+            for key, inner in pairs(value) do
+                cdata[key] = inner
+            end
+            value = cdata
+        end
+
+        if type(value) ~= 'cdata' then
+            error('Cannot assign ' .. type(value) .. ' to struct.')
+        end
+
+        instance[index] = value
     end
 end
 
@@ -444,7 +520,7 @@ do
 
     local typedefs = {}
 
-    struct.name = function(ftype, name)
+    struct_name = function(ftype, name)
         name = name or ftype.name
         if not name then
             named_count = named_count + 1
@@ -474,7 +550,7 @@ do
         end
     end
 
-    struct.declare = function(name)
+    struct_declare = function(name)
         local tag = name .. '_tag'
         ffi_cdef('struct ' .. tag .. ';')
         ffi_cdef('typedef struct ' .. tag .. ' ' .. name .. ';')
@@ -486,7 +562,7 @@ do
         }
     end
 
-    struct.ptr = function(base)
+    struct_ptr = function(base)
         local is_tag = type(base) == 'string'
 
         local base_def = not base and 'void' or is_tag and base or base.name or base.cdef
@@ -520,14 +596,14 @@ do
         __metatable = false,
     }
 
-    struct.typedefs = setmetatable({}, typedefs_mt)
+    struct_typedefs = setmetatable({}, typedefs_mt)
 end
 
 do
     local ffi_cast = ffi.cast
 
-    struct.from_ptr = function(ftype, ptr)
-        struct.name(ftype)
+    struct_from_ptr = function(ftype, ptr)
+        struct_name(ftype)
         return ffi_cast(ftype.name .. '*', ptr)[0]
     end
 end
@@ -537,7 +613,7 @@ do
 
     local type_cache = {}
 
-    struct.new = function(ftype, ...)
+    struct_new = function(ftype, ...)
         local ctype = type_cache[ftype]
         if not ctype then
             ctype = ffi_typeof(ftype.name or ftype.cdef)
@@ -548,23 +624,23 @@ do
     end
 end
 
-struct.tag = function(base, tag)
+struct_tag = function(base, tag)
     local ftype = copy_type(base)
     ftype.tag = tag
     return ftype
 end
 
-struct.int8 = make_type('int8_t')
-struct.int16 = make_type('int16_t')
-struct.int32 = make_type('int32_t')
-struct.int64 = make_type('int64_t')
-struct.uint8 = make_type('uint8_t')
-struct.uint16 = make_type('uint16_t')
-struct.uint32 = make_type('uint32_t')
-struct.uint64 = make_type('uint64_t')
-struct.float = make_type('float')
-struct.double = make_type('double')
-struct.bool = make_type('bool')
+struct_int8 = make_type('int8_t')
+struct_int16 = make_type('int16_t')
+struct_int32 = make_type('int32_t')
+struct_int64 = make_type('int64_t')
+struct_uint8 = make_type('uint8_t')
+struct_uint16 = make_type('uint16_t')
+struct_uint32 = make_type('uint32_t')
+struct_uint64 = make_type('uint64_t')
+struct_float = make_type('float')
+struct_double = make_type('double')
+struct_bool = make_type('bool')
 
 do
     local bit_band = bit.band
@@ -587,7 +663,7 @@ do
 
         local ftype = cache[size]
         if not ftype then
-            ftype = struct.array(make_type('char'), size)
+            ftype = struct_array(make_type('char'), size)
             ftype.converter = tag
             ftype.tag = tag
 
@@ -599,7 +675,7 @@ do
         return ftype
     end
 
-    struct.string = function(size)
+    struct_string = function(size)
         return make(size, 'string', string_cache)
     end
 
@@ -621,7 +697,7 @@ do
         ffi_copy(instance[index], str)
     end
 
-    struct.data = function(size)
+    struct_data = function(size)
         return make(size, 'data', data_cache)
     end
 
@@ -663,7 +739,7 @@ do
         end,
     }
 
-    struct.bitfield = function(bytes)
+    struct_bitfield = function(bytes)
         return make(bytes, 'bitfield', bitfield_cache)
     end
 
@@ -693,7 +769,7 @@ end
 
 do
     local time_base = function(offset, factor)
-        local ftype = struct.tag(struct.uint32, 'time')
+        local ftype = struct_tag(struct_uint32, 'time')
 
         ftype.converter = 'time'
 
@@ -711,15 +787,15 @@ do
         instance[index] = (value - ftype.offset) * ftype.factor
     end
 
-    struct.time = function(offset)
+    struct_time = function(offset)
         return time_base(offset, 1)
     end
 
-    struct.tick = function(offset)
+    struct_tick = function(offset)
         return time_base(offset, 60)
     end
 
-    struct.ms_time = function(offset)
+    struct_ms_time = function(offset)
         return time_base(offset, 1000)
     end
 end
@@ -739,8 +815,9 @@ do
 
     local ctype = ffi_typeof('char[?]')
 
-    struct.packed_string = function(size, lookup_string)
-        local ftype = struct.array(make_type('char'), size)
+    struct_packed_string = function(size, lookup_string)
+        local ftype = struct_array(make_type('char'), size)
+
         ftype.converter = 'packed_string'
 
         do
@@ -806,7 +883,7 @@ do
     end
 end
 
-struct.bit = function(base, bits)
+struct_bit = function(base, bits)
     local ftype = copy_type(base)
 
     ftype.bits = bits
@@ -814,8 +891,8 @@ struct.bit = function(base, bits)
     return ftype
 end
 
-struct.boolbit = function(base)
-    local ftype = struct.bit(base, 1)
+struct_boolbit = function(base)
+    local ftype = struct_bit(base, 1)
 
     ftype.converter = 'boolbit'
 
@@ -836,20 +913,52 @@ do
     local ffi_typeof = ffi.typeof
     local math_min = math.min
 
-    struct.copy = function(cdata, ftype)
+    struct_copy = function(cdata, ftype)
         if not ftype then
             local copy = ffi_typeof(cdata)()
             ffi_copy(copy, cdata, ffi_sizeof(cdata))
             return copy
         end
 
-        local copy = struct.new(ftype)
+        local copy = struct_new(ftype)
         ffi_copy(copy, cdata, math_min(ftype.size, ffi_sizeof(cdata)))
         return copy
     end
 end
 
-return struct
+return {
+    metatype = struct_metatype,
+    array = struct_array,
+    struct = struct_struct,
+    name = struct_name,
+    declare = struct_declare,
+    ptr = struct_ptr,
+    typedefs = struct_typedefs,
+    from_ptr = struct_from_ptr,
+    new = struct_new,
+    tag = struct_tag,
+    int8 = struct_int8,
+    int16 = struct_int16,
+    int32 = struct_int32,
+    int64 = struct_int64,
+    uint8 = struct_uint8,
+    uint16 = struct_uint16,
+    uint32 = struct_uint32,
+    uint64 = struct_uint64,
+    float = struct_float,
+    double = struct_double,
+    bool = struct_bool,
+    string = struct_string,
+    data = struct_data,
+    bitfield = struct_bitfield,
+    time = struct_time,
+    tick = struct_tick,
+    ms_time = struct_ms_time,
+    packed_string = struct_packed_string,
+    bit = struct_bit,
+    boolbit = struct_boolbit,
+    copy = struct_copy,
+}
 
 --[[
 Copyright © 2018, Windower Dev Team
