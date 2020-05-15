@@ -23,8 +23,8 @@ local make_event = function(_, path)
     return make_event(path)
 end
 
-local inject = function(_, path, values)
-    inject(path, values)
+local inject = function(_)
+    inject()
 end
 
 local pairs = pairs
@@ -168,26 +168,6 @@ do
     local injection_size = type_map.injection.size
     local buffer = ffi_cast('char*', injection_ptr) + type_map.injection.fields.data.position
 
-    local copy
-    copy = function(cdata, values, ftype)
-        if not values then
-            return
-        end
-
-        local fields = ftype.fields
-        for key, value in pairs(values) do
-            local field = fields[key]
-            if field and field.count and not field.converter then
-                local array = cdata[key]
-                for i = 0, field.count do
-                    copy(array[i], value, field.base)
-                end
-            else
-                cdata[key] = value
-            end
-        end
-    end
-
     fns.inject = function(t, values)
         local info = info_cache[t]
         local ftype = info.ftype
@@ -199,7 +179,11 @@ do
         injection.id = info.id
 
         local cdata = ffi_cast(ftype.name .. '*', buffer)[0]
-        copy(cdata, values, ftype)
+        if values then
+            for key, value in pairs(values) do
+                cdata[key] = value
+            end
+        end
 
         local fragments = fragments_cache[t]
         if fragments then
