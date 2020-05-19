@@ -1,5 +1,5 @@
 local event = require('core.event')
-local packets = require('packets')
+local packet = require('packet')
 local server = require('shared.server')
 local struct = require('struct')
 
@@ -59,7 +59,7 @@ local model = data.model
 local skills = data.skills
 local job_levels = data.job_levels
 
-packets.incoming:register_init({
+packet.incoming:register_init({
     [{0x00A}] = function(p)
         data.id = p.player_id
         data.index = p.player_index

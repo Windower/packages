@@ -1,5 +1,5 @@
 local event = require('core.event')
-local packets = require('packets')
+local packet = require('packet')
 local server = require('shared.server')
 local struct = require('struct')
 
@@ -34,7 +34,7 @@ local drop_types = {
     [3] = 'drop',
 }
 
-packets.incoming:register_init({
+packet.incoming:register_init({
     [{0x0D2}] = function(p)
         if p.gil > 0 then
             return

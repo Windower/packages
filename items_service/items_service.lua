@@ -1,4 +1,4 @@
-local packets = require('packets')
+local packet = require('packet')
 local resources = require('resources')
 local server = require('shared.server')
 local struct = require('struct')
@@ -85,7 +85,7 @@ local update_item = function(bag, index, count, status, id, bazaar, extdata)
     end
 end
 
-packets.incoming:register_init({
+packet.incoming:register_init({
     [{0x01C}] = function(p)
         for bag = 0, bag_count - 1 do
             items.sizes[bag] = p.size[bag] - 1

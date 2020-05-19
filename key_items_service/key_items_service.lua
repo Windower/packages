@@ -1,5 +1,5 @@
 local bit = require('bit')
-local packets = require('packets')
+local packet = require('packet')
 local server = require('shared.server')
 local string = require('string')
 local struct = require('struct')
@@ -23,7 +23,7 @@ local bit_band = bit.band
 local bit_lshift = bit.lshift
 local string_byte = string.byte
 
-packets.incoming:register_init({
+packet.incoming:register_init({
     [{0x055}] = function(p)
         local offset = p.type * type_size
         local available = p.key_items_available

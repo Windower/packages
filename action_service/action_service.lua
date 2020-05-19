@@ -1,5 +1,5 @@
 local event = require('core.event')
-local packets = require('packets')
+local packet = require('packet')
 local player = require('player')
 local server = require('shared.server')
 local struct = require('struct')
@@ -71,7 +71,7 @@ local handle_outgoing_action = function(packet, info)
 
     pre_action_event:trigger()
 
-    packets.outgoing[0x01A]:inject({
+    packet.outgoing[0x01A]:inject({
         target_id = packet.target_id,
         target_index = packet.target_index,
         action_category = packet.action_category,
@@ -99,8 +99,8 @@ local handle_incoming_action = function(packet)
     post_action_event:trigger()
 end
 
-packets.outgoing[0x01A]:register(handle_outgoing_action)
-packets.incoming[0x028]:register(handle_incoming_action)
+packet.outgoing[0x01A]:register(handle_outgoing_action)
+packet.incoming[0x028]:register(handle_incoming_action)
 
 --[[
 Copyright © 2019, Windower Dev Team

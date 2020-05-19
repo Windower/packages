@@ -1,6 +1,6 @@
 local event = require('core.event')
 local memory = require('memory')
-local packets = require('packets')
+local packet = require('packet')
 local server = require('shared.server')
 local struct = require('struct')
 
@@ -16,7 +16,7 @@ local data = server.new(struct.struct({
 local login_event = data.login
 local logout_event = data.logout
 
-packets.incoming:register_init({
+packet.incoming:register_init({
     [{0x00A}] = function(p)
         local login = not data.logged_in
         if not login then

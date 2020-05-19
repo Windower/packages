@@ -1,4 +1,4 @@
-local packets = require('packets')
+local packet = require('packet')
 local server = require('shared.server')
 local struct = require('struct')
 
@@ -23,7 +23,7 @@ local data = server.new(struct.struct({
     [2]                 = {ls_struct},
 }))
 
-packets.incoming:register_init({
+packet.incoming:register_init({
     [{0x0CC}] = function(p)
         local ls_data = data[p.linkshell_index + 1]
 

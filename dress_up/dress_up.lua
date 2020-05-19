@@ -1,7 +1,7 @@
 local party = require('party')
 local player = require('player')
 local target = require('target')
-local packets = require('packets')
+local packet = require('packet')
 local entities = require('entities')
 local settings = require('settings')
 
@@ -184,7 +184,7 @@ du:register('auto_update', auto_update_enable, '<enabled:lookup_boolean>')
 -- Model change Events
 
 -- Model changes for other players
-packets.incoming[0x00D]:register(function(p, info)
+packet.incoming[0x00D]:register(function(p, info)
 
     if p.update_model then
         local entity = entities[p.player_index]
@@ -219,7 +219,7 @@ packets.incoming[0x00D]:register(function(p, info)
     end
 end)
 -- Model changes for self
-packets.incoming[0x051]:register(function(p, info)
+packet.incoming[0x051]:register(function(p, info)
     local have_target = (target.t or target.st) ~= nil or false
 
     local bmn = options.blink['self']

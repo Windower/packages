@@ -1,7 +1,7 @@
 local bit = require('bit')
 local event = require('core.event')
 local ffi = require('ffi')
-local packets = require('packets')
+local packet = require('packet')
 local server = require('shared.server')
 local string = require('string')
 local struct = require('struct')
@@ -71,7 +71,7 @@ local process_effects = function(effects_array, data_effects)
     return gained, lost
 end
 
-packets.incoming:register_init({
+packet.incoming:register_init({
     [{0x00A}] = function(p)
         data_player.id = p.player_id
         data_player.index = p.player_index
