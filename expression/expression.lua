@@ -30,6 +30,34 @@ expression.between = function(min, max)
     end
 end
 
+expression.one_of = function(...)
+    local length = select('#', ...)
+    local args = {...}
+    return function(value)
+        for i = 1, length do
+            if args[i] == value then
+                return true
+            end
+        end
+
+        return false
+    end
+end
+
+expression.not_one_of = function(...)
+    local length = select('#', ...)
+    local args = {...}
+    return function(value)
+        for i = 1, length do
+            if args[i] == value then
+                return false
+            end
+        end
+
+        return true
+    end
+end
+
 local selector = function(callable)
     return setmetatable({}, {
         __call = function(_, value)
@@ -50,6 +78,12 @@ expression.index = function(field_name)
     return selector(function(value)
         return value[field_name]
     end)
+end
+
+expression.neg = function(fn)
+    return function(...)
+        return not fn(...)
+    end
 end
 
 expression.empty = function()
@@ -81,10 +115,6 @@ end
 
 expression.geq = function(v1, v2)
     return v1 >= v2
-end
-
-expression.neg = function(v)
-    return not v
 end
 
 expression.const = function(v)
