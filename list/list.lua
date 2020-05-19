@@ -1,7 +1,6 @@
 require('table')
 local clear = require('table.clear')
 
-local list = {}
 local meta = {}
 
 local index = function(l, i)
@@ -11,12 +10,16 @@ end
 -- Metatable
 
 meta.__index = function(l, k)
-    if type(k) == 'string' then
-        return list[k]
-    elseif type(k) == 'number' then
-        return rawget(l, index(l, k))
+    local length = l.length
+    local i = length + k + 1
+    if i < 1 or i > length then
+        error('Index out of bounds: ' .. tostring(k) .. '/' .. tostring(length), 2)
     end
+
+    return rawget(l, i)
 end
+
+meta.__newindex = error
 
 meta.__eq = function(l1, l2)
     local length1 = l1.length
@@ -107,14 +110,11 @@ end
 meta.__add_element = function(l, el)
     local new_length = l.length + 1
     l.length = new_length
-    l[new_length] = el
+    rawset(l, new_length, el)
 end
 
-meta.__remove_key = function(l, i)
-    i = index(l, i)
-
+local remove_key = function(l, i, length)
     local length = l.length
-    local element = rawget(l, i)
 
     local new_length = length - 1
     for key = i, new_length do
@@ -124,11 +124,20 @@ meta.__remove_key = function(l, i)
     l[length] = nil
 
     l.length = new_length
+end
 
-    return element
+meta.__remove_key = function(l, i)
+    local idx = index(l, i)
+    local length = l.length
+    if idx < 1 or idx > length then
+        error('Index out of bounds: ' .. tostring(i) .. '/' .. tostring(length))
+    end
+    remove_key(l, idx, length)
 end
 
 -- Enumerable overrides
+
+local list = {}
 
 list.clear = function(l)
     clear(l)
@@ -140,42 +149,33 @@ end
 list.insert = function(l, i, el)
     i = index(l, i)
 
-    local length = l.length
-
     local current = el
-    for key = i, length do
-        local next = current
+    local new_length = l.length + 1
+    for key = i, new_length do
+        local next_element = current
         current = rawget(l, key)
-        l[key] = next
+        rawset(l, key, next_element)
     end
 
-    l.length = length + 1
+    l.length = new_length
 end
 
 list.remove_element = function(l, el)
-    for key = 1, l.length do
+    local length = l.length
+    for key = 1, length do
         if rawget(l, key) == el then
-            l:remove(key)
-            break
+            remove_key(l, key, length)
+            return
         end
     end
-end
 
-list.append = function(l1, l2)
-    local length1 = l1.length
-    local length2 = l2.length
-
-    for k = 1, length2 do
-        rawset(l1, length1 + k, rawget(l2, k))
-    end
-
-    l1.length = length1 + length2
+    error('Element not found: ' .. tostring(el))
 end
 
 -- Invoke enumerable library
 
 local enumerable = require('enumerable')
-return enumerable.init_type(meta, 'list')
+return enumerable.init_type(meta, list, 'list')
 
 --[[
 Copyright © 2018, Windower Dev Team
