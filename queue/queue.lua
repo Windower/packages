@@ -1,7 +1,6 @@
 require('table')
 local clear = require('table.clear')
 
-local queue = {}
 local meta = {}
 
 local index = function(q, i)
@@ -13,11 +12,13 @@ local start = 1000000
 -- Metatable
 
 meta.__index = function(q, k)
-    if type(k) == 'string' then
-        return queue[k]
-    elseif type(k) == 'number' then
-        return rawget(q, index(q, k))
+    local length = q.length
+    local i = k > 0 and k or length + k + 1
+    if i < 1 or i > length then
+        error('Index out of bounds: ' .. tostring(k) .. '/' .. tostring(length), 2)
     end
+
+    return rawget(q, q.index + i)
 end
 
 meta.__eq = function(q1, q2)
@@ -71,11 +72,11 @@ meta.__tostring = function(q)
         return '<>'
     end
 
-    local index = q.index
-    local str = tostring(rawget(q, index + 1))
+    local i = q.index
+    local str = tostring(rawget(q, i + 1))
 
     for key = 2, length do
-        str = str .. ', ' .. tostring(rawget(q, index + key))
+        str = str .. ', ' .. tostring(rawget(q, i + key))
     end
 
     return '<' .. str .. '>'
@@ -86,8 +87,8 @@ meta.__ipairs = pairs
 -- Enumerable base
 
 meta.__pairs = function(q)
-    local index = q.index
-    local max = index + q.length
+    local i = q.index
+    local max = i + q.length
     return function(q, k)
         k = k + 1
         if k > max then
@@ -95,7 +96,7 @@ meta.__pairs = function(q)
         end
 
         return k, rawget(q, k)
-    end, q, index
+    end, q, i
 end
 
 meta.__create = function(...)
@@ -153,6 +154,8 @@ end
 
 -- Enumerable overrides
 
+local queue = {}
+
 queue.clear = function(q)
     clear(q)
     rawset(q, 'length', 0)
@@ -182,7 +185,7 @@ end
 -- Invoke enumerable library
 
 local enumerable = require('enumerable')
-return enumerable.init_type(meta, 'queue')
+return enumerable.init_type(meta, queue, 'queue')
 
 --[[
 Copyright © 2018, Windower Dev Team
