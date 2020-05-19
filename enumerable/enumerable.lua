@@ -1,6 +1,9 @@
+local table = require('table')
+
 local enumerable = {}
 
 local enumerator_cache = setmetatable({}, {__mode = 'k'})
+local empty_constructor
 
 local add_fn = function(x, y)
     return x + y
@@ -20,15 +23,15 @@ enumerable.enumerate = function(t)
     end, table, key
 end
 
-enumerable.count = function(t, fn, ...)
+enumerable.count = function(t, fn)
     local count = 0
-    if not fn then
+    if fn == nil  then
         for _ in pairs(t) do
             count = count + 1
         end
     else
         for _, v in pairs(t) do
-            if fn(v, ...) == true then
+            if fn(v) == true then
                 count = count + 1
             end
         end
@@ -37,14 +40,14 @@ enumerable.count = function(t, fn, ...)
     return count
 end
 
-enumerable.any = function(t, fn, ...)
-    if not fn then
+enumerable.any = function(t, fn)
+    if fn == nil then
         for _ in pairs(t) do
             return true
         end
     else
         for _, v in pairs(t) do
-            if fn(v, ...) == true then
+            if fn(v) == true then
                 return true
             end
         end
@@ -53,9 +56,9 @@ enumerable.any = function(t, fn, ...)
     return false
 end
 
-enumerable.all = function(t, fn, ...)
+enumerable.all = function(t, fn)
     for _, v in pairs(t) do
-        if fn(v, ...) == false then
+        if fn(v) == false then
             return false
         end
     end
@@ -73,31 +76,31 @@ enumerable.contains = function(t, search)
     return false
 end
 
-enumerable.first = function(t, fn, ...)
-    if not fn then
+enumerable.first = function(t, fn)
+    if fn == nil  then
         for _, v in pairs(t) do
             return v
         end
-    end
-
-    for _, v in pairs(t) do
-        if fn(v, ...) == true then
-            return v
+    else
+        for _, v in pairs(t) do
+            if fn(v) == true then
+                return v
+            end
         end
     end
 
     return nil
 end
 
-enumerable.last = function(t, fn, ...)
+enumerable.last = function(t, fn)
     local res
-    if not fn then
+    if fn == nil  then
         for _, v in pairs(t) do
             res = v
         end
     else
         for _, v in pairs(t) do
-            if fn(v, ...) == true then
+            if fn(v) == true then
                 res = v
             end
         end
@@ -106,9 +109,9 @@ enumerable.last = function(t, fn, ...)
     return res
 end
 
-enumerable.single = function(t, fn, ...)
+enumerable.single = function(t, fn)
     local res
-    if not fn then
+    if fn == nil  then
         for _, v in pairs(t) do
             if res ~= nil then
                 return nil
@@ -118,7 +121,7 @@ enumerable.single = function(t, fn, ...)
         end
     else
         for _, v in pairs(t) do
-            if fn(v, ...) == true then
+            if fn(v) == true then
                 if res ~= nil then
                     return nil
                 else
@@ -131,20 +134,20 @@ enumerable.single = function(t, fn, ...)
     return res
 end
 
-enumerable.sequence_equal = function(t, compare, fn, ...)
+enumerable.sequence_equal = function(t, compare, fn)
     local iterator, table, key = pairs(t)
     local value
     key, value = iterator(table, key)
-    if not fn then
-        for compare_key, compare_value in pairs(compare) do
+    if fn == nil  then
+        for _, compare_value in pairs(compare) do
             if key == nil or compare_value ~= value then
                 return false
             end
             key, value = iterator(table, key)
         end
     else
-        for compare_key, compare_value in pairs(compare) do
-            if key == nil or not fn(compare_value, value, ...) then
+        for _, compare_value in pairs(compare) do
+            if key == nil or not fn(compare_value, value) then
                 return false
             end
             key, value = iterator(table, key)
@@ -166,7 +169,7 @@ enumerable.element_at = function(t, index)
     return nil
 end
 
-local aggregate_fn = function(t, initial, accumulator, selector)
+enumerable.aggregate = function(t, initial, accumulator, selector)
     local initialized = accumulator ~= nil
     accumulator = initialized and accumulator or initial
 
@@ -183,41 +186,69 @@ local aggregate_fn = function(t, initial, accumulator, selector)
     return selector ~= nil and selector(res) or res
 end
 
-enumerable.aggregate = aggregate_fn
+local enumerable_aggregate = enumerable.aggregate
 
-enumerable.sum = function(t, fn, ...)
-    return aggregate_fn(t, fn or add_fn, ...)
+enumerable.sum = function(t, fn)
+    return enumerable_aggregate(t, fn or add_fn)
 end
 
-enumerable.min = function(t, fn, ...)
-    return aggregate_fn(t, fn or min_fn, ...)
+enumerable.min = function(t, fn)
+    return enumerable_aggregate(t, fn or min_fn)
 end
 
-enumerable.max = function(t, fn, ...)
-    return aggregate_fn(t, fn or max_fn, ...)
+enumerable.max = function(t, fn)
+    return enumerable_aggregate(t, fn or max_fn)
 end
 
-enumerable.average = function(t, fn, ...)
-    return aggregate_fn(t, fn or add_fn, ...) / #t
+enumerable.average = function(t, fn)
+    return enumerable_aggregate(t, fn or add_fn) / #t
 end
 
-enumerable.totable = function(t)
+enumerable.to_table = function(t)
     local arr = {}
-    local key = 0
+    local count = 0
     for _, el in pairs(t) do
-        key = key + 1
-        arr[key] = el
+        count = count + 1
+        arr[count] = el
     end
 
-    return arr
+    return arr, count
+end
+
+local enumerable_to_table = enumerable.to_table
+
+enumerable.group_by = function(t, fn)
+    local elements, length = enumerable_to_table(t)
+
+    local groups = {}
+    for i = 1, length do
+        local element = elements[i]
+        local key = fn(element)
+        local group = groups[key]
+        if not group then
+            group = empty_constructor()
+            groups[key] = group
+        end
+        group:add(element)
+    end
+
+    return groups
+end
+
+enumerable.default_if_empty = function(t, element)
+    local iterator, table, key = pairs(t)
+    if iterator(table, key) == nil then
+        return element
+    end
+
+    return t
 end
 
 local lazy_functions = {
-    select = function(constructor, original, fn, ...)
+    select = function(constructor, original, fn)
         local res = constructor()
-        local args = {...}
 
-        enumerator_cache[res] = function(res)
+        enumerator_cache[res] = function()
             local iterator, table, key = pairs(original)
             return function(t, k)
                 local key, value = iterator(t, k)
@@ -225,19 +256,18 @@ local lazy_functions = {
                     return nil, nil
                 end
 
-                return key, fn(value, unpack(args))
+                return key, fn(value)
             end, table, key
         end
 
         return res
     end,
-    select_many = function(constructor, original, fn, ...)
+    select_many = function(constructor, original, fn)
         local res = constructor()
-        local args = {...}
 
-        enumerator_cache[res] = function(res)
+        enumerator_cache[res] = function()
             local iterator, table, key = pairs(original)
-            local outer_key, inner, inner_iterator, inner_table, inner_key
+            local outer_key, inner, inner_iterator, inner_key
             return function(t, k)
                 local value
 
@@ -256,8 +286,8 @@ local lazy_functions = {
                         return nil, nil
                     end
 
-                    inner = fn(inner, unpack(args))
-                    inner_iterator, inner_table, inner_key = pairs(inner)
+                    inner = fn(inner)
+                    inner_iterator, _, inner_key = pairs(inner)
 
                     inner_key, value = inner_iterator(inner, inner_key)
                 end
@@ -268,15 +298,14 @@ local lazy_functions = {
 
         return res
     end,
-    where = function(constructor, original, fn, ...)
+    where = function(constructor, original, fn)
         local res = constructor()
-        local args = {...}
 
-        enumerator_cache[res] = function(res)
+        enumerator_cache[res] = function()
             local iterator, table, key = pairs(original)
             return function(t, k)
                 local key, value = iterator(t, k)
-                while key ~= nil and not fn(value, unpack(args)) do
+                while key ~= nil and not fn(value) do
                     key, value = iterator(t, key)
                 end
 
@@ -286,15 +315,15 @@ local lazy_functions = {
 
         return res
     end,
-    take = function(constructor, original, max)
+    take = function(constructor, original, count)
         local res = constructor()
 
-        enumerator_cache[res] = function(res)
+        enumerator_cache[res] = function()
             local iterator, table, key = pairs(original)
-            local count = 0
+            local current_count = 0
             return function(t, k)
-                count = count + 1
-                if count > max then
+                current_count = current_count + 1
+                if current_count > count then
                     return nil, nil
                 end
 
@@ -307,7 +336,7 @@ local lazy_functions = {
     take_while = function(constructor, original, condition)
         local res = constructor()
 
-        enumerator_cache[res] = function(res)
+        enumerator_cache[res] = function()
             local iterator, table, key = pairs(original)
             return function(t, k)
                 local key, value = iterator(t, k)
@@ -321,16 +350,34 @@ local lazy_functions = {
 
         return res
     end,
+    take_last = function(constructor, original, count)
+        local res = constructor()
+
+        enumerator_cache[res] = function()
+            local elements, length = enumerable_to_table(original)
+            local init = length - count
+            return function(t, k)
+                k = k + 1
+                if k > length then
+                    return nil, nil
+                end
+
+                return k, t[k]
+            end, elements, init
+        end
+
+        return res
+    end,
     skip = function(constructor, original, count)
         local res = constructor()
 
-        enumerator_cache[res] = function(res)
+        enumerator_cache[res] = function()
             local iterator, table, key = pairs(original)
-            local count = count
+            local current_count = 0
             return function(t, k)
                 local key, value = iterator(t, k)
-                while key ~= nil and count > 0 do
-                    count = count - 1
+                while key ~= nil and current_count < count do
+                    current_count = current_count + 1
                     key, value = iterator(t, key)
                 end
 
@@ -343,7 +390,7 @@ local lazy_functions = {
     skip_while = function(constructor, original, condition)
         local res = constructor()
 
-        enumerator_cache[res] = function(res)
+        enumerator_cache[res] = function()
             local iterator, table, key = pairs(original)
             return function(t, k)
                 local key, value = iterator(t, k)
@@ -357,10 +404,27 @@ local lazy_functions = {
 
         return res
     end,
+    skip_last = function(constructor, original, count)
+        local res = constructor()
+
+        enumerator_cache[res] = function()
+            local elements, length = enumerable_to_table(original)
+            return function(t, k)
+                k = k + 1
+                if k > length - count then
+                    return nil, nil
+                end
+
+                return k, t[k]
+            end, elements, 0
+        end
+
+        return res
+    end,
     of_type = function(constructor, original, compare)
         local res = constructor()
 
-        enumerator_cache[res] = function(res)
+        enumerator_cache[res] = function()
             local iterator, table, key = pairs(original)
             return function(t, k)
                 local key, value = iterator(t, k)
@@ -377,10 +441,10 @@ local lazy_functions = {
     concat = function(constructor, original, other)
         local res = constructor()
 
-        enumerator_cache[res] = function(res)
+        enumerator_cache[res] = function()
             local iterator, table, key = pairs(original)
             local first = true
-            return function(t, k)
+            return function(_, _)
                 local value
                 key, value = iterator(table, key)
                 if key == nil then
@@ -399,76 +463,448 @@ local lazy_functions = {
 
         return res
     end,
-}
+    order_by = function(_, original, selector)
+        local res = empty_constructor()
 
-local dependent_functions = {
-    add = {
-        copy = function(constructor, add, original)
-            local res = constructor()
-            for key, el in pairs(original) do
-                add(res, el, key)
+        enumerator_cache[res] = function()
+            local elements, length = enumerable_to_table(original)
+
+            local properties = {}
+            for i = 1, length do
+                local element = elements[i]
+                properties[i] = {element, selector(element)}
             end
 
-            return res
-        end,
-    },
-    remove = {
-        clear = function(constructor, remove, t)
-            for key in pairs(t) do
-                remove(t, key)
+            table.sort(properties, function(lhs, rhs)
+                return lhs[2] < rhs[2]
+            end)
+
+            return function(t, k)
+                local key = k + 1
+                if key > length then
+                    return nil, nil
+                end
+
+                return key, t[key][1]
+            end, properties, 0
+        end
+
+        return res
+    end,
+    order_by_descending = function(_, original, selector)
+        local res = empty_constructor()
+
+        enumerator_cache[res] = function()
+            local elements, length = enumerable_to_table(original)
+
+            local properties = {}
+            for i = 1, length do
+                local element = elements[i]
+                properties[i] = {element, selector(element)}
             end
 
-            return t
-        end,
-    },
+            table.sort(properties, function(lhs, rhs)
+                return lhs[2] < rhs[2]
+            end)
+
+            return function(t, k)
+                k = k + 1
+                if k > length then
+                    return nil, nil
+                end
+
+                return k, t[length - k + 1][1]
+            end, properties, 0
+        end
+
+        return res
+    end,
+    distinct = function(constructor, original, compare)
+        local res = constructor()
+
+        if compare then
+            enumerator_cache[res] = function()
+                local found = {}
+                local found_count = 0
+                local iterator, table, key = pairs(original)
+                return function(t, k)
+                    local key = k
+                    local value, exists
+                    repeat
+                        key, value = iterator(t, key)
+                        if key == nil then
+                            return nil, nil
+                        end
+
+                        exists = false
+                        for i = 1, found_count do
+                            if compare(value, found[i]) then
+                                exists = true
+                                break
+                            end
+                        end
+
+                        found_count = found_count + 1
+                        found[found_count] = value
+                    until not exists
+
+                    return key, value
+                end, table, key
+            end
+        else
+            enumerator_cache[res] = function()
+                local found = {}
+                local iterator, table, key = pairs(original)
+                return function(t, k)
+                    local key = k
+                    local value, exists
+                    repeat
+                        key, value = iterator(t, key)
+                        if key == nil then
+                            return nil, nil
+                        end
+
+                        exists = found[value]
+
+                        found[value] = true
+                    until not exists
+
+                    return key, value
+                end, table, key
+            end
+        end
+
+        return res
+    end,
+    prepend = function(constructor, original, element)
+        local res = constructor()
+
+        enumerator_cache[res] = function()
+            local single = false
+            local dummy_key = {}
+            local iterator, table, key = pairs(original)
+            return function(t, k)
+                if single == false then
+                    single = true
+                    return dummy_key, element
+                end
+
+                return iterator(t, k == dummy_key and key or k)
+            end, table, nil
+        end
+
+        return res
+    end,
+    append = function(constructor, original, element)
+        local res = constructor()
+
+        enumerator_cache[res] = function()
+            local single = false
+            local iterator, table, key = pairs(original)
+            return function(t, k)
+                if single then
+                    return nil, nil
+                end
+
+                local key, value = iterator(t, k)
+                if key == nil then
+                    single = true
+                    return 0, element
+                end
+
+                return key, value
+            end, table, key
+        end
+
+        return res
+    end,
+    reverse = function(constructor, original)
+        local res = constructor()
+
+        enumerator_cache[res] = function()
+            local elements, length = enumerable_to_table(original)
+            return function(t, k)
+                k = k + 1
+                if k > length then
+                    return nil, nil
+                end
+
+                return k, t[length - k + 1]
+            end, elements, 0
+        end
+
+        return res
+    end,
+    zip = function(constructor, original, other, selector)
+        local res = constructor()
+
+        if selector then
+            enumerator_cache[res] = function()
+                local iterator_original, table_original, key_original = pairs(original)
+                local iterator_other, table_other, key_other = pairs(other)
+                return function(_, k)
+                    local value_original, value_other
+                    key_original, value_original = iterator_original(table_original, key_original)
+                    key_other, value_other = iterator_other(table_other, key_other)
+                    if key_original == nil or key_other == nil then
+                        return nil, nil
+                    end
+
+                    return k + 1, selector(value_original, value_other)
+                end, nil, 0
+            end
+        else
+            enumerator_cache[res] = function()
+                local iterator_original, table_original, key_original = pairs(original)
+                local iterator_other, table_other, key_other = pairs(other)
+                return function(_, k)
+                    local value_original, value_other
+                    key_original, value_original = iterator_original(table_original, key_original)
+                    key_other, value_other = iterator_other(table_other, key_other)
+                    if key_original == nil or key_other == nil then
+                        return nil, nil
+                    end
+
+                    return k + 1, {value_original, value_other}
+                end, nil, 0
+            end
+        end
+
+        return res
+    end,
+    intersect = function(constructor, original, other, compare)
+        local res = constructor()
+
+        if compare then
+            enumerator_cache[res] = function()
+                local iterator, table, key = pairs(original)
+                local elements, length = enumerable_to_table(other)
+                return function(t, k)
+                    local key = k
+                    local value, match
+                    repeat
+                        key, value = iterator(t, key)
+                        if key == nil then
+                            return nil, nil
+                        end
+
+                        match = false
+                        for i = 1, length do
+                            if compare(value, elements[i]) then
+                                match = true
+                                break
+                            end
+                        end
+                    until match
+
+                    return key, value
+                end, table, key
+            end
+        else
+            enumerator_cache[res] = function()
+                local iterator, table, key = pairs(original)
+                local elements, length = enumerable_to_table(other)
+                return function(t, k)
+                    local key = k
+                    local value, match
+                    repeat
+                        key, value = iterator(t, key)
+                        if key == nil then
+                            return nil, nil
+                        end
+
+                        match = false
+                        for i = 1, length do
+                            if value == elements[i] then
+                                match = true
+                                break
+                            end
+                        end
+                    until match
+
+                    return key, value
+                end, table, key
+            end
+        end
+
+        return res
+    end,
+    except = function(constructor, original, other, compare)
+        local res = constructor()
+
+        if compare then
+            enumerator_cache[res] = function()
+                local iterator, table, key = pairs(original)
+                local elements, length = enumerable_to_table(other)
+                return function(t, k)
+                    local key = k
+                    local value, match
+                    repeat
+                        key, value = iterator(t, key)
+                        if key == nil then
+                            return nil, nil
+                        end
+
+                        match = false
+                        for i = 1, length do
+                            if compare(value, elements[i]) then
+                                match = true
+                                break
+                            end
+                        end
+                    until not match
+
+                    return key, value
+                end, table, key
+            end
+        else
+            enumerator_cache[res] = function()
+                local iterator, table, key = pairs(original)
+                local elements, length = enumerable_to_table(other)
+                return function(t, k)
+                    local key = k
+                    local value, match
+                    repeat
+                        key, value = iterator(t, key)
+                        if key == nil then
+                            return nil, nil
+                        end
+
+                        match = false
+                        for i = 1, length do
+                            if value == elements[i] then
+                                match = true
+                                break
+                            end
+                        end
+                    until not match
+
+                    return key, value
+                end, table, key
+            end
+        end
+
+        return res
+    end,
+    union = function(constructor, original, other, compare)
+        local res = constructor()
+
+        if compare then
+            enumerator_cache[res] = function()
+                local found = {}
+                local found_count = 0
+                local first = true
+                local iterator, table, key = pairs(original)
+                return function(_, k)
+                    local key = k
+                    local value, exists
+                    repeat
+                        key, value = iterator(table, key)
+                        if key == nil  then
+                            if first then
+                                iterator, table, key = pairs(other)
+                                exists = true
+                                first = false
+                            else
+                                return nil, nil
+                            end
+                        else
+                            exists = false
+                            for i = 1, found_count do
+                                if compare(value, found[i]) then
+                                    exists = true
+                                    break
+                                end
+                            end
+
+                            found_count = found_count + 1
+                            found[found_count] = value
+                        end
+                    until not exists
+
+                    return key, value
+                end, nil, key
+            end
+        else
+            enumerator_cache[res] = function()
+                local found = {}
+                local found_count = 0
+                local first = true
+                local iterator, table, key = pairs(original)
+                return function(_, k)
+                    local key = k
+                    local value, exists
+                    repeat
+                        key, value = iterator(table, key)
+                        if key == nil  then
+                            if first then
+                                iterator, table, key = pairs(other)
+                                exists = true
+                                first = false
+                            else
+                                return nil, nil
+                            end
+                        else
+                            exists = false
+                            for i = 1, found_count do
+                                if value == found[i] then
+                                    exists = true
+                                    break
+                                end
+                            end
+
+                            found_count = found_count + 1
+                            found[found_count] = value
+                        end
+                    until not exists
+
+                    return key, value
+                end, nil, key
+            end
+        end
+
+        return res
+    end,
 }
 
-local build_index_table = function(constructor, proxies)
+local build_index_table = function(constructor, converter, add, remove, methods)
     local index_table = {}
-
-    for name, fn in pairs(proxies) do
-        index_table[name] = fn
-    end
 
     for name, fn in pairs(enumerable) do
         index_table[name] = fn
     end
 
     for name, fn in pairs(lazy_functions) do
-        index_table[name] = function(...)
-            return fn(constructor, ...)
+        index_table[name] = function(original, ...)
+            return fn(constructor, original, ...)
         end
     end
 
-    for proxy_name, proxy in pairs(proxies) do
-        for name, fn in pairs(dependent_functions[proxy_name]) do
-            index_table[name] = function(...)
-                return fn(constructor, proxy, ...)
-            end
+    index_table.add = add
+    index_table.remove = remove
+    index_table.copy = function(original, ...)
+        local res = constructor()
+        for key, el in pairs(original) do
+            add(res, el, key)
+        end
+
+        return res
+    end
+
+    index_table.clear = function(original)
+        for key in pairs(original) do
+            remove(original, key)
+        end
+    end
+
+    for name, fn in pairs(methods) do
+        index_table[name] = function(original, ...)
+            local cached = enumerator_cache[original]
+            return fn(cached and converter(cached) or original, ...)
         end
     end
 
     return index_table
-end
-
-local find_index = function(t, k, index_table, original, converter)
-    if type(original) == 'function' and enumerator_cache[t] ~= nil then
-        return function(_, ...)
-            return original(converter(t), ...)
-        end
-    end
-
-    if original ~= nil then
-        return original
-    end
-
-    if index_table[k] then
-        return index_table[k]
-    end
-
-    if enumerator_cache[t] then
-        return converter(t)[k]
-    end
 end
 
 local operators = {
@@ -497,11 +933,11 @@ local meta_cache = {}
 
 local result_cache = {}
 local index_cache = {}
-local configure_metatable = function(meta, name)
+local configure_metatable = function(meta, methods, name)
     -- Create default addition function
     if meta.__add_element == nil then
-        meta.__add_element = function(t, v, k)
-            rawset(t, k, v)
+        meta.__add_element = function(t, v)
+            rawset(t, #t + 1, v)
         end
     end
 
@@ -529,8 +965,8 @@ local configure_metatable = function(meta, name)
     if meta.__convert == nil then
         meta.__convert = function(t)
             local res = constructor()
-            for key, el in pairs(t) do
-                add(res, el, key)
+            for _, el in pairs(t) do
+                add(res, el)
             end
             return res
         end
@@ -538,30 +974,48 @@ local configure_metatable = function(meta, name)
 
     local converter = meta.__convert
 
-    local index_table = build_index_table(constructor, {
-        add = add,
-        remove = remove,
-    })
+    local index_table = build_index_table(constructor, converter, add, remove, methods)
     index_cache[index_table] = true
 
     -- __index
     local original_index = meta.__index
     local index_type = type(original_index)
-    --TODO: Cache find_index result? local table with __index metamethod that sets used keys?
+    local raw_getter
     if index_type == 'nil' then
-        meta.__index = function(t, k)
-            return find_index(t, k, index_table, nil, converter)
+        raw_getter = function(_, _)
+            return nil
         end
     elseif index_type == 'table' then
-        meta.__index = function(t, k)
-            return find_index(t, k, index_table, original_index[k], converter)
+        raw_getter = function(_, k)
+            return original_index[k]
         end
     elseif index_type == 'function' then
-        meta.__index = function(t, k)
-            return find_index(t, k, index_table, original_index(t, k), converter)
+        raw_getter = function(t, k)
+            return original_index(t, k)
         end
     else
-        error(('Unknown index_type: %s'):format(type))
+        error('Unknown index_type: ' .. type)
+    end
+
+    meta.__index = function(t, k)
+        local indexed = index_table[k]
+        if indexed then
+            return indexed
+        end
+
+        if enumerator_cache[t] == nil then
+            return raw_getter(t, k)
+        end
+
+        local converted = converter(t)
+        local original_result = converted[k]
+        if type(original_result) == 'function' then
+            return function(_, ...)
+                return original_result(converted, ...)
+            end
+        end
+
+        return original_result
     end
 
     -- __len
@@ -577,12 +1031,16 @@ local configure_metatable = function(meta, name)
         return next, t, nil
     end
     meta.__pairs = function(t)
-        return (enumerator_cache[t] or enumerator)(t)
+        local cached = enumerator_cache[t]
+        if cached ~= nil then
+            return cached()
+        end
+        return enumerator(t)
     end
 
     -- Implement toX function as a constructor call
     if name ~= nil then
-        local key = 'to' .. name
+        local key = 'to_' .. name
         enumerable[key] = converter
         for cached_index_table in pairs(index_cache) do
             cached_index_table[key] = converter
@@ -645,7 +1103,7 @@ local configure_metatable = function(meta, name)
 end
 
 local empty_meta = {}
-configure_metatable(empty_meta)
+empty_constructor = configure_metatable(empty_meta, {})
 local empty_converter = empty_meta.__convert
 
 local result = {
@@ -654,7 +1112,7 @@ local result = {
         --TODO: Or just ignore existing metatable? Or copy? Or initialize fully?
         assert(getmetatable(t) == nil, 'Cannot wrap enumerable around existing metatable')
 
-        return empty_converter(t)
+        return empty_converter(t, {})
     end,
     is_enumerable = function(t)
         local meta = getmetatable(t)

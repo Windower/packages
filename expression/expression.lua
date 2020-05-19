@@ -1,18 +1,12 @@
 local expression = {}
 
-expression.max = function(max)
-    return function(value)
-        return value <= max
-    end
-end
-
-expression.eq = function(eq)
+expression.is = function(eq)
     return function(value)
         return value == eq
     end
 end
 
-expression.neq = function(neq)
+expression.is_not = function(neq)
     return function(value)
         return value ~= neq
     end
@@ -21,6 +15,12 @@ end
 expression.min = function(min)
     return function(value)
         return value >= min
+    end
+end
+
+expression.max = function(max)
+    return function(value)
+        return value <= max
     end
 end
 
@@ -50,6 +50,55 @@ expression.index = function(field_name)
     return selector(function(value)
         return value[field_name]
     end)
+end
+
+expression.empty = function()
+end
+
+expression.id = function(...)
+    return ...
+end
+
+expression.eq = function(v1, v2)
+    return v1 == v2
+end
+
+expression.neq = function(v1, v2)
+    return v1 ~= v2
+end
+
+expression.lt = function(v1, v2)
+    return v1 < v2
+end
+
+expression.leq = function(v1, v2)
+    return v1 <= v2
+end
+
+expression.gt = function(v1, v2)
+    return v1 > v2
+end
+
+expression.geq = function(v1, v2)
+    return v1 >= v2
+end
+
+expression.neg = function(v)
+    return not v
+end
+
+expression.const = function(v)
+    return function()
+        return v
+    end
+end
+
+expression.const_true = function()
+    return true
+end
+
+expression.const_false = function()
+    return false
 end
 
 return expression

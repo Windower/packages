@@ -1,11 +1,12 @@
-local set = {}
 local meta = {}
 
 -- Metatable
 
-meta.__index = set
+meta.__index = function(_, _)
+    error('Cannot access set index.')
+end
 
-meta.__newindex = function(s, k, v)
+meta.__newindex = function(_, _, _)
     error('Cannot assign to set indices.')
 end
 
@@ -183,6 +184,8 @@ end
 
 -- Enumerable overrides
 
+local set = {}
+
 set.contains = function(s, el)
     return s.data[el] == el
 end
@@ -230,7 +233,7 @@ end
 -- Invoke enumerable library
 
 local enumerable = require('enumerable')
-return enumerable.init_type(meta, 'set')
+return enumerable.init_type(meta, set, 'set')
 
 --[[
 Copyright © 2018, Windower Dev Team

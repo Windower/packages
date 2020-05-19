@@ -69,7 +69,7 @@ do
             lines:add(line)
         end
 
-        obj.text = table_concat(lines:select(function(line) return time .. line end):tolist(), '\n')
+        obj.text = table_concat(lines:select(function(line) return time .. line end):to_list(), '\n')
     end)
 end
 
