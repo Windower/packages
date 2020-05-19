@@ -40,7 +40,7 @@ local constructors = setmetatable({}, {
             rawset(t, el.id, el)
         end
 
-        local constructor = enumerable.init_type(meta)
+        local constructor = enumerable.init_type(meta, {})
         mts[resource_name] = constructor
         return constructor
     end,
