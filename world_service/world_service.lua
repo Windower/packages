@@ -1,5 +1,5 @@
 local event = require('core.event')
-local packets = require('packets')
+local packet = require('packet')
 local server = require('shared.server')
 local struct = require('struct')
 
@@ -40,7 +40,7 @@ local music_type_to_field = {
 local zone_change_event = data.zone_change
 local weather_change_event = data.weather_change
 
-packets.incoming:register_init({
+packet.incoming:register_init({
     [{0x00A}] = function(p)
         data.zone_id = p.zone_id
         data.weather_id = p.weather_id

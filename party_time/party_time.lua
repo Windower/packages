@@ -3,7 +3,7 @@ local set = require('set')
 local party = require('party')
 local player = require('player')
 local string = require('string')
-local packets = require('packets')
+local packet = require('packet')
 local settings = require('settings')
 local treasure = require('treasure')
 
@@ -302,7 +302,7 @@ local default_handlers = {
     }
 }
 
-packets.incoming[0x0DC]:register(function(p)
+packet.incoming[0x0DC]:register(function(p)
     if options.auto.accept and options.whitelist:contains(p.player_name) then
         coroutine.schedule(function()
             local clock = os.clock()
@@ -322,7 +322,7 @@ packets.incoming[0x0DC]:register(function(p)
     end
 end)
 
-packets.incoming[0x11D]:register(function(p)
+packet.incoming[0x11D]:register(function(p)
     if options.auto.accept and options.whitelist:contains(p.player_name) then
         command.input('/pcmd add ' .. p.player_name)
     elseif options.auto.decline and options.blacklist:contains(p.player_name) then
@@ -332,7 +332,7 @@ packets.incoming[0x11D]:register(function(p)
     end
 end)
 
-packets.outgoing[0x074]:register(function(p)
+packet.outgoing[0x074]:register(function(p)
     unhandled_invite = false
 end)
 
