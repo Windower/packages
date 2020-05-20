@@ -4,9 +4,36 @@ local event = require('core.event')
 
 local data, ftype = client.new('action_service')
 
-ftype.fields.action.type.fields.target = {
+ftype.fields.action.type.fields.targets = {
     get = function(data)
-        return entities:by_id(data.target_id)
+        local target_ids = data.target_ids
+        local target_ids_length = #target_ids
+        return setmetatable({}, {
+            __len = function(_)
+                for i = 0, target_ids_length - 1 do
+                    if target_ids[i] == 0 then
+                        return i
+                    end
+                end
+                return target_ids_length
+            end,
+            __index = function(_, k)
+                return entities:by_id(target_ids[k])
+            end,
+            __pairs = function(t)
+                return function(t, k)
+                    k = k + 1
+                    if k == target_ids_length then
+                        return nil, nil
+                    end
+
+                    return k, t[k]
+                end, t, -1
+            end,
+            __ipairs = pairs,
+            __newindex = error,
+            __metatable = false,
+        })
     end,
 }
 
