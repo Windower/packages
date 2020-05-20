@@ -51,15 +51,15 @@ local outgoing_categories = {
     [15] = category.job_ability,
 }
 
-local handle_outgoing_action = function(packet, info)
-    local action_category = incoming_categories[packet.action_category]
+local handle_outgoing_action = function(p, info)
+    local action_category = incoming_categories[p.action_category]
     if info.injected or info.blocked or not action_category then
         return
     end
 
-    action.target_id = packet.target_id
+    action.target_id = p.target_id
     action.category = action_category
-    action.id = packet.param
+    action.id = p.param
 
     filter_action_event:trigger()
     info.blocked = true
@@ -72,13 +72,13 @@ local handle_outgoing_action = function(packet, info)
     pre_action_event:trigger()
 
     packet.outgoing[0x01A]:inject({
-        target_id = packet.target_id,
-        target_index = packet.target_index,
-        action_category = packet.action_category,
-        param = packet.param,
-        x_offset = packet.x_offset,
-        y_offset = packet.y_offset,
-        z_offset = packet.z_offset,
+        target_id = p.target_id,
+        target_index = p.target_index,
+        action_category = p.action_category,
+        param = p.param,
+        x_offset = p.x_offset,
+        y_offset = p.y_offset,
+        z_offset = p.z_offset,
     })
 
     if action_category == category.magic or action_category == category.ranged_attack then
@@ -86,15 +86,15 @@ local handle_outgoing_action = function(packet, info)
     end
 end
 
-local handle_incoming_action = function(packet)
-    local action_category = outgoing_categories[packet.category]
-    if not action_category or packet.actor ~= player.id then
+local handle_incoming_action = function(p)
+    local action_category = outgoing_categories[p.category]
+    if not action_category or p.actor ~= player.id then
         return
     end
 
-    action.target_id = packet.targets[1].id
+    action.target_id = p.targets[1].id
     action.category = action_category
-    action.id = packet.param
+    action.id = p.param
 
     post_action_event:trigger()
 end
