@@ -80,6 +80,12 @@ expression.index = function(field_name)
     end)
 end
 
+expression.method = function(method_name)
+    return function(value)
+        return value[method_name](value)
+    end
+end
+
 expression.neg = function(fn)
     return function(...)
         return not fn(...)
@@ -93,33 +99,37 @@ expression.id = function(...)
     return ...
 end
 
-expression.eq = function(v1, v2)
-    return v1 == v2
+expression.exists = function(value)
+    return value ~= nil
 end
 
-expression.neq = function(v1, v2)
-    return v1 ~= v2
+expression.eq = function(lhs, rhs)
+    return lhs == rhs
 end
 
-expression.lt = function(v1, v2)
-    return v1 < v2
+expression.neq = function(lhs, rhs)
+    return lhs ~= rhs
 end
 
-expression.leq = function(v1, v2)
-    return v1 <= v2
+expression.lt = function(lhs, rhs)
+    return lhs < rhs
 end
 
-expression.gt = function(v1, v2)
-    return v1 > v2
+expression.leq = function(lhs, rhs)
+    return lhs <= rhs
 end
 
-expression.geq = function(v1, v2)
-    return v1 >= v2
+expression.gt = function(lhs, rhs)
+    return lhs > rhs
 end
 
-expression.const = function(v)
+expression.geq = function(lhs, rhs)
+    return lhs >= rhs
+end
+
+expression.const = function(value)
     return function()
-        return v
+        return value
     end
 end
 
