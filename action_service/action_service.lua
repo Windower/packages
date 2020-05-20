@@ -8,7 +8,7 @@ local data = server.new(struct.struct({
     action              = {struct.struct({
         category        = {struct.int32},
         id              = {struct.int32},
-        target_id       = {struct.int32},
+        target_ids      = {struct.int32[15]},
         blocked         = {struct.bool},
     })},
     filter_action       = {data = event.new()},
@@ -31,16 +31,18 @@ local mid_action_event = data.mid_action
 local post_action_event = data.post_action
 
 local action = data.action
+local target_ids = action.target_ids
+local target_ids_length = #target_ids
 local category = data.category
 
-local incoming_categories = {
+local outgoing_categories = {
     [3] = category.magic,
     [7] = category.weapon_skill,
     [9] = category.job_ability,
     [16] = category.ranged_attack,
 }
 
-local outgoing_categories = {
+local incoming_categories = {
     [2] = category.ranged_attack,
     [3] = category.weapon_skill,
     [4] = category.magic,
@@ -52,12 +54,16 @@ local outgoing_categories = {
 }
 
 local handle_outgoing_action = function(p, info)
-    local action_category = incoming_categories[p.action_category]
+    local action_category = outgoing_categories[p.action_category]
     if info.injected or info.blocked or not action_category then
         return
     end
 
-    action.target_id = p.target_id
+    target_ids[0] = p.target_id
+    for i = 1, target_ids_length - 1 do
+        target_ids[i] = 0
+    end
+
     action.category = action_category
     action.id = p.param
 
@@ -87,12 +93,16 @@ local handle_outgoing_action = function(p, info)
 end
 
 local handle_incoming_action = function(p)
-    local action_category = outgoing_categories[p.category]
+    local action_category = incoming_categories[p.category]
     if not action_category or p.actor ~= player.id then
         return
     end
 
-    action.target_id = p.targets[1].id
+    local target_count = p.target_count
+    for i = 0, target_ids_length - 1 do
+        target_ids[i] = i < target_count and p.targets[i + 1].id or 0
+    end
+
     action.category = action_category
     action.id = p.param
 

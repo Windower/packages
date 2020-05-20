@@ -1,6 +1,6 @@
 <package>
   <name>action_service</name>
-  <version>2.0.1.2</version>
+  <version>3.0.0.0</version>
   <type>service</type>
   <dependencies>
     <dependency>packet</dependency>
