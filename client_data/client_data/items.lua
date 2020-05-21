@@ -150,7 +150,7 @@ local string_entry = function(item, i)
         return nil
     end
 
-    local base_ptr = ffi_cast(raw_data_ptr, item) + ffi_offsetof(item, '_strings')
+    local base_ptr = ffi_cast(raw_data_ptr, item) + ffi_offsetof(item, '__strings')
     local type = entry.type
     if type == 0 then
         return (from_shift_jis(ffi_string(base_ptr + offset + 0x1C)))
@@ -169,13 +169,16 @@ local numeric = {}
 local none = {}
 
 local wrap_log_string = function(item, log_string)
-    return function(_, ...) return log_string(_, item, ...) end
+    return function(_, ...)
+        if type(_) ~= 'table' then
+            error('bad argument #1 to \'log_string\' (expected item; got ' .. type(_) .. ')')
+        end
+
+        return log_string(_, item, ...)
+    end
 end
 
 local en_log_string = function(_, item, count, article)
-    if type(_) ~= 'table' then
-        error('bad argument #1 to \'log_string\' (expected item; got ' .. type(count) .. ')')
-    end
     local article_type = string_entry(item, 1)
     if type(article_type) ~= 'number' then
         return nil
@@ -248,10 +251,6 @@ local en_log_string = function(_, item, count, article)
 end
 
 local ja_log_string = function(_, item, count, article)
-    if type(_) ~= 'table' then
-        error('bad argument #1 to \'log_string\' (expected item; got ' .. type(count) .. ')')
-    end
-
     if count == 1 then
         if article == numeric then
             return '1' .. string_entry(item, 0)
@@ -327,7 +326,7 @@ local wrap_item = function(item, language)
 
     return setmetatable({}, {
         __index = function(t, k)
-            if k == 'name' or k == 'description' or k == 'log_string' then
+            if k == 'name' or k == 'description' or k == 'log_string' or k == 'full_name' then
                 if client == nil then
                     last_language = client_language
                     client = get_item(item[1].id, client_language)
@@ -349,16 +348,21 @@ local wrap_item = function(item, language)
                     end
                 elseif k == 'description' then
                     if item[1].id < 0xF000 or item[1].id > 0xF1FF then
-                        if client_language == 'en' then
-                            result = string_entry(client[1], 4)
-                        else
-                            result = string_entry(client[1], 1)
-                        end
+                        result = string_entry(client[1], client_description_index)
+                    else
+                        result = string_entry(client[1], 0)
+                    end
+                elseif k == 'log_string' then
+                    result = wrap_log_string(client[1], client_log_string)
+                elseif k == 'full_name' then
+                    if client_language == 'en' then
+                        local name = string_entry(client[1], 2)
+                        result = name:sub(1, 1):upper() .. name:sub(2)
                     else
                         result = string_entry(client[1], 0)
                     end
                 else
-                    result = wrap_log_string(client[1], client_log_string)
+                    error()
                 end
                 rawset(t, k, result)
                 return result
@@ -440,7 +444,7 @@ do
             return false
         end
 
-        local ptr = ffi_cast(raw_data_ptr, item) + ffi_offsetof(item, '_strings') + offset + 0x1C
+        local ptr = ffi_cast(raw_data_ptr, item) + ffi_offsetof(item, '__strings') + offset + 0x1C
         for i = 1, #name do
             if string_byte(name, i) ~= ptr[i - 1] then
                 return false
