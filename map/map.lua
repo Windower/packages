@@ -19,6 +19,12 @@ local string_char = string.char
 
 local zones = {}
 do
+    local key_item_offsets = {
+        [0] = 384,
+        [1] = 1855,
+        [2] = 2301,
+    }
+
     local ptr = memory.map_table.ptr
     local i = 0
     while true do
@@ -33,7 +39,7 @@ do
             zones[entry.zone_id] = zone
         end
         zone[entry.map_id] = entry
-        zone.key_item_offset = entry.key_item_offset
+        zone.key_item_offset = key_item_offsets[entry.key_item_offset]
         zone.key_item_index = entry.key_item_index
 
         i = i + 1
@@ -41,64 +47,41 @@ do
 end
 
 return {
-    available = function()
-        local zone_id = world.zone_id
-        if not zone_id then
-            return nil
-        end
-
-        local zone = zones[zone_id]
-        if not zone then
-            return nil
-        end
-
+    available = function(zone_id)
+        local zone = zones[zone_id or world.zone_id]
         return key_items[zone.key_item_offset + zone.key_item_index].available
     end,
-    coordinates = function(entity)
-        entity = entity or target.me
-        if not entity then
-            return nil, nil, nil
+    coordinates = function(x, y, z)
+        if y == nil then
+            local entity = x or target.me
+            local pos = entity.position
+            x, y, z = pos.x, pos.y, pos.z
         end
 
-        local pos = entity.position
-        local map_id = fn(this, 0, pos.x, pos.z, pos.y)
+        local map_id = fn(this, 0, x, z, y)
         local maps = zones[world.zone_id]
-        if not maps then
-            return nil, nil, nil
-        end
-
         local entry = maps[map_id]
-        if not entry then
-            return nil, nil, nil
-        end
 
         return
-            pos.x * entry.scale / 1200 - entry.offset_x / 240 - 16 / 15,
-            -pos.y * entry.scale / 1200 - entry.offset_y / 240 - 16 / 15,
+            x * entry.scale / 1200 - entry.offset_x / 240 - 16 / 15,
+            -y * entry.scale / 1200 - entry.offset_y / 240 - 16 / 15,
             map_id
     end,
-    position = function(entity)
-        entity = entity or target.me
-        if not entity then
-            return nil
+    position = function(x, y, z)
+        if y == nil then
+            local entity = x or target.me
+            local pos = entity.position
+            x, y, z = pos.x, pos.y, pos.z
         end
 
-        local pos = entity.position
-        local map_id = fn(this, 0, pos.x, pos.z, pos.y)
+        local map_id = fn(this, 0, x, z, y)
         local maps = zones[world.zone_id]
-        if not maps then
-            return '(?-?)'
-        end
-
         local entry = maps[map_id]
-        if not entry then
-            return '(?-?)'
-        end
 
-        local x = pos.x * entry.scale / 160 - entry.offset_x / 32 + 0.5
-        local y = -pos.y * entry.scale / 160 - entry.offset_y / 32 + 0.5
+        local x_pos = x * entry.scale / 160 - entry.offset_x / 32 + 0.5
+        local y_pos = -y * entry.scale / 160 - entry.offset_y / 32 + 0.5
 
-        return '(' .. string_char(x + 0x40) .. '-' .. tostring(math_floor(y)) .. ')'
+        return '(' .. string_char(x_pos + 0x40) .. '-' .. tostring(math_floor(y_pos)) .. ')'
     end,
 }
 

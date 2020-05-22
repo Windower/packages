@@ -43,11 +43,6 @@ prepare_struct = function(struct)
         if ftype then
             configure_ftype(ftype)
         end
-
-        local lookup = field.lookup
-        if type(lookup) == 'function' then
-            setfenv(lookup, _G)
-        end
     end
 end
 

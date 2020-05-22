@@ -312,16 +312,7 @@ do
                     end
                 end
 
-                local lookup = field.lookup
-                if not lookup then
-                    return data
-                end
-
-                if type(lookup) == 'table' then
-                    return lookup[data]
-                end
-
-                return lookup(data, field)
+                return data
             end,
             __newindex = function(cdata, key, value)
                 local field = fields[key]
