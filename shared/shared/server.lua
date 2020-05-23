@@ -63,11 +63,11 @@ return {
             ftype = serializer_serialize(ftype, true),
         }
 
-        return attach_gc(ptr[0], ptr)
+        return attach_gc(ptr[0], ptr), ftype
     end,
     new_ptr = function(ftype)
         local ptr = new_ptr(ftype)
-        return attach_gc(ptr, ptr)
+        return attach_gc(ptr, ptr), ftype
     end,
 }
 
