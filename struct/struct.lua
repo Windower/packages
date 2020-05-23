@@ -41,6 +41,7 @@ local struct_packed_string
 local struct_bit
 local struct_boolbit
 local struct_copy
+local struct_reset_on
 
 local tolua = {}
 local toc = {}
@@ -917,6 +918,17 @@ do
     end
 end
 
+do
+    local ffi_copy = ffi.copy
+
+    struct_reset_on = function(event, cdata, ftype)
+        local original = struct_copy(cdata, ftype)
+        event:register(function()
+            ffi_copy(cdata, original, ftype.size)
+        end)
+    end
+end
+
 return {
     metatype = struct_metatype,
     array = struct_array,
@@ -949,6 +961,7 @@ return {
     bit = struct_bit,
     boolbit = struct_boolbit,
     copy = struct_copy,
+    reset_on = struct_reset_on,
 }
 
 --[[
