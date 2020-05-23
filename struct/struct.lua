@@ -41,6 +41,7 @@ local struct_packed_string
 local struct_bit
 local struct_boolbit
 local struct_copy
+local struct_reset_on
 
 local tolua = {}
 local toc = {}
@@ -907,13 +908,26 @@ do
     struct_copy = function(cdata, ftype)
         if not ftype then
             local copy = ffi_typeof(cdata)()
-            ffi_copy(copy, cdata, ffi_sizeof(cdata))
+            local size = ffi_sizeof(cdata)
+            print('copy', copy, cdata, size)
+            ffi_copy(copy, cdata, size)
             return copy
         end
 
         local copy = struct_new(ftype)
         ffi_copy(copy, cdata, math_min(ftype.size, ffi_sizeof(cdata)))
         return copy
+    end
+end
+
+do
+    local ffi_copy = ffi.copy
+
+    struct_reset_on = function(event, cdata, ftype)
+        local original = struct_copy(cdata, ftype)
+        event:register(function()
+            ffi_copy(cdata, original, ftype.size)
+        end)
     end
 end
 
@@ -949,6 +963,7 @@ return {
     bit = struct_bit,
     boolbit = struct_boolbit,
     copy = struct_copy,
+    reset_on = struct_reset_on,
 }
 
 --[[
