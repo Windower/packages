@@ -26,7 +26,6 @@ local items, items_type = server.new('items', struct.struct({
     bags                = {item_type[bag_size + 1][bag_count]},
     sizes               = {struct.int32[bag_count]},
     gil                 = {struct.int32},
-    ready               = {struct.bool},
 }))
 
 local items_sizes = items.sizes
