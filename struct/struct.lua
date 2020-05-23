@@ -909,7 +909,6 @@ do
         if not ftype then
             local copy = ffi_typeof(cdata)()
             local size = ffi_sizeof(cdata)
-            print('copy', copy, cdata, size)
             ffi_copy(copy, cdata, size)
             return copy
         end
