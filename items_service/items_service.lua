@@ -1,3 +1,4 @@
+local account = require('account')
 local packet = require('packet')
 local resources = require('resources')
 local server = require('shared.server')
@@ -13,21 +14,22 @@ local item_type = struct.struct({
     extdata             = {struct.data(0x18)},
 })
 
-local equipment_type = struct.struct({
+local equipment, equipment_type = server.new('equipment', struct.struct({
     slot                = {struct.int32},
     item                = {item_type},
-})
-
-local equipment = server.new('equipment', equipment_type[16])
+})[16])
 
 local bag_count = #resources.bags
 local bag_size = 80
 
-local items = server.new('items', struct.struct({
+local items, items_type = server.new('items', struct.struct({
     bags                = {item_type[bag_size + 1][bag_count]},
     sizes               = {struct.int32[bag_count]},
     gil                 = {struct.int32},
+    ready               = {struct.bool},
 }))
+
+local items_sizes = items.sizes
 
 local equipment_references = {}
 
@@ -44,6 +46,9 @@ end
 for i = 0, 15 do
     equipment[i].slot = i
 end
+
+struct.reset_on(account.logout, equipment, equipment_type)
+struct.reset_on(account.logout, items, items_type)
 
 local empty_item = struct.new(item_type)
 
@@ -88,7 +93,7 @@ end
 packet.incoming:register_init({
     [{0x01C}] = function(p)
         for bag = 0, bag_count - 1 do
-            items.sizes[bag] = p.size[bag] - 1
+            items_sizes[bag] = p.size[bag] - 1
         end
     end,
 
