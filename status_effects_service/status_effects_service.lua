@@ -18,15 +18,15 @@ local data = server.new(struct.struct({
         id                  = {struct.int32},
         timestamp           = {struct.time()},
     })[0x20]},
-    status_effect_gained         = {data=event.new()},
-    status_effect_lost           = {data=event.new()},
+    gained              = {data = event.new()},
+    lost                = {data = event.new()},
 }))
 
 local data_player = data.party[0]
 local data_party = data.party
 local data_durations = data.durations
-local event_status_effect_gained = data.status_effect_gained
-local event_status_effect_lost = data.status_effect_lost
+local event_gained = data.gained
+local event_lost = data.lost
 
 local temp_buffer = struct.new(struct.int8[status_effects_size])
 local temp_array = struct.new(struct.int32[0x20])
@@ -93,11 +93,11 @@ packet.incoming:register_init({
         end
 
         if gained[1] then
-            event_status_effect_gained:trigger(0, unpack(gained))
+            event_gained:trigger(0, unpack(gained))
         end
 
         if lost[1] then
-            event_status_effect_lost:trigger(0, unpack(lost))
+            event_lost:trigger(0, unpack(lost))
         end
     end,
 
@@ -125,11 +125,11 @@ packet.incoming:register_init({
 
                 if trigger then
                     if gained[1] then
-                        event_status_effect_gained:trigger(i, unpack(gained))
+                        event_gained:trigger(i, unpack(gained))
                     end
 
                     if lost[1] then
-                        event_status_effect_lost:trigger(i, unpack(lost))
+                        event_lost:trigger(i, unpack(lost))
                     end
                 end
             else
