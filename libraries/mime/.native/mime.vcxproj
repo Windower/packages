@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Label="Environment Variables">
-    <LuaPath Condition="'$(LuaPath)' == ''">$(SolutionDir)..\..\..\lua\</LuaPath>
+    <LuaPath Condition="'$(LuaPath)' == ''">$(SolutionDir)..\..\..\.github\lua\</LuaPath>
     <StagingPath Condition="'$(StagingPath)' == ''">$(SolutionDir)..\</StagingPath>
-    <SymbolPath Condition="'$(SymbolPath)' == ''">$(SolutionDir)..\..\..\symbols\</SymbolPath>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="debug|Win32">
@@ -25,19 +24,19 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{1A93DE27-DA10-4D15-9099-E16B1943D92B}</ProjectGuid>
     <RootNamespace>socket</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -98,7 +97,5 @@
   </ImportGroup>
   <Target Name="Stage" AfterTargets="Build">
     <Copy SourceFiles="$(OutDir)core.dll" DestinationFiles="$(StagingPath)mime\core.dll" />
-    <Copy SourceFiles="$(OutDir)core.dll" DestinationFiles="$(SymbolPath)mime\core.dll" />
-    <Copy SourceFiles="$(OutDir)core.pdb" DestinationFiles="$(SymbolPath)mime\core.pdb" />
   </Target>
 </Project>
