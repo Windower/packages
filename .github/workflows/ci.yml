@@ -1,0 +1,98 @@
+name: Build
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  manifest_check:
+    name: Validate Manifest
+    runs-on: windows-2019
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Validate package manifests
+        run: .github/scripts/check-manifests
+  syntax_check:
+    name: Validate Syntax
+    runs-on: windows-2019
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Download LuaJIT binaries
+        with:
+          repository: luapower/luajit
+          path: .tools
+        uses: actions/checkout@v2
+      - name: Validate Lua syntax
+        run: .github/scripts/check-syntax
+  version_check:
+    name: Check Version
+    runs-on: windows-2019
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      - name: Check version numbers
+        run: .github/scripts/check-versions
+  build:
+    name: Build
+    runs-on: windows-2019
+    steps:
+      - name: Set up environment
+        uses: microsoft/setup-msbuild@v1.0.0
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Stage files
+        run: .github/scripts/stage-files
+      - name: Build native binaries
+        run: .github/scripts/build-native-binaries
+      - name: Build package index
+        run: .github/scripts/build-package-index
+      - name: Upload build artifacts
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v2
+        with:
+          name: packages
+          path: .staging
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: windows-2019
+    if: github.event_name == 'push'
+    steps:
+      - name: Set up environment
+        run: |
+          # Set up environment
+          Write-Output 'Starting ssh-agent service...'
+          Get-Service -Name 'ssh-agent' | Set-Service -StartupType Manual
+          Start-Service -Name 'ssh-agent'
+          New-Item -ItemType Directory -Force -Path '~/.ssh' *>$null
+          $env:SSH_KEY | &ssh-add -
+          &ssh-keyscan -H "$(
+            @($env:SSH_HOST) + (Resolve-DnsName $env:SSH_HOST).IPAddress -Join ','
+          )" | Add-Content '~/.ssh/known_hosts'
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Download build artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: packages
+          path: .staging
+      - name: Deploy to server
+        run: .github/scripts/deploy
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          FILES_PATH: ${{ secrets.FILES_PATH }}
