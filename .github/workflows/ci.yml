@@ -32,6 +32,14 @@ jobs:
         uses: actions/checkout@v2
       - name: Validate Lua syntax
         run: .github/scripts/check-syntax
+  license_check:
+    name: Validate License Text
+    runs-on: windows-2019
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Validate license text
+        run: .github/scripts/check-license
   version_check:
     name: Check Version
     runs-on: windows-2019
