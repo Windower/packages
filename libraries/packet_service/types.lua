@@ -1011,7 +1011,7 @@ types.incoming[0x037] = struct({
     status_effects      = {0x00, status_effect[0x20]},
     player_id           = {0x20, entity},
     hp_percent          = {0x26, percent},
-    movement_speed_half = {0x28, bit(uint16, 12), offset=0},
+    movement_speed      = {0x28, uint8},
     yalms_per_step      = {0x2A, bit(uint16, 9), offset=0}, -- Determines how quickly your animation walks
     state_id            = {0x2C, state},
     linkshell1_red      = {0x2D, uint8},
