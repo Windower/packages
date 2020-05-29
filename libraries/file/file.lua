@@ -21,6 +21,9 @@ local file_fns = {}
 
 local file_mt = {
     __index = file_fns,
+    __tostring = function(f)
+        return 'file: ' .. f.path
+    end,
 }
 
 do
@@ -28,7 +31,10 @@ do
     local unicode_to_utf16 = unicode.to_utf16
 
     file.new = function(path)
-        local obj = {}
+        local obj = {
+            path = path,
+        }
+
         paths[obj] = unicode_to_utf16(path)
         return setmetatable(obj, file_mt)
     end
@@ -107,6 +113,14 @@ do
         ffi_copy(buffer, line, size)
         C.WriteFile(handle, buffer, size, read_ptr, nil)
     end
+end
+
+file_fns.load = function(f, ...)
+    return loadfile(f.path)(...)
+end
+
+file_fns.load_env = function(f, env, ...)
+    return setfenv(loadfile(f.path), env)(...)
 end
 
 return file
