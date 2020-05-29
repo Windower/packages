@@ -30,8 +30,8 @@ local data = server.new(struct.struct({
     item_level          = {struct.int32},
     exp                 = {struct.int32},
     exp_required        = {struct.int32},
-    movement_speed      = {struct.double},
-    animation_speed     = {struct.double},
+    movement_speed      = {struct.float},
+    animation_speed     = {struct.float},
     title_id            = {struct.int32},
     nation_id           = {struct.int32},
     nation_rank         = {struct.int32},
@@ -69,6 +69,7 @@ packet.incoming:register_init({
         data.hp_max = p.hp_max
         data.mp_max = p.mp_max
         data.hp_percent = p.hp_percent
+        data.movement_speed = p.movement_speed / 10
     end,
 
     [{0x00B, 0x01}] = function(p)
@@ -82,8 +83,8 @@ packet.incoming:register_init({
         end
 
         if p.update_position then
-            data.movement_speed = p.movement_speed / 8
-            data.animation_speed = p.animation_speed / 8
+            data.movement_speed = p.movement_speed / 10
+            data.animation_speed = p.animation_speed / 10
         end
 
         if p.update_vitals then
@@ -123,6 +124,7 @@ packet.incoming:register_init({
     [{0x037}] = function(p)
         data.hp_percent = p.hp_percent
         data.pet_index = p.pet_index
+        data.movement_speed = p.movement_speed / 10
         if data.state_id ~= p.state_id then
             data.state_id = p.state_id
             data.state_change:trigger()
