@@ -50,6 +50,7 @@ return {
     pre_action = get_event(data.pre_action),
     mid_action = get_event(data.mid_action),
     post_action = get_event(data.post_action),
+    category = data.category,
 }
 
 --[[
