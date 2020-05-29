@@ -20,10 +20,6 @@ ftype.fields.find_ids = {
 
 ftype.fields.search_inventories = {
     data = function(_, item)
-        if item == nil then
-            return search_client:read()
-        end
-
         return search_client:read('search_map', item) or {}
     end,
 }
