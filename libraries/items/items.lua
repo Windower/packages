@@ -1,11 +1,26 @@
+local channel = require('core.channel')
 local client = require('shared.client')
 local resources = require('resources')
+
+local search_client = channel.get('items_service', 'items_service_search')
 
 local data, ftype = client.new('items_service', 'items')
 
 ftype.fields.bags.type.base.base.fields.item = {
     get = function(data)
         return resources.items[data.id]
+    end,
+}
+
+ftype.fields.find_ids = {
+    data = function(_, item)
+        return search_client:read('id_map', item)
+    end,
+}
+
+ftype.fields.search_inventories = {
+    data = function(_, item)
+        return search_client:read('search_map', item) or {}
     end,
 }
 
