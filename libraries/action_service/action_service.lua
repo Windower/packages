@@ -55,7 +55,7 @@ local incoming_categories = {
 
 local handle_outgoing_action = function(p, info)
     local action_category = outgoing_categories[p.action_category]
-    if info.injected or info.blocked or not action_category then
+    if info.injected or info.blocked or action_category == nil then
         return
     end
 

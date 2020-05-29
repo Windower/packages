@@ -92,11 +92,11 @@ packet.incoming:register_init({
             slot.timestamp = durations[i]
         end
 
-        if gained[1] then
+        if #gained > 0 then
             event_gained:trigger(0, unpack(gained))
         end
 
-        if lost[1] then
+        if #lost > 0 then
             event_lost:trigger(0, unpack(lost))
         end
     end,
