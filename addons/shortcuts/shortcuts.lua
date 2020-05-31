@@ -4,7 +4,6 @@ local entities = require('entities')
 local enumerable = require('enumerable')
 local ffi = require('ffi')
 local list = require('list')
-local packet = require('packet')
 local resources = require('resources')
 local string = require('string.ext')
 local struct = require('struct')
@@ -189,6 +188,10 @@ local parse_targets = function(entry, target_string)
     if not target_string then
         if entry.self_only then
             return target.me
+        end
+
+        if entry.targets.player then
+            return target.t, target.me
         end
 
         return target.t
