@@ -3,25 +3,26 @@ local packet = require('packet')
 local player = require('player')
 local server = require('shared.server')
 local struct = require('struct')
+local table = require('table')
 
 local data = server.new(struct.struct({
     action              = {struct.struct({
-        category        = {struct.int32},
-        id              = {struct.int32},
-        target_ids      = {struct.int32[15]},
-        blocked         = {struct.bool},
+        category            = {struct.int32},
+        id                  = {struct.int32},
+        target_ids          = {struct.int32[15]},
+        blocked             = {struct.bool},
     })},
     filter_action       = {data = event.new()},
     pre_action          = {data = event.new()},
     mid_action          = {data = event.new()},
     post_action         = {data = event.new()},
     category            = {struct.struct({
-        magic           = {struct.int32, static = 0},
-        job_ability     = {struct.int32, static = 1},
-        weapon_skill    = {struct.int32, static = 2},
-        ranged_attack   = {struct.int32, static = 3},
-        item            = {struct.int32, static = 4},
-        pet_ability     = {struct.int32, static = 5},
+        magic               = {struct.int32, static = 0},
+        job_ability         = {struct.int32, static = 1},
+        weapon_skill        = {struct.int32, static = 2},
+        ranged_attack       = {struct.int32, static = 3},
+        item                = {struct.int32, static = 4},
+        pet_ability         = {struct.int32, static = 5},
     })},
 }))
 
@@ -53,42 +54,60 @@ local incoming_categories = {
     [15] = category.job_ability,
 }
 
-local handle_outgoing_action = function(p, info)
-    local action_category = outgoing_categories[p.action_category]
-    if info.injected or info.blocked or action_category == nil then
-        return
-    end
+local action_tag = 0xACCE
+local tag_field = '_known1'
 
-    target_ids[0] = p.target_id
-    for i = 1, target_ids_length - 1 do
-        target_ids[i] = 0
-    end
+local backups = {}
 
-    action.category = action_category
-    action.id = p.param
+local handle_outgoing_action
+do
+    local table_remove = table.remove
 
-    filter_action_event:trigger()
-    info.blocked = true
+    handle_outgoing_action = function(p, info)
+        local action_category = outgoing_categories[p.action_category]
+        if info.blocked or action_category == nil then
+            return
+        end
 
-    if action.blocked then
-        action.blocked = false
-        return
-    end
+        if info.injected and p[tag_field] == action_tag then
+            p[tag_field] = backups[1]
+            table_remove(backups, 1)
+            return
+        end
 
-    pre_action_event:trigger()
+        target_ids[0] = p.target_id
+        for i = 1, target_ids_length - 1 do
+            target_ids[i] = 0
+        end
 
-    packet.outgoing[0x01A]:inject({
-        target_id = p.target_id,
-        target_index = p.target_index,
-        action_category = p.action_category,
-        param = p.param,
-        x_offset = p.x_offset,
-        y_offset = p.y_offset,
-        z_offset = p.z_offset,
-    })
+        action.category = action_category
+        action.id = p.param
 
-    if action_category == category.magic or action_category == category.ranged_attack then
-        mid_action_event:trigger()
+        filter_action_event:trigger()
+        info.blocked = true
+
+        if action.blocked then
+            action.blocked = false
+            return
+        end
+
+        pre_action_event:trigger()
+
+        backups[#backups + 1] = p[tag_field]
+        packet.outgoing[0x01A]:inject({
+            target_id = p.target_id,
+            target_index = p.target_index,
+            action_category = p.action_category,
+            param = p.param,
+            [tag_field] = action_tag,
+            x_offset = p.x_offset,
+            y_offset = p.y_offset,
+            z_offset = p.z_offset,
+        })
+
+        if action_category == category.magic or action_category == category.ranged_attack then
+            mid_action_event:trigger()
+        end
     end
 end
 
