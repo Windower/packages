@@ -1,13 +1,12 @@
 <package>
   <name>shortcuts</name>
-  <version>1.0.0.0</version>
+  <version>1.1.0.0</version>
   <type>addon</type>
   <dependencies>
     <dependency>client_data</dependency>
     <dependency>entities</dependency>
     <dependency>enumerable</dependency>
     <dependency>list</dependency>
-    <dependency>packet</dependency>
     <dependency>resources</dependency>
     <dependency>string</dependency>
     <dependency>struct</dependency>
