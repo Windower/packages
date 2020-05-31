@@ -146,6 +146,7 @@ local entity = struct({
     model                   = {0x0FE, model},
     freeze                  = {0x11C, bool},
     flags                   = {0x120, struct({size = 0x18}, {
+        costume                 = {0x00, boolbit(uint8), offset=5},
         spawned                 = {0x01, boolbit(uint8), offset=1},
         enemy                   = {0x01, boolbit(uint8), offset=5},
         hidden                  = {0x01, boolbit(uint8), offset=6},
@@ -188,7 +189,20 @@ local entity = struct({
     animation_step          = {0x1B6, uint16},
     emote_id                = {0x1BC, uint16},
     emote_name              = {0x1C0, fourcc},
-    spawn_type              = {0x1CC, uint8}, -- 1 = PC, 2 = NPC, 13 = Player, 16 = Mob
+    entity_type             = {0x1CC, struct({size = 0x02}, {
+        pc                      = {0x00, boolbit(uint8), offset=0},
+        npc                     = {0x00, boolbit(uint8), offset=1},
+        party                   = {0x00, boolbit(uint8), offset=2},
+        alliance                = {0x00, boolbit(uint8), offset=3},
+        enemy                   = {0x00, boolbit(uint8), offset=4},
+        object                  = {0x00, boolbit(uint8), offset=5},
+        elevator                = {0x00, boolbit(uint8), offset=6},
+        ship                    = {0x00, boolbit(uint8), offset=7},
+        ally                    = {0x01, boolbit(uint8), offset=0},
+        player                  = {0x01, boolbit(uint8), offset=1},
+        fellow                  = {0x01, boolbit(uint8), offset=3},
+        trust                   = {0x01, boolbit(uint8), offset=4},
+    })},
     linkshell_color         = {0x1D0, linkshell_color},
     campaign_mode           = {0x1D6, bool},
     fishing_timer           = {0x1D8, uint32}, -- counts down during fishing, goes 0xFFFFFFFF after 0, time until the fish bites
