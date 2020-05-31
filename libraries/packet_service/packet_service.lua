@@ -10,6 +10,7 @@ local server = require('shared.server')
 local channel = require('core.channel')
 local string = require('string')
 local struct = require('struct')
+local table = require('table')
 local windower = require('core.windower')
 
 local loadstring = loadstring
@@ -135,6 +136,8 @@ end
 do
     local event_new = event.new
 
+    local event_count = 0
+
     packets_server.env.make_event = function(path)
         local events = registry[path]
         if not events then
@@ -143,7 +146,8 @@ do
         end
 
         local new_event = event_new()
-        events[#events + 1] = new_event
+        event_count = event_count + 1
+        events[#events + 1] = {event_count, new_event}
 
         return new_event
     end
@@ -179,6 +183,7 @@ do
     local ffi_copy = ffi.copy
     local ffi_string = ffi.string
     local server_new_ptr = server.new_ptr
+    local table_sort = table.sort
 
     local make_timestamp
     do
@@ -263,13 +268,24 @@ do
 
         current.path = full_path
 
+        local event_list = {}
+        local event_count = 0
         for i = 1, paths_count do
             local events = registry[paths[i]]
             if events then
                 for j = 1, #events do
-                    events[j]:trigger()
+                    event_count = event_count + 1
+                    event_list[event_count] = events[j]
                 end
             end
+        end
+
+        table_sort(event_list, function(lhs, rhs)
+            return lhs[1] < rhs[1]
+        end)
+
+        for i = 1, event_count do
+            event_list[i][2]:trigger()
         end
 
         local entry_ptr = server_new_ptr(current_type)
