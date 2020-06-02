@@ -150,7 +150,6 @@ local entity = struct({
         spawned                 = {0x01, boolbit(uint8), offset=1},
         enemy                   = {0x01, boolbit(uint8), offset=5},
         hidden                  = {0x01, boolbit(uint8), offset=6},
-        dead                    = {0x02, boolbit(uint8), offset=6},
         invisible               = {0x05, boolbit(uint8), offset=4},
         seeking                 = {0x06, boolbit(uint8), offset=4},
         autogroup               = {0x06, boolbit(uint8), offset=5},
@@ -189,7 +188,7 @@ local entity = struct({
     animation_step          = {0x1B6, uint16},
     emote_id                = {0x1BC, uint16},
     emote_name              = {0x1C0, fourcc},
-    entity_type             = {0x1CC, struct({size = 0x02}, {
+    entity_flags            = {0x1CC, struct({size = 0x02}, {
         pc                      = {0x00, boolbit(uint8), offset=0},
         npc                     = {0x00, boolbit(uint8), offset=1},
         party                   = {0x00, boolbit(uint8), offset=2},
