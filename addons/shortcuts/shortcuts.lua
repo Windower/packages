@@ -1,12 +1,14 @@
+local chat = require('core.chat')
 local client_data = require('client_data')
 local command = require('core.command')
 local entities = require('entities')
-local enumerable = require('enumerable')
 local ffi = require('ffi')
+local fn = require('expression')
 local list = require('list')
 local resources = require('resources')
 local string = require('string.ext')
 local struct = require('struct')
+local table = require('table')
 local target = require('target')
 
 local target_flags = require('client_data.types.target_flags')
@@ -77,6 +79,13 @@ local entry_categories = {
     spell = 2,
     job_ability = 3,
     weapon_skill = 4,
+}
+
+local category_resources = {
+    [entry_categories.item] = client_data_items,
+    [entry_categories.spell] = resources.spells,
+    [entry_categories.job_ability] = resources.job_abilities,
+    [entry_categories.weapon_skill] = resources.weapon_skills,
 }
 
 local make_entry
@@ -180,98 +189,152 @@ do
     end
 end
 
-local parse_targets = function(entry, target_string)
-    if entry.category == 'item' then
-        return
-    end
-
-    if not target_string then
-        if entry.self_only then
-            return target.me
-        end
-
-        if entry.targets.player then
-            return target.t, target.me
-        end
-
-        return target.t
-    end
-
-    if target_string:starts_with('<') and target_string:ends_with('>') then
-        return target[target_string:sub(2, -2)]
-    end
-
-    local candidates = list()
-    for _, entity in pairs(entities.pcs) do
-        if entity ~= nil and entity.spawned and entity.name:starts_with(target_string) then
-            candidates:add(entity)
-        end
-    end
-    return unpack(candidates)
-end
-
-local get_target
+local process_command
 do
-    get_target = function(targets, ...)
-        local dead = targets.dead
-        for i = 1, select('#', ...) do
-            local candidate = select(i, ...)
-            if candidate ~= nil and candidate.flags.dead == dead then
-                local entity_type = candidate.entity_type
-                if targets.player and entity_type.player
-                or targets.enemy and entity_type.enemy
-                or targets.party and entity_type.party
-                or targets.pc and entity_type.pc
-                or targets.npc and entity_type.npc
-                or targets.object and entity_type.object
+    local parse_targets
+    do
+        local get_default_targets = function(entry)
+            if entry.self_only then
+                return target.me
+            end
+
+            local targets = entry.targets
+            local current_target = target.t
+            if targets.player then
+                if current_target ~= nil then
+                    if targets.enemy and current_target.entity_flags.enemy then
+                        return target.me, current_target
+                    end
+                    return current_target, target.me
+                end
+
+                return target.me
+            end
+
+            if current_target ~= nil then
+                return current_target
+            end
+
+            error('Could not determine target.')
+        end
+
+        parse_targets = function(entry, target_string)
+            if not target_string then
+                return {get_default_targets(entry)}
+            end
+
+            if target_string:starts_with('<') and target_string:ends_with('>') then
+                return {target[target_string:sub(2, -2)]}
+            end
+
+            local target_entity = target[target_string]
+            if target_entity ~= nil then
+                return {target_entity}
+            end
+
+            local name_prefix = target_string:sub(1, 1):upper() .. target_string:sub(2)
+
+            local pcs = list()
+            local alliance = list()
+            local party = list()
+
+            for _, entity in pairs(entities.pcs) do
+                if entity ~= nil and entity.flags.spawned then
+                    if entity.name == name_prefix then
+                        return entity
+                    end
+
+                    if entity.name:starts_with(name_prefix) then
+                        local entity_flags = entity.entity_flags
+                        if entity_flags.party then
+                            party:add(entity)
+                        elseif entity_flags.alliance then
+                            alliance:add(entity)
+                        else
+                            pcs:add(entity)
+                        end
+                    end
+                end
+            end
+
+            for _, collection in ipairs({party, alliance, pcs}) do
+                if collection:any() then
+                    if collection:count() > 1 then
+                        error('Provided target ambiguous for "' .. target_string .. '". Choices: ' .. (', '):join(collection:select(fn.index('name'))))
+                    end
+
+                    return {collection:first()}
+                end
+            end
+
+            error('Could not determine target for "' .. target_string .. '".')
+        end
+    end
+
+    local get_target
+    do
+        get_target = function(targets, ...)
+            for i = 1, select('#', ...) do
+                local candidate = select(i, ...)
+                local entity_flags = candidate.entity_flags
+                if targets.player and entity_flags.player
+                or targets.enemy and entity_flags.enemy
+                or targets.party and entity_flags.party
+                or targets.pc and entity_flags.pc
+                or targets.npc and entity_flags.npc
+                or targets.object and entity_flags.object
                 or targets.pet and candidate.owner_index == target.me.index then
                     return candidate
                 end
             end
+
+            return nil
+        end
+    end
+
+    local execute_command
+    do
+        local prefixes = {
+            [entry_categories.spell] = 'ma',
+            [entry_categories.job_ability] = 'ja',
+            [entry_categories.weapon_skill] = 'ws',
+            [entry_categories.item] = 'item',
+        }
+
+        local lookups = {
+            [entry_categories.spell] = resources.spells,
+            [entry_categories.job_ability] = resources.job_abilities,
+            [entry_categories.weapon_skill] = resources.weapon_skills,
+            [entry_categories.item] = resources.items,
+        }
+
+        execute_command = function(entry, target)
+            local category = entry.category
+            command.input('/' .. prefixes[category] .. ' "' .. lookups[category][entry.id].name .. '" ' .. tostring(target.id), 'client')
+        end
+    end
+
+    process_command = function(entries, target_string)
+        if entries == nil then
+            return false
         end
 
-        return nil
-    end
-end
+        local entry = entries[1]
+        local ok, targets = pcall(parse_targets, entry, target_string)
+        if not ok then
+            chat.add_text(targets:match(' (.*)'), 167)
+            return
+        end
 
-local execute_command
-do
-    local prefixes = {
-        [entry_categories.spell] = 'ma',
-        [entry_categories.job_ability] = 'ja',
-        [entry_categories.weapon_skill] = 'ws',
-        [entry_categories.item] = 'item',
-    }
-
-    local lookups = {
-        [entry_categories.spell] = resources.spells,
-        [entry_categories.job_ability] = resources.job_abilities,
-        [entry_categories.weapon_skill] = resources.weapon_skills,
-        [entry_categories.item] = resources.items,
-    }
-
-    execute_command = function(entry, target)
-        local category = entry.category
-        command.input('/' .. prefixes[category] .. ' "' .. lookups[category][entry.id].name .. '" ' .. tostring(target.id), 'client')
-    end
-end
-
-local process_command = function(command, target_string)
-    local entries = action_map[command:normalize()]
-    if entries == nil then
-        return false
-    end
-
-    for i = 1, #entries do
-        local entry = entries[i]
-        local target_entity = get_target(entry.targets, parse_targets(entry, target_string))
+        local target_entity = get_target(entry.targets, unpack(targets))
         if target_entity ~= nil then
             execute_command(entry, target_entity)
             return true
         end
-    end
 
-    return false
+        chat.add_text('Cannot cast "' .. category_resources[entry.category][entry.id].name .. '" on "' .. targets[1].name .. '".', 167)
+        return true
+    end
 end
 
 command.core.unknown_command:register(function(_, text, handled)
@@ -279,10 +342,15 @@ command.core.unknown_command:register(function(_, text, handled)
         return
     end
 
-    local tokens = enumerable.to_list(text:split(' '))
-
-    if #tokens > 1 and process_command((' '):join(tokens:skip_last(1)), tokens[-1]) or process_command(text) then
+    if process_command(action_map[text:normalize()]) then
         handled.set = true
+        return
+    end
+
+    local tokens = text:split(' ')
+    if #tokens > 1 and process_command(action_map[table.concat(tokens, '', 1, #tokens - 1):normalize()], tokens[#tokens]) then
+        handled.set = true
+        return
     end
 end)
 
