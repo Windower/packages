@@ -224,7 +224,10 @@ do
     local ffi_metatype = ffi.metatype
     local ffi_sizeof = ffi.sizeof
     local math_floor = math.floor
+    local string_byte = string.byte
     local table_sort = table.sort
+
+    local underscore_byte = string_byte('_', 1, 1)
 
     local build_type = function(cdef, info)
         local ftype = make_type(cdef, info)
@@ -338,6 +341,9 @@ do
             __pairs = function(cdata)
                 return function(t, k)
                     local label = next(t, k)
+                    while label ~= nil and string_byte(label, 1, 1) == underscore_byte do
+                        label = next(t, label)
+                    end
                     return label, label and cdata[label]
                 end, fields, nil
             end,
