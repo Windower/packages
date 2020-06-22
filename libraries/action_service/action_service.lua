@@ -1,11 +1,36 @@
+local account = require('account')
 local event = require('core.event')
+local os = require('os')
 local packet = require('packet')
 local player = require('player')
+local resources = require('resources')
 local server = require('shared.server')
 local struct = require('struct')
 local table = require('table')
+local world = require('world')
 
-local data = server.new(struct.struct({
+local os_clock = os.clock
+
+local spell_ftype = struct.struct({
+    _recast_end         = {struct.double},
+    learned             = {struct.bool},
+    _level_requirements = {struct.bool},
+})
+
+local ability_ftype = struct.struct({
+    _recast_id          = {struct.int32},
+    available           = {struct.bool},
+})
+
+local ability_recast_ftype = struct.struct({
+    recast_end         = {struct.double},
+})
+
+local weapon_skill_ftype = struct.struct({
+    available           = {struct.bool},
+})
+
+local data, data_ftype = server.new(struct.struct({
     action              = {struct.struct({
         category            = {struct.int32},
         id                  = {struct.int32},
@@ -24,6 +49,10 @@ local data = server.new(struct.struct({
         item                = {struct.int32, static = 4},
         pet_ability         = {struct.int32, static = 5},
     })},
+    spells              = {spell_ftype[0x400]},
+    job_ability_recasts = {ability_recast_ftype[0x100]},
+    job_abilities       = {ability_ftype[0x400]},
+    weapon_skills       = {weapon_skill_ftype[0x100]},
 }))
 
 local filter_action_event = data.filter_action
@@ -35,6 +64,24 @@ local action = data.action
 local target_ids = action.target_ids
 local target_ids_length = #target_ids
 local category = data.category
+
+local spells = data.spells
+local job_ability_recasts = data.job_ability_recasts
+local job_abilities = data.job_abilities
+local weapon_skills = data.weapon_skills
+
+do
+    local resources_job_abilities = resources.job_abilities
+    for id, job_ability in pairs(job_abilities) do
+        local resource = resources_job_abilities[id]
+        if resource ~= nil then
+            job_ability._recast_id = resource.recast_id
+        end
+    end
+end
+
+struct.reset_on(account.logout, data, data_ftype)
+struct.reset_on(world.zone_change, spells, data_ftype.fields.spells.type)
 
 local outgoing_categories = {
     [3] = category.magic,
@@ -123,13 +170,75 @@ local handle_incoming_action = function(p)
     end
 
     action.category = action_category
-    action.id = p.param
+    local id = p.param
+    action.id = id
+
+    if action_category == category.magic then
+        spells[id]._recast_end = os_clock() + p.recast
+    end
 
     post_action_event:trigger()
 end
 
 packet.outgoing[0x01A]:register(handle_outgoing_action)
 packet.incoming[0x028]:register(handle_incoming_action)
+
+do
+    local spell_levels = struct.new(struct.int32[0x18][0x400])
+
+    for id, spell in pairs(resources.spells) do
+        local spell_level_source = spell.levels
+        local spell_level_target = spell_levels[id]
+        for job_id = 0, 0x18 - 1 do
+            spell_level_target[job_id] = spell_level_source[job_id] or 0x100
+        end
+    end
+
+    local adjust_spell_requirements = function()
+        local main_job_id = player.main_job_id
+        local main_job_level = player.main_job_level
+        local sub_job_id = player.sub_job_id
+        local sub_job_level = player.sub_job_level
+
+        for id, spell in pairs(spells) do
+            local levels = spell_levels[id]
+            spell._level_requirements = main_job_level >= levels[main_job_id] or sub_job_level >= levels[sub_job_id]
+        end
+    end
+
+    player.job_change:register(adjust_spell_requirements)
+end
+
+packet.incoming:register_init({
+    [{0x0AA}] = function(p)
+        for id, learned in pairs(p.spells) do
+            spells[id].learned = learned
+        end
+    end,
+
+    [{0x119}] = function(p)
+        local now = os_clock()
+
+        for slot, recast in pairs(p.recasts) do
+            local recast_id = recast.recast_id
+            if slot > 0 and recast_id == 0 then
+                break
+            end
+
+            job_ability_recasts[recast_id].recast_end = now + recast.duration
+        end
+    end,
+
+    [{0x0AC}] = function(p)
+        for id, available in pairs(p.weapon_skills) do
+            weapon_skills[id].available = available
+        end
+
+        for id, available in pairs(p.job_abilities) do
+            job_abilities[id].available = available
+        end
+    end
+})
 
 --[[
 Copyright © 2019, Windower Dev Team

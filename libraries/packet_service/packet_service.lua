@@ -46,8 +46,8 @@ local ftype_map = {
     current = struct.struct({
         modified        = {0x000, struct.data(0x100)},
         modified_size   = {0x100, struct.int32},
-        original        = {struct.data(0x100)},
-        original_size   = {struct.int32},
+        original        = {0x104, struct.data(0x100)},
+        original_size   = {0x204, struct.int32},
         id              = {struct.int32},
         direction       = {struct.string(0x10)},
         timestamp       = {struct.double},
@@ -220,10 +220,11 @@ do
         local id = raw.id
         local data = raw.data
 
+        local data_length = #data
         current.modified = data
-        current.modified_size = #data
+        current.modified_size = data_length
         current.original = data
-        current.original_size = #data
+        current.original_size = data_length
         current.timestamp = make_timestamp()
         current.id = id
         current.direction = direction
