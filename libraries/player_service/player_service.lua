@@ -1,3 +1,4 @@
+local account = require('account')
 local event = require('core.event')
 local packet = require('packet')
 local server = require('shared.server')
@@ -9,7 +10,7 @@ local skill_type = struct.struct({
     rank_id             = {struct.int32},
 })
 
-local data = server.new(struct.struct({
+local data, ftype = server.new(struct.struct({
     id                  = {struct.int32},
     index               = {struct.int32},
     name                = {struct.string(0x10)},
@@ -59,6 +60,13 @@ local model = data.model
 local skills = data.skills
 local job_levels = data.job_levels
 
+struct.reset_on(account.logout, data, ftype)
+
+local trigger_job_change = not account.logged_in
+account.logout:register(function()
+    trigger_job_change = true
+end)
+
 packet.incoming:register_init({
     [{0x00A}] = function(p)
         data.id = p.player_id
@@ -70,11 +78,6 @@ packet.incoming:register_init({
         data.mp_max = p.mp_max
         data.hp_percent = p.hp_percent
         data.movement_speed = p.movement_speed / 10
-    end,
-
-    [{0x00B, 0x01}] = function(p)
-        data.id = 0
-        data.index = 0
     end,
 
     [{0x00D}] = function(p)
@@ -119,6 +122,16 @@ packet.incoming:register_init({
         for i = 0, 0x17 do
             job_levels[i] = p.job_levels[i]
         end
+        local main_job_id = p.main_job_id
+        local sub_job_id = p.sub_job_id
+        data.main_job_level = job_levels[main_job_id]
+        data.sub_job_level = job_levels[sub_job_id]
+        if trigger_job_change or data.main_job_id ~= main_job_id or data.sub_job_id ~= sub_job_id then
+            data.main_job_id = main_job_id
+            data.sub_job_id = sub_job_id
+            data.job_change:trigger()
+            trigger_job_change = false
+        end
     end,
 
     [{0x037}] = function(p)
@@ -145,10 +158,13 @@ packet.incoming:register_init({
         data.item_level = p.item_level_over_99 + p.main_job_level
         data.exp = p.exp
         data.exp_required = p.exp_required
-        if data.main_job_id ~= p.main_job_id or data.sub_job_id ~= p.sub_job_id then
-            data.main_job_id = p.main_job_id
-            data.sub_job_id = p.sub_job_id
+        local main_job_id = p.main_job_id
+        local sub_job_id = p.sub_job_id
+        if trigger_job_change or data.main_job_id ~= main_job_id or data.sub_job_id ~= sub_job_id then
+            data.main_job_id = main_job_id
+            data.sub_job_id = sub_job_id
             data.job_change:trigger()
+            trigger_job_change = false
         end
     end,
 
