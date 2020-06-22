@@ -1,3 +1,4 @@
+local action = require('action')
 local chat = require('core.chat')
 local client_data = require('client_data')
 local command = require('core.command')
@@ -74,18 +75,18 @@ local add_map = function(map)
     end
 end
 
-local entry_categories = {
-    item = 1,
-    spell = 2,
-    job_ability = 3,
-    weapon_skill = 4,
-}
+local category_magic = action.category.magic
+local category_job_ability = action.category.job_ability
+local category_weapon_skill = action.category.weapon_skill
+local category_item = action.category.item
+local category_mount = action.category.mount
 
 local category_resources = {
-    [entry_categories.item] = client_data_items,
-    [entry_categories.spell] = resources.spells,
-    [entry_categories.job_ability] = resources.job_abilities,
-    [entry_categories.weapon_skill] = resources.weapon_skills,
+    [category_item] = client_data_items,
+    [category_magic] = resources.spells,
+    [category_job_ability] = resources.job_abilities,
+    [category_weapon_skill] = resources.weapon_skills,
+    [category_mount] = resources.mount,
 }
 
 local make_entry
@@ -121,7 +122,6 @@ do
     end
 end
 
-local read_items
 do
     local map_item = function(item)
         local name = item.name
@@ -129,7 +129,7 @@ do
             return
         end
 
-        local entry = make_entry(entry_categories.item, item.id, item.valid_targets)
+        local entry = make_entry(category_item, item.id, item.valid_targets)
 
         local full_name = item.full_name
 
@@ -149,36 +149,32 @@ do
         add_map(map)
     end
 
-    read_items = function()
-        for id = 0x1000, 0x1FFF do
-            map_item(client_data_items[id])
-        end
+    for id = 0x1000, 0x1FFF do
+        map_item(client_data_items[id])
+    end
 
-        for id = 0x2800, 0x59FF do
-            local item = client_data_items[id]
-            if item.activation_time > 0 then
-                map_item(item)
-            end
+    for id = 0x2800, 0x59FF do
+        local item = client_data_items[id]
+        if item.activation_time > 0 then
+            map_item(item)
         end
     end
 end
 
--- read_items()
-
 do
     local categories = {
-        [entry_categories.spell] = resources.spells,
-        [entry_categories.job_ability] = resources.job_abilities,
-        [entry_categories.weapon_skill] = resources.weapon_skills,
+        [category_magic] = resources.spells,
+        [category_job_ability] = resources.job_abilities,
+        [category_weapon_skill] = resources.weapon_skills,
+        [category_mount] = resources.mounts,
     }
 
     for category, resource in pairs(categories) do
-        for id = 0x0000, 0x03FF do
-            local action = resource[id]
-            if action ~= nil and not action.unlearnable then
-                local entry = make_entry(category, id, action.targets)
+        for id, action_resource in pairs(resource) do
+            if not action_resource.unlearnable then
+                local entry = make_entry(category, id, action_resource.targets or 1)
 
-                local name = action.name
+                local name = action_resource.name
                 add_single(string_normalize(name), entry)
                 local arabic = parse_roman(name)
                 if arabic then
@@ -295,17 +291,19 @@ do
     local execute_command
     do
         local prefixes = {
-            [entry_categories.spell] = 'ma',
-            [entry_categories.job_ability] = 'ja',
-            [entry_categories.weapon_skill] = 'ws',
-            [entry_categories.item] = 'item',
+            [category_magic] = 'magic',
+            [category_job_ability] = 'jobability',
+            [category_weapon_skill] = 'weaponskill',
+            [category_item] = 'item',
+            [category_mount] = 'mount',
         }
 
         local lookups = {
-            [entry_categories.spell] = resources.spells,
-            [entry_categories.job_ability] = resources.job_abilities,
-            [entry_categories.weapon_skill] = resources.weapon_skills,
-            [entry_categories.item] = resources.items,
+            [category_magic] = resources.spells,
+            [category_job_ability] = resources.job_abilities,
+            [category_weapon_skill] = resources.weapon_skills,
+            [category_item] = resources.items,
+            [category_mount] = resources.mounts,
         }
 
         execute_command = function(entry, target)
@@ -314,12 +312,43 @@ do
         end
     end
 
+    local get_entry
+    do
+        local category_action_lookup = {
+            [category_magic] = action.spells,
+            [category_job_ability] = action.job_abilities,
+            [category_weapon_skill] = action.weapon_skills,
+            [category_mount] = action.mounts,
+        }
+
+        local check_availability = function(category, id)
+            if category == category_item then
+                return false
+            end
+
+            return category_action_lookup[category][id].available
+        end
+
+        get_entry = function(entries)
+            if entries == nil then
+                return nil
+            end
+
+            for i = 1, #entries do
+                local entry = entries[i]
+                if check_availability(entry.category, entry.id) then
+                    return entry
+                end
+            end
+        end
+    end
+
     process_command = function(entries, target_string)
-        if entries == nil then
+        local entry = get_entry(entries)
+        if entry == nil then
             return false
         end
 
-        local entry = entries[1]
         local ok, targets = pcall(parse_targets, entry, target_string)
         if not ok then
             chat.add_text(targets:match(' (.*)'), 167)
