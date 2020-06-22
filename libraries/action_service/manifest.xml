@@ -1,11 +1,14 @@
 <package>
   <name>action_service</name>
-  <version>3.1.0.0</version>
+  <version>4.0.0.0</version>
   <type>service</type>
   <dependencies>
+    <dependency>account</dependency>
     <dependency>packet</dependency>
     <dependency>player</dependency>
+    <dependency>resources</dependency>
     <dependency>shared</dependency>
     <dependency>struct</dependency>
+    <dependency>world</dependency>
   </dependencies>
 </package>

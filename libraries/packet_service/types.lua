@@ -68,7 +68,7 @@ local struct = function(info, fields)
 
     for _, field in pairs(fields) do
         local ftype = field[2]
-        if ftype and ftype.count == '*' then
+        if ftype and ftype.vl_constructor then
             info.size = 0x100
         end
     end
@@ -127,7 +127,6 @@ local skill = tag(uint8, 'skills')
 local indi = tag(uint8, 'indi')
 local ip = tag(uint32, 'ip')
 local chat = tag(uint8, 'chat')
-local ability_recast = tag(uint8, 'ability_recasts')
 local action_message = tag(uint16, 'action_messages')
 local roe_quest = tag(bit(uint32, 12), 'roe_quest')
 
@@ -175,8 +174,8 @@ local combat_skill = struct({
 })
 
 local crafting_skill = struct({
-    level               = {0x00, bit(uint16, 5), offset=0},
-    rank_id             = {0x00, bit(uint16, 10), offset=5},
+    rank_id             = {0x00, bit(uint16, 5), offset=0},
+    level               = {0x00, bit(uint16, 10), offset=5},
     capped              = {0x00, boolbit(uint16), offset=15},
 })
 
@@ -248,8 +247,8 @@ local check_item = struct({
 local shop_item = struct({
     price               = {0x00, uint32},
     item_id             = {0x04, item},
-    shop_slot           = {0x06, uint16},
-    craft_skill         = {0x08, skill}, -- Zero on normal shops, has values that correlate to res\skills.
+    shop_slot           = {0x06, uint8},
+    craft_skill_id      = {0x08, skill}, -- Zero on normal shops, has values that correlate to res\skills.
     craft_rank          = {0x0A, uint16}, -- Correlates to Rank able to purchase product from GuildNPC
 })
 
@@ -289,10 +288,10 @@ local equipset_entry = struct({size = 4}, {
     bag_id              = {0x02, bag},
 })
 
-local ability_recast = struct({
+local ability_recast = struct({size = 8}, {
     duration            = {0x00, uint16},
-    _known1             = {0x02, uint8, const=0},
-    recast              = {0x03, ability_recast},
+    _known1             = {0x02, uint8, const = 0},
+    recast_id           = {0x03, uint8},
 })
 
 local lockstyle_entry = struct({size = 8}, {
@@ -526,7 +525,7 @@ types.incoming[0x01C] = struct({
 
 -- Finish Inventory
 types.incoming[0x01D] = struct({
-    _known1             = {0x00, uint8, const=0x01},
+    _known1             = {0x00, uint8, const = 0x01},
 })
 
 -- Modify Inventory
@@ -580,7 +579,7 @@ types.incoming[0x023] = struct({
     count               = {0x00, uint32},
     trade_count         = {0x04, uint16}, -- Seems to increment every time packet 0x023 comes in, i.e. every trade action performed by the other party
     item_id             = {0x06, item}, -- If the item is removed, gil is used with a count of zero
-    _known1             = {0x08, uint8, const=0x05},
+    _known1             = {0x08, uint8, const = 0x05},
     trade_slot          = {0x09, uint8}, -- Gil itself is in slot 0, whereas the other slots start at 1 and count up horizontally
     extdata             = {0x0A, data(24)},
 })
@@ -597,9 +596,9 @@ types.incoming[0x025] = struct({
 -- Sent after Item Update chunks for active inventory (sometimes) when zoning.
 -- #BYRTH# come back to this at some point because I think this is missing something.
 types.incoming[0x026] = struct({
-    _known1             = {0x00, uint8, const=0x00},
+    _known1             = {0x00, uint8, const = 0x00},
     bag_index           = {0x01, uint8},
-    _known2             = {0x02, data(22), const=0x00},
+    _known2             = {0x02, data(22), const = 0x00},
 })
 
 -- String Message
@@ -874,7 +873,7 @@ types.incoming[0x032] = struct({
     npc_index           = {0x04, entity_index},
     zone_id             = {0x06, zone},
     menu_id             = {0x08, uint16}, -- Seems to select between menus within a zone
-    _known1             = {0x0A, uint16, const=0x00},
+    _known1             = {0x0A, uint16, const = 0x00},
     other_zone_id       = {0x0C, uint8},
     _known2             = {0x0D, data(3)},
 })
@@ -902,7 +901,7 @@ types.incoming[0x034] = struct({
     menu_id             = {0x28, uint16},
     -- 0x2A is usually 8 for pre-WotG menus, but often not for newer menus
     other_zone_id       = {0x2C, zone},
-    _known1             = {0x2E, data(2), const=0},
+    _known1             = {0x2E, data(2), const = 0},
 })
 
 --- When messages are fishing related, the player is the Actor.
@@ -1019,8 +1018,8 @@ types.incoming[0x037] = struct({
     linkshell1_blue     = {0x2F, uint8},
     pet_index           = {0x30, bit(uint32, 16), offset=3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
     ballista_stuff      = {0x30, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
-    time_offset_maybe   = {0x38, uint32}, -- For me, this is the number of seconds in 66 hours
-    timestamp           = {0x3C, time()}, -- This is 32 years off of JST at the time the packet is sent.
+    home_point_ticks    = {0x38, uint32}, -- This value is at 1h 6min and upoon death starts counting down to 6min
+    home_point_timestamp= {0x3C, time()}, -- This is the game-offset timestamp of the home point countdown, including the 6min from home_point_ticks, keeps counting up until the player dies, then it freezes
     fish_hook_delay     = {0x46, uint8}, -- number of seconds between casting and hooking a fish, only set when state_id changes to 56
     status_effect_mask  = {0x48, data(8)},
     indi_status_effect  = {0x54, indi},
@@ -1073,12 +1072,12 @@ types.incoming[0x03D] = struct({
     price               = {0x00, uint32},
     bag_index           = {0x04, uint8},
     bag_id              = {0x05, bag},
-    _known1             = {0x08, uint32, const=0x01},
+    _known1             = {0x08, uint32, const = 0x01},
 })
 
 -- Open Buy/Sell
 types.incoming[0x03E] = struct({
-    _known1             = {0x00, uint8, const=0x04},
+    _known1             = {0x00, uint8, const = 0x04},
 })
 
 
@@ -1187,7 +1186,7 @@ types.incoming[0x04B] = multiple({
         _known1         = {0x01, uint8}, -- 0x01 for all types except 0x05, where it is 0xFF
         delivery_slot   = {0x02, uint8}, -- This goes left to right and then drops down a row and left to right again. Value is 00 through 07
         _known2         = {0x03, uint8}, -- 0xFF for all packets except 0x06, where it indicates whether the packet is the first of a pair.
-        _known3         = {0x04, uint32, const=0xFFFFFFFF},
+        _known3         = {0x04, uint32, const = 0xFFFFFFFF},
     }),
 
     key = 'type',
@@ -1361,7 +1360,7 @@ types.incoming[0x04C] = multiple({
         [0x04] = struct({
             fee             = {0x08, uint32},
             bag_index       = {0x0C, uint8},
-            _known2         = {0x0D, uint8, const=0x00},
+            _known2         = {0x0D, uint8, const = 0x00},
             item_id         = {0x0E, item},
             stack           = {0x10, bool},
             -- 0x2A was 0x32 for me. The rest of the undefined bytes were 0x00.
@@ -1398,7 +1397,7 @@ types.incoming[0x04C] = multiple({
             sale_status     = {0x10, uint8}, -- see breakout above
             -- 0x11 is not a part of sale_status
             bag_index       = {0x12, uint8}, -- From when the item was put on auction
-            _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
+            _known3         = {0x13, uint8, const = 0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
             player_name     = {0x14, pc_name},
             item_id         = {0x24, item},
             count           = {0x26, uint8},
@@ -1415,7 +1414,7 @@ types.incoming[0x04C] = multiple({
             -- 12 junk bytes?
             sale_status     = {0x10, uint8}, -- see above
             bag_index       = {0x12, uint8}, -- From when the item was put on auction
-            _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
+            _known3         = {0x13, uint8, const = 0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
             player_name     = {0x14, pc_name},
             item_id         = {0x24, item},
             count           = {0x26, uint8},
@@ -1432,7 +1431,7 @@ types.incoming[0x04C] = multiple({
             -- 12 junk bytes?
             sale_status     = {0x10, uint8}, -- see above
             bag_index       = {0x12, uint8}, -- From when the item was put on auction
-            _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
+            _known3         = {0x13, uint8, const = 0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
             player_name     = {0x14, pc_name},
             item_id         = {0x24, item},
             count           = {0x26, uint8},
@@ -1448,7 +1447,7 @@ types.incoming[0x04C] = multiple({
             -- 12 junk bytes?
             sale_status     = {0x10, uint8}, -- see above
             bag_index       = {0x12, uint8}, -- From when the item was put on auction
-            _known3         = {0x13, uint8, const=0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
+            _known3         = {0x13, uint8, const = 0x00}, -- Might explain why bag_index is a short, or it might be the bag ID (always 00, inventory)
             player_name     = {0x14, pc_name},
             item_id         = {0x24, item},
             count           = {0x26, uint8},
@@ -1488,10 +1487,10 @@ types.incoming[0x04C] = multiple({
 -- The server message appears to generate some kind of feedback to the server based on the flags?
 -- If you set the first byte to 0 in incoming chunk with eval and do /smes, the message will not display until you unload eval.
 types.incoming[0x04D] = struct({
-    _known1             = {0x00, uint8, const=0x01}, -- Message does not appear without this
-    _known2             = {0x01, uint8, const=0x01}, -- Nonessential to message appearance
-    _known3             = {0x02, uint8, const=0x01}, -- Message does not appear without this
-    _known4             = {0x03, uint8, const=0x02}, -- Message does not appear without this
+    _known1             = {0x00, uint8, const = 0x01}, -- Message does not appear without this
+    _known2             = {0x01, uint8, const = 0x01}, -- Nonessential to message appearance
+    _known3             = {0x02, uint8, const = 0x01}, -- Message does not appear without this
+    _known4             = {0x03, uint8, const = 0x02}, -- Message does not appear without this
     timestamp           = {0x04, uint32}, -- UTC timestamp
     message_length      = {0x08, uint32}, -- Number of characters in the message
     other_message_length= {0x10, uint32}, -- Same as original message length
@@ -1647,7 +1646,7 @@ types.incoming[0x05A] = struct({
     player_index        = {0x08, entity_index},
     target_index        = {0x0A, entity_index},
     emote_id            = {0x0C, uint16},
-    _known1             = {0x0E, uint16, const=0x0002},
+    _known1             = {0x0E, uint16, const = 0x0002},
     motion              = {0x12, boolbit(uint8), offset=1},
 })
 
@@ -1664,7 +1663,7 @@ types.incoming[0x05B] = struct({
 
 -- Dialogue Information
 types.incoming[0x05C] = struct({
-    params              = {0x00, data(32)}, -- How information is packed in this region depends on the particular dialogue exchange.
+    params              = {0x00, data(0x20)}, -- How information is packed in this region depends on the particular dialogue exchange.
 })
 
 -- Campaign/Besieged Map information
@@ -1837,7 +1836,7 @@ types.incoming[0x063] = multiple({
 
         [0x09] = struct({
             status_effects  = {0x04, uint16[0x20]},
-            durations       = {0x44, time(1510890320, 60)[0x20]},
+            end_ticks       = {0x44, uint32[0x20]},
         }),
     },
 })
@@ -1953,7 +1952,7 @@ types.incoming[0x082] = struct({
 types.incoming[0x083] = struct({
     items               = {0x00, guild_entry[30]},
     number_of_items     = {0xF0, uint8},
-    order               = {0xF1, bit(uint8, 4), order=0},
+    order               = {0xF1, bit(uint8, 4), offset = 0},
     -- fields.lua implies that the upper 4 bits of 0xF1 may have a use.
 })
 
@@ -1969,7 +1968,7 @@ types.incoming[0x084] = struct({
 types.incoming[0x085] = struct({
     items               = {0x00, guild_entry[30]},
     number_of_items     = {0xF0, uint8},
-    order               = {0xF1, bit(uint8, 4), order=0},
+    order               = {0xF1, bit(uint8, 4), offset = 0},
     -- fields.lua implies that the upper 4 bits of 0xF1 may have a use.
 })
 
@@ -1979,7 +1978,7 @@ types.incoming[0x086] = struct({
     guild_status        = {0x00, uint8}, -- 0x00 = Open guild menu, 0x01 = Guild is closed, 0x03 = nothing, so this is treated as an unsigned char
     -- 0x01~0x03: Does not seem to matter in any permutation of this packet
     guild_hours         = {0x04, data(3)}, -- Bitpacked: First 1 indicates the opening hour. First 0 after that indicates the closing hour. In the event that there are no 0s, 91022244 is used.
-    close_guild         = {0x07, bit(uint8,1), offset=7}, -- Most significant bit (0x80) indicates whether the "close guild" message should be displayed.
+    close_guild         = {0x07, bit(uint8,1), offset = 7}, -- Most significant bit (0x80) indicates whether the "close guild" message should be displayed.
 })
 
 -- Merits
@@ -1987,12 +1986,12 @@ types.incoming[0x08C] = struct({
     entry_count         = {0x00, uint8}, -- Number of merits entries in this packet (possibly a short, although it wouldn't make sense)
     -- Always 00 0F 01?
     merit_entries       = {0x04, merit_entry[1]}, -- #BYRTH# This is going to be a problem. There are an entry_count number of these
-    _known1             = {0x04 + 1*4, uint32, const=0}, -- #BYRTH# This is going to be a problem. Should be entry_count*4
+    _known1             = {0x04 + 1*4, uint32, const = 0}, -- #BYRTH# This is going to be a problem. Should be entry_count*4
 })
 
 -- Job Points
 types.incoming[0x08D] = struct({
-    job_point_entries   = {0x00, job_point_entry[1]}, -- #BYRTH# This is going to be a problem. Should be *
+    job_point_entries   = {0x00, job_point_entry['*']},
 })
 
 -- Campaign Map Info
@@ -2015,10 +2014,18 @@ types.incoming[0x0A0] = struct({
 
 -- Player spells known
 types.incoming[0x0AA] = struct({
-    spells              = {0x00, bitfield(0x80)} -- 0 indexed bit field where nth bit indicates if that spell_id is known. I.E. bit 1 is Cure, bit 2 is Cure II, etc.
+    spells              = {0x00, bitfield(0x80)}, -- 0 indexed bit field where nth bit indicates if that spell_id is known. I.E. bit 1 is Cure, bit 2 is Cure II, etc.
 })
 
--- 0x0AC, and 0x0AE are bitfields where the lsb indicates whether you have index 0 of the related resource.
+types.incoming[0x0AC] = struct({
+    weapon_skills       = {0x00, bitfield(0x20)},
+    job_abilities       = {0x40, bitfield(0x80)},
+    job_traits          = {0xC0, bitfield(0x20)},
+})
+
+types.incoming[0x0AE] = struct({
+    mounts              = {0x00, bitfield(0x08)},
+})
 
 -- Help Desk submenu open
 types.incoming[0x0B5] = struct({
@@ -2094,7 +2101,7 @@ types.incoming[0x0D2] = struct({cache = {'pool_index'}}, {
     dropper_index       = {0x0E, entity_index},
     pool_index          = {0x10, uint8}, -- This is the internal index in memory, not the one it appears in in the menu
     is_old              = {0x11, bool}, -- This is true if it was already in the pool, but appeared in the pool before you joined a party
-    _known1             = {0x12, uint8, const=0},
+    _known1             = {0x12, uint8, const = 0},
     -- 0x17: Seemingly random, both 00 and FF observed, as well as many values in between
     timestamp           = {0x14, time()},
     -- 28 bytes of 0s?
@@ -2107,7 +2114,7 @@ types.incoming[0x0D3] = struct({cache = {'pool_index'}}, {
     highest_lotter_index= {0x08, entity_index},
     highest_lot         = {0x0A, uint16},
     lotter_index        = {0x0C, bit(uint16, 15), offset=0}, -- Not a normal index somehow
-    --_known1             = {0x0C, bit(uint16, 1 ), offset=15, const=1}, -- Always seems set
+    --_known1             = {0x0C, bit(uint16, 1 ), offset=15, const = 1}, -- Always seems set
     lot                 = {0x0E, uint16}, -- 0xFFFF if passing
     pool_index          = {0x10, uint8},
     drop                = {0x11, uint8}, -- 0 if no drop, 1 if dropped to player, 3 if floored
@@ -2233,7 +2240,7 @@ types.incoming[0x0F9] = struct({
 -- Furniture Interaction
 types.incoming[0x0FA] = struct({
     item                = {0x00, item},
-    _known1             = {0x02, data(6), const=0},
+    _known1             = {0x02, data(6), const = 0},
     bag_index           = {0x08, uint8}, -- Safe slot for the furniture being interacted with? How does safe2 work?
 })
 
@@ -2266,7 +2273,7 @@ types.incoming[0x107] = struct({
 types.incoming[0x108] = struct({
     player_id           = {0x00, entity},
     type                = {0x04, bool},
-    _known1             = {0x05, data(4), const=0},
+    _known1             = {0x05, data(4), const = 0},
     player_index        = {0x0A, entity_index},
     player_name         = {0x0C, pc_name},
 })
@@ -2302,7 +2309,7 @@ types.incoming[0x110] = struct({
     -- 0x02~0x03: Sparks are currently capped at 50,000
     shared_unity        = {0x04, uint8}, -- Unity (Shared) designator (0=A, 1=B, 2=C, etc.)
     person_unity        = {0x05, uint8}, -- The game does not distinguish these
-    _known1             = {0x06, data(6), const=0xFFFFFFFFFFFF},
+    _known1             = {0x06, data(6), const = 0xFFFFFFFFFFFF},
 })
 
 -- Eminence Update
@@ -2534,27 +2541,27 @@ types.incoming[0x11D] = struct({
 -- Likely triggers specific incoming packets.
 -- Does not trigger any packets when randomly injected.
 types.outgoing[0x00C] = struct({
-    _known1             = {0x00, data(8), const=0},
+    _known1             = {0x00, data(8), const = 0},
 })
 
 -- Client Leave
 -- Last packet sent when zoning. Disconnects from the zone server.
 types.outgoing[0x00D] = struct({
-    _known1             = {0x00, uint32, const=0},
+    _known1             = {0x00, uint32, const = 0},
 })
 
 -- Zone In 2
 -- Likely triggers specific incoming packets.
 -- Does not trigger any packets when randomly injected.
 types.outgoing[0x00F] = struct({
-    _known1             = {0x00, data(32), const=0},
+    _known1             = {0x00, data(32), const = 0},
 })
 
 -- Zone In 3
 -- Likely triggers specific incoming packets.
 -- Does not trigger any packets when randomly injected.
 types.outgoing[0x011] = struct({
-    _known1             = {0x00, uint32, const=0x02000000},
+    _known1             = {0x00, uint32, const = 0x02000000},
 })
 
 -- Standard Client
@@ -2607,7 +2614,7 @@ types.outgoing[0x01A] = struct({
     target_index        = {0x04, entity_index},
     action_category     = {0x06, uint16}, -- Why is this a short?
     param               = {0x08, uint16},
-    _known1             = {0x0A, uint16, const=0},
+    _known1             = {0x0A, uint16, const = 0},
     x_offset            = {0x0C, float}, -- non-zero values only observed for geo spells cast using a repositioned subtarget
     z_offset            = {0x10, float},
     y_offset            = {0x14, float},
@@ -2639,7 +2646,7 @@ types.outgoing[0x029] = struct({
 types.outgoing[0x02B] = struct({
     current_language    = {0x00, uint8}, -- 0 == JP, 1 == EN
     target_language     = {0x01, uint8}, -- 0 == JP, 1 == EN
-    _known1             = {0x02, uint16, const=0},
+    _known1             = {0x02, uint16, const = 0},
     phrase              = {0x04, string(64)}, -- Quotation marks are removed. Phrase is truncated at 64 characters.
 })
 
@@ -2838,7 +2845,7 @@ types.outgoing[0x053] = struct({
     -- First 4 bytes are a header for the set
     count               = {0x00, uint8},
     type                = {0x01, uint8}, -- 0 = "Stop locking style", 1 = "Continue locking style", 3 = "Lock style in this way". Might be flags?
-    _known1             = {0x02, uint16, const=0},
+    _known1             = {0x02, uint16, const = 0},
     lockstyle_equipment = {0x04, lockstyle_entry[0x10], key_lookup='slots'},
 })
 
@@ -2883,7 +2890,7 @@ types.outgoing[0x05D] = struct({
     target_index        = {0x04, entity_index},
     emote_id            = {0x06, uint8},
     motion              = {0x07, boolbit(uint8), offset=1},
-    _known1             = {0x08, uint32, const=0},
+    _known1             = {0x08, uint32, const = 0},
 })
 
 -- Zone request
@@ -2894,7 +2901,7 @@ types.outgoing[0x05E] = struct({
                                           -- Region-specific char ('6' for Jeuno, '3' for Qufim, etc.)
                                           -- Zone-specific char ('u' for Port Jeuno, 't' for Lower Jeuno, 's' for Upper Jeuno, etc.)
                                           -- Zone line identifier ('4' for Port Jeuno > Qufim Island, '2' for Port Jeuno > Lower Jeuno, etc.)
-    _known1             = {0x04, data(14), const=0},
+    _known1             = {0x04, data(14), const = 0},
     _known2             = {0x12, uint8, const=4}, -- Seemed to never vary for me
     type                = {0x13, uint8}, -- 03 for leaving the MH, 00 otherwise
 })
@@ -2924,7 +2931,7 @@ types.outgoing[0x06E] = struct({
     target_id           = {0x00, entity}, -- This is so weird. The client only knows IDs from searching for people or running into them. So if neither has happened, the manual invite will fail, as the ID cannot be retrieved.
     target_index        = {0x04, entity_index}, -- 00 if target not in zone
     alliance            = {0x06, uint8}, -- 05 for alliance, 00 for party or if invalid alliance target (the client somehow knows..)
-    _known1             = {0x07, uint8, const=0x41},
+    _known1             = {0x07, uint8, const = 0x41},
 })
 
 -- Party leaving
@@ -2969,7 +2976,7 @@ types.outgoing[0x078] = struct({ })
 -- Sent when buying an item from a guild NPC
 types.outgoing[0x082] = struct({
     item_id             = {0x00, item},
-    _known1             = {0x02, uint8, const=0},
+    _known1             = {0x02, uint8, const = 0},
     count               = {0x03, uint8}, -- Number you are buying
 })
 
@@ -2996,7 +3003,7 @@ types.outgoing[0x084] = struct({
 -- NPC Sell confirm
 -- Sent when confirming a sell of an item to an NPC
 types.outgoing[0x085] = struct({
-    _known1             = {0x00, uint32, const=1}, -- Always 1? Possibly a type
+    _known1             = {0x00, uint32, const = 1}, -- Always 1? Possibly a type
 })
 
 -- Synth
@@ -3031,7 +3038,7 @@ types.outgoing[0x0A2] = struct({
 -- Sent when buying an item from a guild NPC
 types.outgoing[0x0AA] = struct({
     item_id             = {0x00, item},
-    _known1             = {0x02, uint8, const=0},
+    _known1             = {0x02, uint8, const = 0},
     count               = {0x03, uint8}, -- Number you are buying
 })
 
@@ -3059,7 +3066,7 @@ types.outgoing[0x0B5] = struct({
 
 -- Tell
 types.outgoing[0x0B6] = struct({
-    _known1             = {0x00, uint8, const=0}, -- Varying this does nothing.
+    _known1             = {0x00, uint8, const = 0}, -- Varying this does nothing.
     target_name         = {0x01, string(15)},
     message             = {0x10, string()},
 })
@@ -3069,14 +3076,14 @@ types.outgoing[0x0BE] = struct({
     _known1             = {0x00, uint8, const=3}, -- No idea what it is, but it's always 0x03 for me
     increasing          = {0x01, bool}, -- 1 when you're increasing a merit point. 0 when you're decreasing it.
     merit_point_id      = {0x02, uint16}, -- No known mapping, but unique to each merit point. Could be an int.
-    _known2             = {0x04, uint32, const=0},
+    _known2             = {0x04, uint32, const = 0},
 })
 
 -- Job Point Increase
 types.outgoing[0x0BF] = struct({
     type                = {0x00, bit(uint16, 5), offset=0},
     job_id              = {0x00, bit(uint16, 11), offset=5},
-    _known1             = {0x00, uint16, const=0}, -- No values seen so far
+    _known1             = {0x00, uint16, const = 0}, -- No values seen so far
 })
 
 -- Job Point Menu
@@ -3129,12 +3136,12 @@ types.outgoing[0x0E0] = struct({
 
 -- Get LS Message
 types.outgoing[0x0E1] = struct({
-    _known1             = {0x00, data(136), const=0}, -- analogous to the set ls message, but with no content
+    _known1             = {0x00, data(136), const = 0}, -- analogous to the set ls message, but with no content
 })
 
 -- Set LS Message
 types.outgoing[0x0E2] = struct({
-    _known1             = {0x00, uint32, const=0x00000040},
+    _known1             = {0x00, uint32, const = 0x00000040},
     -- 0x04~0x07: Usually 0, but sometimes contains some junk
     message             = {0x08, string(128)},
 })
@@ -3158,15 +3165,15 @@ types.outgoing[0x0F1] = struct({
 
 -- Declare Subregion
 types.outgoing[0x0F2] = struct({
-    _known1             = {0x00, uint8, const=1},
-    _known2             = {0x01, uint8, const=0},
+    _known1             = {0x00, uint8, const = 1},
+    _known2             = {0x01, uint8, const = 0},
     subregion_index     = {0x02, uint16},
 })
 
 -- Unknown packet 0xF2
 types.outgoing[0x0F2] = struct({
-    _known1             = {0x00, uint8, const=1},
-    _known2             = {0x01, uint8, const=0},
+    _known1             = {0x00, uint8, const = 1},
+    _known2             = {0x01, uint8, const = 0},
     synergy_index       = {0x02, entity_index}, -- Has always been the index of a synergy enthusiast or furnace for me
 })
 
@@ -3182,7 +3189,7 @@ types.outgoing[0x0F5] = struct({
 
 -- Widescan Cancel
 types.outgoing[0x0F6] = struct({
-    _known1             = {0x00, uint32, const=0},
+    _known1             = {0x00, uint32, const = 0},
 })
 
 -- Place/Move Furniture
@@ -3192,7 +3199,7 @@ types.outgoing[0x0FA] = struct({
     grid_x              = {0x03, uint8}, -- 0 to 0x12
     grid_z              = {0x04, uint8}, -- 0 to ?
     grid_y              = {0x05, uint8}, -- 0 to 0x17
-    _known1             = {0x06, uint16, const=0},
+    _known1             = {0x06, uint16, const = 0},
 })
 
 -- Remove Furniture
@@ -3274,7 +3281,7 @@ types.outgoing[0x10A] = struct({
 -- Open own Bazaar
 -- Sent when you attempt to open your bazaar to set prices
 types.outgoing[0x10B] = struct({
-    _known1             = {0x00, uint32, const=0},
+    _known1             = {0x00, uint32, const = 0},
 })
 
 -- Start RoE Quest

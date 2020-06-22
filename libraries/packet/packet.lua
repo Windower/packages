@@ -225,6 +225,7 @@ do
             register_init = fns.register_init,
             inject = specific and fns.inject or make_error('Cannot inject path: ' .. path),
             last = specific and fns.last or make_error('Cannot retrieve last path: ' .. path),
+            type = specific and type_map[path] or nil,
         }
 
         if specific then
