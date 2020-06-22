@@ -17,18 +17,27 @@ local spell_ftype = struct.struct({
     _level_requirements = {struct.bool},
 })
 
-local ability_ftype = struct.struct({
+local job_ability_ftype = struct.struct({
     _recast_id          = {struct.int32},
     available           = {struct.bool},
 })
 
-local ability_recast_ftype = struct.struct({
+local job_ability_recast_ftype = struct.struct({
     recast_end         = {struct.double},
 })
 
 local weapon_skill_ftype = struct.struct({
     available           = {struct.bool},
 })
+
+local mount_ftype = struct.struct({
+    available           = {struct.bool},
+})
+
+local spells_count = packet.incoming[0x0AA].type.fields.spells.type.count
+local job_abilities_count = packet.incoming[0x0AC].type.fields.job_abilities.type.count
+local weapon_skills_count = packet.incoming[0x0AC].type.fields.weapon_skills.type.count
+local mounts_count = packet.incoming[0x0AE].type.fields.mounts.type.count
 
 local data, data_ftype = server.new(struct.struct({
     action              = {struct.struct({
@@ -48,11 +57,13 @@ local data, data_ftype = server.new(struct.struct({
         ranged_attack       = {struct.int32, static = 3},
         item                = {struct.int32, static = 4},
         pet_ability         = {struct.int32, static = 5},
+        mount               = {struct.int32, static = 6},
     })},
-    spells              = {spell_ftype[0x400]},
-    job_ability_recasts = {ability_recast_ftype[0x100]},
-    job_abilities       = {ability_ftype[0x400]},
-    weapon_skills       = {weapon_skill_ftype[0x100]},
+    spells              = {spell_ftype[spells_count]},
+    job_ability_recasts = {job_ability_recast_ftype[0x100]},
+    job_abilities       = {job_ability_ftype[job_abilities_count]},
+    weapon_skills       = {weapon_skill_ftype[weapon_skills_count]},
+    mounts              = {mount_ftype[mounts_count]},
 }))
 
 local filter_action_event = data.filter_action
@@ -65,14 +76,16 @@ local target_ids = action.target_ids
 local target_ids_length = #target_ids
 local category = data.category
 
-local spells = data.spells
-local job_ability_recasts = data.job_ability_recasts
-local job_abilities = data.job_abilities
-local weapon_skills = data.weapon_skills
+local data_spells = data.spells
+local data_job_ability_recasts = data.job_ability_recasts
+local data_job_abilities = data.job_abilities
+local data_weapon_skills = data.weapon_skills
+local data_mounts = data.mounts
 
 do
     local resources_job_abilities = resources.job_abilities
-    for id, job_ability in pairs(job_abilities) do
+    for id = 0, job_abilities_count - 1 do
+        local job_ability = data_job_abilities[id]
         local resource = resources_job_abilities[id]
         if resource ~= nil then
             job_ability._recast_id = resource.recast_id
@@ -81,7 +94,7 @@ do
 end
 
 struct.reset_on(account.logout, data, data_ftype)
-struct.reset_on(world.zone_change, spells, data_ftype.fields.spells.type)
+struct.reset_on(world.zone_change, data_spells, data_ftype.fields.spells.type)
 
 local outgoing_categories = {
     [3] = category.magic,
@@ -174,7 +187,7 @@ local handle_incoming_action = function(p)
     action.id = id
 
     if action_category == category.magic then
-        spells[id]._recast_end = os_clock() + p.recast
+        data_spells[id]._recast_end = os_clock() + p.recast
     end
 
     post_action_event:trigger()
@@ -184,13 +197,13 @@ packet.outgoing[0x01A]:register(handle_outgoing_action)
 packet.incoming[0x028]:register(handle_incoming_action)
 
 do
-    local spell_levels = struct.new(struct.int32[0x18][0x400])
+    local spell_levels = struct.new(struct.uint32[0x18][spells_count])
 
     for id, spell in pairs(resources.spells) do
         local spell_level_source = spell.levels
         local spell_level_target = spell_levels[id]
         for job_id = 0, 0x18 - 1 do
-            spell_level_target[job_id] = spell_level_source[job_id] or 0x100
+            spell_level_target[job_id] = spell_level_source[job_id] or 0xFFFFFFFF
         end
     end
 
@@ -200,7 +213,7 @@ do
         local sub_job_id = player.sub_job_id
         local sub_job_level = player.sub_job_level
 
-        for id, spell in pairs(spells) do
+        for id, spell in pairs(data_spells) do
             local levels = spell_levels[id]
             spell._level_requirements = main_job_level >= levels[main_job_id] or sub_job_level >= levels[sub_job_id]
         end
@@ -211,8 +224,28 @@ end
 
 packet.incoming:register_init({
     [{0x0AA}] = function(p)
-        for id, learned in pairs(p.spells) do
-            spells[id].learned = learned
+        local spells = p.spells
+        for id = 0, spells_count - 1 do
+            data_spells[id].learned = spells[id]
+        end
+    end,
+
+    [{0x0AC}] = function(p)
+        local job_abilities = p.job_abilities
+        for id = 0, job_abilities_count - 1 do
+            data_job_abilities[id].available = job_abilities[id]
+        end
+
+        local weapon_skills = p.weapon_skills
+        for id = 0, weapon_skills_count - 1 do
+            data_weapon_skills[id].available = weapon_skills[id]
+        end
+    end,
+
+    [{0x0AE}] = function(p)
+        local mounts = p.mounts
+        for id = 0, mounts_count - 1 do
+            data_mounts[id].available = mounts[id]
         end
     end,
 
@@ -225,19 +258,9 @@ packet.incoming:register_init({
                 break
             end
 
-            job_ability_recasts[recast_id].recast_end = now + recast.duration
+            data_job_ability_recasts[recast_id].recast_end = now + recast.duration
         end
     end,
-
-    [{0x0AC}] = function(p)
-        for id, available in pairs(p.weapon_skills) do
-            weapon_skills[id].available = available
-        end
-
-        for id, available in pairs(p.job_abilities) do
-            job_abilities[id].available = available
-        end
-    end
 })
 
 --[[

@@ -79,9 +79,9 @@ ftype.fields.weapon_skills.type.base.fields.ready = {
     end,
 }
 
-ftype.fields.weapon_skills.type.base.fields.available = {
+ftype.fields.mounts.type.base.fields.ready = {
     get = function(data)
-        return data.learned and data._level_requirements
+        return data.available
     end,
 }
 
@@ -102,6 +102,7 @@ return {
     spells = data.spells,
     job_abilities = data.job_abilities,
     weapon_skills = data.weapon_skills,
+    mounts = data.mounts,
 }
 
 --[[
