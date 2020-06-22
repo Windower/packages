@@ -4,7 +4,7 @@ local channel = require('core.channel')
 local fetch = channel.get('resources_service', 'resources')
 
 local iterate = function(data, resource_name, index)
-    return next(data[resource_name], index)
+    return (next(data[resource_name], index))
 end
 
 local constructors = setmetatable({}, {
@@ -31,8 +31,9 @@ local constructors = setmetatable({}, {
         end
 
         meta.__pairs = function(t)
-            return function(t, index)
-                return fetch:call(iterate, resource_name, index)
+            return function(t, k)
+                local key = fetch:call(iterate, resource_name, k)
+                return key, t[key]
             end, t, nil
         end
 
