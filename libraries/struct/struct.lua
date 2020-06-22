@@ -878,7 +878,11 @@ do
     }
 
     struct_bitfield = function(bytes)
-        return make(bitfield_cache, 'bitfield', bytes)
+        local ftype = make(bitfield_cache, 'bitfield', bytes)
+
+        ftype.count = 8 * bytes
+
+        return ftype
     end
 
     to_lua_factories.bitfield = function(args)
