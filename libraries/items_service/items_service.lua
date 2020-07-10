@@ -90,12 +90,14 @@ do
                 end
                 id_map_name[#id_map_name + 1] = id
 
-                local id_map_full_name = id_map[full_name]
-                if id_map_full_name == nil then
-                    id_map_full_name = {}
-                    id_map[full_name] = id_map_full_name
+                if full_name ~= name then
+                    local id_map_full_name = id_map[full_name]
+                    if id_map_full_name == nil then
+                        id_map_full_name = {}
+                        id_map[full_name] = id_map_full_name
+                    end
+                    id_map_full_name[#id_map_full_name + 1] = id
                 end
-                id_map_full_name[#id_map_full_name + 1] = id
             end
         end
     end
