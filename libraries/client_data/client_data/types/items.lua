@@ -20,211 +20,201 @@ local string = struct.string
 local struct = struct.struct
 
 local string_table = struct({
-    count           = {0x00, uint32},
-    entries         = {0x04, struct({
-        offset      = {0x00, uint32},
-        type        = {0x04, uint32},
+    count               = {0x00, uint32},
+    entries             = {0x04, struct({
+        offset              = {0x00, uint32},
+        type                = {0x04, uint32},
     })[5]},
 })
 
-local item_struct
+local flags_type = struct({
+    augmentable         = {0x00, boolbit(uint8), offset = 0},
+    gm_only             = {0x00, boolbit(uint8), offset = 1},
+    goblin_box_reward   = {0x00, boolbit(uint8), offset = 2},
+    mog_garden_usable   = {0x00, boolbit(uint8), offset = 3},
+    pol_sendable        = {0x00, boolbit(uint8), offset = 4},
+    inscribable         = {0x00, boolbit(uint8), offset = 5},
+    auction_disabled    = {0x00, boolbit(uint8), offset = 6},
+    scroll              = {0x00, boolbit(uint8), offset = 7},
+    linkshell           = {0x01, boolbit(uint8), offset = 0},
+    usable              = {0x01, boolbit(uint8), offset = 1},
+    npc_tradable        = {0x01, boolbit(uint8), offset = 2},
+    equippable          = {0x01, boolbit(uint8), offset = 3},
+    npc_sale_disabled   = {0x01, boolbit(uint8), offset = 4},
+    delivery_disabled   = {0x01, boolbit(uint8), offset = 5},
+    pc_trade_disabled   = {0x01, boolbit(uint8), offset = 6},
+    rare                = {0x01, boolbit(uint8), offset = 7},
+    exclusive           = {
+        get = function(data)
+            return data.auction_disabled and data.delivery_disabled and data.pc_trade_disabled
+        end
+    },
+})
+
+local basic_item_struct
+local inventory_item_struct
 do
-    local icon_descriptor = {0x280, uint8[0x980]}
-    item_struct = function(string_offset, fields)
+    local common_basic_fields = {
+        id                  = {0x000, uint16},
+        icon_size           = {0x280, uint32},
+        icon                = {0x284, uint8[0x97C]},
+    }
+
+    local common_inventory_fields = {
+        flags               = {0x04, flags_type},
+        stack_size          = {0x06, int8},
+        type                = {0x08, uint16},
+        ah_sort_value       = {0x0A, uint16},
+        valid_targets       = {0x0C, target_flags},
+    }
+
+    basic_item_struct = function(string_offset, fields)
         fields._strings = {string_offset, string_table}
-        fields.icon = icon_descriptor
+        for name, field in pairs(common_basic_fields) do
+            fields[name] = field
+        end
         return struct(fields)
+    end
+
+    inventory_item_struct = function(string_offset, fields)
+        for name, field in pairs(common_inventory_fields) do
+            fields[name] = field
+        end
+        return basic_item_struct(string_offset, fields)
     end
 end
 
 local types = {}
 
-types.general_item = item_struct(0x18, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
-    element         = {0x0E, uint16},
-    storage         = {0x10, uint16},
-    _item_ref_id    = {0x12, uint16},
-    _unknown1       = {0x14, uint16},
-    attachment_id   = {0x16, uint16},
+types.general_item = inventory_item_struct(0x18, {
+    element             = {0x0E, uint16},
+    storage             = {0x10, uint16},
+    _item_ref_id        = {0x12, uint16},
+    _unknown1           = {0x14, uint16},
+    attachment_id       = {0x16, uint16},
 })
 
-types.usable_item = item_struct(0x1C, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
-    activation_time = {0x0E, uint16},
-    _item_ref_id    = {0x10, uint16},
-    _unknown2       = {0x12, uint8},
-    action_type     = {0x13, uint8},
-    action_id       = {0x14, uint16},
-    aoe_range       = {0x16, uint8},
-    aoe             = {0x17, bool},
-    aoe_targets     = {0x18, uint8},
+types.usable_item = inventory_item_struct(0x1C, {
+    activation_time     = {0x0E, uint16},
+    _item_ref_id        = {0x10, uint16},
+    _unknown2           = {0x12, uint8},
+    action_type         = {0x13, uint8},
+    action_id           = {0x14, uint16},
+    aoe_range           = {0x16, uint8},
+    aoe                 = {0x17, bool},
+    aoe_targets         = {0x18, uint8},
 })
 
-types.automaton_item = item_struct(0x18, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
-    automaton_slot  = {0x0E, uint16},
-    charge          = {0x10, struct({
-        fire        = {0x00, bit(uint32, 4), offset = 0x00},
-        ice         = {0x00, bit(uint32, 4), offset = 0x04},
-        wind        = {0x00, bit(uint32, 4), offset = 0x08},
-        earth       = {0x00, bit(uint32, 4), offset = 0x0C},
-        lightning   = {0x00, bit(uint32, 4), offset = 0x10},
-        water       = {0x00, bit(uint32, 4), offset = 0x14},
-        light       = {0x00, bit(uint32, 4), offset = 0x18},
-        dark        = {0x00, bit(uint32, 4), offset = 0x1C},
+types.automaton_item = inventory_item_struct(0x18, {
+    automaton_slot      = {0x0E, uint16},
+    charge              = {0x10, struct({
+        fire                = {0x00, bit(uint32, 4), offset = 0x00},
+        ice                 = {0x00, bit(uint32, 4), offset = 0x04},
+        wind                = {0x00, bit(uint32, 4), offset = 0x08},
+        earth               = {0x00, bit(uint32, 4), offset = 0x0C},
+        lightning           = {0x00, bit(uint32, 4), offset = 0x10},
+        water               = {0x00, bit(uint32, 4), offset = 0x14},
+        light               = {0x00, bit(uint32, 4), offset = 0x18},
+        dark                = {0x00, bit(uint32, 4), offset = 0x1C},
     })},
-    _unknown3       = {0x14, uint32},
+    _unknown3           = {0x14, uint32},
 })
 
-types.armor_item = item_struct(0x2C, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
-    level           = {0x0E, uint16},
-    equipment_slots = {0x10, uint16},
-    races           = {0x12, uint16},
-    jobs            = {0x14, uint32},
-    superior_level  = {0x18, uint16},
-    shield_type     = {0x1A, uint16},
-    max_charges     = {0x1C, uint8},
-    activation_time = {0x1D, uint8},
-    use_delay       = {0x1E, uint16},
-    reuse_delay     = {0x20, uint32},
-    _item_ref_id    = {0x24, uint16},
-    item_level      = {0x26, uint8},
-    _augmentable    = {0x27, bool},
-    aoe_modifier    = {0x28, uint8},
-    aoe_range       = {0x29, uint8},
-    aoe             = {0x2A, bool},
-    aoe_targets     = {0x2B, uint8},
+types.armor_item = inventory_item_struct(0x2C, {
+    level               = {0x0E, uint16},
+    equipment_slots     = {0x10, uint16},
+    races               = {0x12, uint16},
+    jobs                = {0x14, uint32},
+    superior_level      = {0x18, uint16},
+    shield_type         = {0x1A, uint16},
+    max_charges         = {0x1C, uint8},
+    activation_time     = {0x1D, uint8},
+    use_delay           = {0x1E, uint16},
+    reuse_delay         = {0x20, uint32},
+    _item_ref_id        = {0x24, uint16},
+    item_level          = {0x26, uint8},
+    _augmentable        = {0x27, bool},
+    aoe_modifier        = {0x28, uint8},
+    aoe_range           = {0x29, uint8},
+    aoe                 = {0x2A, bool},
+    aoe_targets         = {0x2B, uint8},
 })
 
-types.weapon_item = item_struct(0x38, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
-    level           = {0x0E, uint16},
-    equipment_slots = {0x10, uint16},
-    races           = {0x12, uint16},
-    jobs            = {0x14, uint32},
-    superior_level  = {0x18, uint16},
-    damage          = {0x1C, uint16},
-    delay           = {0x1E, uint16},
-    dps             = {0x20, uint16},
-    skill           = {0x22, uint8},
-    animation       = {0x24, uint32},
-    max_charges     = {0x28, uint8},
-    activation_time = {0x29, uint8},
-    use_delay       = {0x2A, uint16},
-    reuse_delay     = {0x2C, uint32},
-    _item_ref_id    = {0x30, uint16},
-    item_level      = {0x32, uint8},
-    _augmentable    = {0x33, bool},
-    aoe_modifier    = {0x34, uint8},
-    aoe_range       = {0x35, uint8},
-    aoe             = {0x36, bool},
-    targets         = {0x37, uint8},
+types.weapon_item = inventory_item_struct(0x38, {
+    level               = {0x0E, uint16},
+    equipment_slots     = {0x10, uint16},
+    races               = {0x12, uint16},
+    jobs                = {0x14, uint32},
+    superior_level      = {0x18, uint16},
+    damage              = {0x1C, uint16},
+    delay               = {0x1E, uint16},
+    dps                 = {0x20, uint16},
+    skill               = {0x22, uint8},
+    animation           = {0x24, uint32},
+    max_charges         = {0x28, uint8},
+    activation_time     = {0x29, uint8},
+    use_delay           = {0x2A, uint16},
+    reuse_delay         = {0x2C, uint32},
+    _item_ref_id        = {0x30, uint16},
+    item_level          = {0x32, uint8},
+    _augmentable        = {0x33, bool},
+    aoe_modifier        = {0x34, uint8},
+    aoe_range           = {0x35, uint8},
+    aoe                 = {0x36, bool},
+    targets             = {0x37, uint8},
 })
 
-types.maze_tabula_item = item_struct(0x54, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
-    _unknown4       = {0x0E, uint16},
-    tabula_layout   = {0x14, int8[25]},
+types.maze_tabula_item = inventory_item_struct(0x54, {
+    _unknown4           = {0x0E, uint16},
+    tabula_layout       = {0x14, int8[25]},
 })
 
-types.maze_voucher_item = item_struct(0x54, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
-    _unknown4       = {0x0E, uint16},
-    _unknown5       = {0x14, uint8[15]},
+types.maze_voucher_item = inventory_item_struct(0x54, {
+    _unknown4           = {0x0E, uint16},
+    _unknown5           = {0x14, uint8[15]},
 })
 
-types.maze_rune_item = item_struct(0x54, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
-    _unknown4       = {0x0E, uint16},
-    element         = {0x14, int8},
-    shape           = {0x15, uint8},
+types.maze_rune_item = inventory_item_struct(0x54, {
+    _unknown4           = {0x0E, uint16},
+    element             = {0x14, int8},
+    shape               = {0x15, uint8},
 })
 
-types.basic_item = item_struct(0x54, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
-    _unknown4       = {0x0E, uint16},
+types.basic_item = inventory_item_struct(0x54, {
+    _unknown4           = {0x0E, uint16},
 })
 
-types.instinct_item = item_struct(0x28, {
-    id              = {0x00, uint16},
-    _unknown6       = {0x04, uint32},
-    _unknown7       = {0x08, uint16},
-    instinct_id     = {0x0A, uint16},
-    _unknown8       = {0x0E, uint16},
-    _unknown9       = {0x12, uint16},
-    faculty_points  = {0x18, uint32},
+types.instinct_item = basic_item_struct(0x28, {
+    _unknown6           = {0x04, uint32},
+    _unknown7           = {0x08, uint16},
+    instinct_id         = {0x0A, uint16},
+    _unknown8           = {0x0E, uint16},
+    _unknown9           = {0x12, uint16},
+    faculty_points      = {0x18, uint32},
 })
 
-types.monipulator_item = item_struct(0x70, {
-    id              = {0x00, uint16},
-    monipulator_id  = {0x04, uint16},
-    name            = {0x06, string(32)},
-    family          = {0x26, uint16},
-    species         = {0x28, uint16},
-    sort_value      = {0x2A, uint16},
-    _unknown10      = {0x2C, uint16},
-    size            = {0x2E, uint16},
-    abilities       = {0x30, struct({
-        id          = {0x00, uint16},
-        level       = {0x02, uint8},
-        _unknown    = {0x03, uint8},
+types.monipulator_item = basic_item_struct(0x70, {
+    monipulator_id      = {0x04, uint16},
+    name                = {0x06, string(32)},
+    family              = {0x26, uint16},
+    species             = {0x28, uint16},
+    sort_value          = {0x2A, uint16},
+    _unknown10          = {0x2C, uint16},
+    size                = {0x2E, uint16},
+    abilities               = {0x30, struct({
+        id                  = {0x00, uint16},
+        level               = {0x02, uint8},
+        _unknown            = {0x03, uint8},
     })[16]},
 })
 
-types.gil_item = item_struct(0x10, {
-    id              = {0x00, uint16},
-    flags           = {0x04, uint16},
-    stack_size      = {0x06, int8},
-    _unknown11      = {0x07, uint8},
-    type            = {0x08, uint16},
-    ah_sort_value   = {0x0A, uint16},
-    valid_targets   = {0x0C, target_flags},
+types.gil_item = basic_item_struct(0x10, {
+    flags               = {0x04, flags_type},
+    stack_size          = {0x06, int8},
+    _unknown11          = {0x07, uint8},
+    type                = {0x08, uint16},
+    ah_sort_value       = {0x0A, uint16},
+    valid_targets       = {0x0C, target_flags},
 })
 
 types.type_map = {

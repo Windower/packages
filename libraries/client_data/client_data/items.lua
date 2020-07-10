@@ -140,7 +140,8 @@ end
 local string_entry = function(item, i)
     local strings = item._strings
 
-    if strings.count >= 0x40 or i >= strings.count then
+    local count = strings.count
+    if count >= 0x40 or i >= count then
         return nil
     end
 
