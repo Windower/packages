@@ -423,10 +423,11 @@ do
         ftype.cdef = 'struct{' .. (base.name or base.cdef) .. ' array[' .. count .. '];}'
 
         struct_name(ftype, info.name)
+        local name = ftype.name
 
-        ftype.converter = 'array ' .. (base.name or base.cdef) .. ' ' .. tostring(count)
+        ftype.converter = 'array ' .. name .. ' ' .. tostring(count)
 
-        ftype.size = ffi_sizeof(ftype.name)
+        ftype.size = ffi_sizeof(name)
 
         struct_metatype(ftype)
 
