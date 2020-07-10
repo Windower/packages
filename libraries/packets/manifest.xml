@@ -1,8 +1,0 @@
-<package>
-  <name>packets</name>
-  <version>3.1.4.2</version>
-  <type>library</type>
-  <dependencies>
-    <dependency>packet</dependency>
-  </dependencies>
-</package>
