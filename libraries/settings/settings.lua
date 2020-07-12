@@ -8,28 +8,19 @@ local client = require('shared.client')
 local enumerable = require('enumerable')
 local event = require('core.event')
 local file = require('file')
-local ffi = require('ffi')
 local channel = require('core.channel')
 local string = require('string.ext')
 local table = require('table')
-local unicode = require('core.unicode')
 local windower = require('core.windower')
 
-ffi.cdef[[
-    bool CreateDirectoryW(wchar_t*, void*);
-]]
-
-local C = ffi.C
 local error = error
 local getmetatable = getmetatable
-local loadstring = loadstring
 local pairs = pairs
 local tonumber = tonumber
 local tostring = tostring
 local type = type
 local account_login = account.login
 local account_logout = account.logout
-local unicode_to_utf16 = unicode.to_utf16
 local windower_settings_path = windower.settings_path
 
 local info_cache = {}
@@ -57,13 +48,9 @@ do
     end
 
     get_file = function(id, global)
-        local dir = windower_settings_path .. '\\' .. make_account_name(global)
-
-        C.CreateDirectoryW(unicode_to_utf16(windower_settings_path .. '\\..'), nil)
-        C.CreateDirectoryW(unicode_to_utf16(windower_settings_path), nil)
-        C.CreateDirectoryW(unicode_to_utf16(dir), nil)
-
-        return file_new(dir .. '\\' .. id .. '.lua')
+        local settings_file = file_new(windower_settings_path .. '\\' .. make_account_name(global) .. '\\' .. id .. '.lua')
+        settings_file:create_directories()
+        return settings_file
     end
 end
 
@@ -154,7 +141,7 @@ do
         local options_file = get_file(id, global)
         local options
         if options_file:exists() then
-            options = loadstring(options_file:read())()
+            options = options_file:load()
         else
             options_file:write('return ' .. format_table(defaults))
             options = {}
