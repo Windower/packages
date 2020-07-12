@@ -3,17 +3,18 @@ local ffi = require('ffi')
 local table = require('table')
 local unicode = require('core.unicode')
 
+local C = ffi.C
+
+local ffi_cdef = ffi.cdef
+local ffi_load = ffi.load
+local ffi_typeof = ffi.typeof
+local table_concat = table.concat
+
 ffi.cdef[[
     void SetLastError(uint32_t);
     uint32_t GetLastError();
     uint32_t FormatMessageW(uint32_t, void const*, uint32_t, uint32_t, wchar_t*, uint32_t);
 ]]
-
-local C = ffi.C
-
-local ffi_cdef = ffi.cdef
-local ffi_load = ffi.load
-local table_concat = table.concat
 
 local buffer_size = 0x100
 local buffer_t = ffi.typeof('wchar_t[?]')
@@ -109,6 +110,37 @@ local wrap_fn = function(definition, module)
     end
 end
 
+ffi.cdef[[
+    typedef uint16_t WORD;
+    typedef uint32_t DWORD;
+    typedef int32_t LONG;
+    typedef uint32_t ULONG;
+    typedef void* HANDLE;
+    typedef void* HWND;
+    typedef wchar_t WCHAR;
+    typedef int32_t* LONG_PTR;
+    typedef uint32_t* ULONG_PTR;
+    typedef bool BOOL;
+    typedef char* PSTR;
+    typedef char* LPSTR;
+    typedef wchar_t* PWSTR;
+    typedef wchar_t* LPWSTR;
+    typedef char const* PCSTR;
+    typedef char const* LPCSTR;
+    typedef wchar_t const* PCWSTR;
+    typedef wchar_t const* LPCWSTR;
+    typedef void* PVOID;
+    typedef void* LPVOID;
+    typedef void const* PCVOID;
+    typedef void const* LPCVOID;
+    typedef DWORD* PDWORD;
+    typedef DWORD* LPDWORD;
+
+    static uint32_t const MAX_PATH = 260;
+    static uint32_t const INVALID_FILE_ATTRIBUTES = (DWORD)-1;
+    static uint32_t const INVALID_FILE_SIZE = (DWORD)0xFFFFFFFF;
+]]
+
 return {
     null = null,
     error_type = error_t,
@@ -124,6 +156,18 @@ return {
 
         return wrap_fn(definition, module or C)
     end,
+    values = setmetatable({
+        MAX_PATH = C.MAX_PATH,
+        INVALID_FILE_ATTRIBUTES = C.INVALID_FILE_ATTRIBUTES,
+        INVALID_FILE_SIZE = C.INVALID_FILE_SIZE,
+        INVALID_HANDLE_VALUE = ffi.cast('void*', -1),
+    }, {
+        __index = function(t, k)
+            local value = C[k]
+            rawset(t, k, value)
+            return value
+        end,
+    }),
 }
 
 --[[
