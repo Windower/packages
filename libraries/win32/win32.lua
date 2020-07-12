@@ -141,13 +141,6 @@ ffi.cdef[[
     static uint32_t const INVALID_FILE_SIZE = (DWORD)0xFFFFFFFF;
 ]]
 
-local values = {
-    MAX_PATH = C.MAX_PATH,
-    INVALID_FILE_ATTRIBUTES = C.INVALID_FILE_ATTRIBUTES,
-    INVALID_FILE_SIZE = C.INVALID_FILE_SIZE,
-    INVALID_HANDLE_VALUE = ffi.cast('void*', -1),
-}
-
 return {
     null = null,
     error_type = error_t,
@@ -163,9 +156,14 @@ return {
 
         return wrap_fn(definition, module or C)
     end,
-    values = setmetatable({}, {
+    values = setmetatable({
+        MAX_PATH = C.MAX_PATH,
+        INVALID_FILE_ATTRIBUTES = C.INVALID_FILE_ATTRIBUTES,
+        INVALID_FILE_SIZE = C.INVALID_FILE_SIZE,
+        INVALID_HANDLE_VALUE = ffi.cast('void*', -1),
+    }, {
         __index = function(t, k)
-            local value = values[k] or C[k]
+            local value = C[k]
             rawset(t, k, value)
             return value
         end,
