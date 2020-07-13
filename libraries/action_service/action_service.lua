@@ -165,7 +165,7 @@ do
             z_offset = p.z_offset,
         })
 
-        if action_category == category.magic or action_category == category.job_ability then
+        if action_category == category.magic or action_category == category.job_ability or action_category == category.weapon_skill then
             mid_action_event:trigger()
         end
     end
