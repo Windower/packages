@@ -4,6 +4,10 @@ local resources = require('resources')
 
 local search_client = channel.get('items_service', 'items_service_search')
 
+local search_prefix = function(_, prefix)
+    return search_prefix(prefix)
+end
+
 local data, ftype = client.new('items_service', 'items')
 
 ftype.fields.bags.type.base.base.fields.item = {
@@ -21,6 +25,12 @@ ftype.fields.find_ids = {
 ftype.fields.search_inventories = {
     data = function(_, item)
         return search_client:read('search_map', item) or {}
+    end,
+}
+
+ftype.fields.search_prefix = {
+    data = function(_, prefix)
+        return search_client:call(search_prefix, prefix)
     end,
 }
 
