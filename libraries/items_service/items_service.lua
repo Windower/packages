@@ -1,6 +1,7 @@
 local account = require('account')
 local channel = require('core.channel')
 local client_data_items = require('client_data.items')
+local math = require('math')
 local packet = require('packet')
 local resources = require('resources')
 local server = require('shared.server')
@@ -55,6 +56,7 @@ struct.reset_on(account.logout, items, items_type)
 
 local search_server = channel.new('items_service_search')
 search_server.data = {}
+search_server.env = {}
 
 local normalized_lookup
 local init_search = function()
@@ -99,6 +101,86 @@ do
                     id_map_full_name[#id_map_full_name + 1] = id
                 end
             end
+        end
+    end
+
+    do
+        local math_floor = math.floor
+        local table_sort = table.sort
+
+        local name_lookup = {}
+        local name_lookup_count = 0
+
+        for key in pairs(id_map) do
+            name_lookup_count = name_lookup_count + 1
+            name_lookup[name_lookup_count] = key
+        end
+
+        table_sort(name_lookup)
+
+        local binary_search
+        do
+            local find_lower_bound = function(prefix, index, from)
+                for i = index - 1, from, -1 do
+                    if not name_lookup[i]:starts_with(prefix) then
+                        return i + 1
+                    end
+                end
+
+                return from
+            end
+
+            local find_upper_bound = function(prefix, index, to)
+                for i = index + 1, to, 1 do
+                    if not name_lookup[i]:starts_with(prefix) then
+                        return i - 1
+                    end
+                end
+
+                return to
+            end
+
+            binary_search = function(prefix, from, to)
+                local index = math_floor((to - from) / 2 + from)
+                local entry = name_lookup[index]
+                if entry:starts_with(prefix) then
+                    return unpack(name_lookup, find_lower_bound(prefix, index, from), find_upper_bound(prefix, index, to))
+                end
+
+                if from == to then
+                    return
+                end
+
+                if entry < prefix then
+                    return binary_search(prefix, index + 1, to)
+                else
+                    return binary_search(prefix, from, index - 1)
+                end
+            end
+        end
+
+        local map_to_ids = function(...)
+            local res = {}
+            local res_count = 0
+
+            local found = {}
+            for i = 1, select('#', ...) do
+                local ids = id_map[select(i, ...)]
+                for j = 1, #ids do
+                    local id = ids[j]
+                    if found[id] == nil then
+                        res_count = res_count + 1
+                        res[res_count] = id
+                        found[id] = true
+                    end
+                end
+            end
+
+            return res
+        end
+
+        search_server.env.search_prefix = function(prefix)
+            return map_to_ids(binary_search(prefix, 1, name_lookup_count))
         end
     end
 end
