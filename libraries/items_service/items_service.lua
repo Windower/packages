@@ -74,7 +74,7 @@ do
     local string_normalize = string.normalize
     local id_map = search_server.data.id_map
 
-    for i = 0, 0xEFFF do
+    for i = 0, 0x73FF do
         local item = client_data_items[i]
         if item ~= nil then
             local item_name = item.name
