@@ -141,13 +141,13 @@ do
             end
 
             binary_search = function(prefix, from, to)
-                local index = math_floor((to - from) / 2 + from)
+                local index = math_floor((to + from) / 2)
                 local entry = name_lookup[index]
                 if entry:starts_with(prefix) then
                     return unpack(name_lookup, find_lower_bound(prefix, index, from), find_upper_bound(prefix, index, to))
                 end
 
-                if from == to then
+                if from > to then
                     return
                 end
 
