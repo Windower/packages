@@ -147,7 +147,7 @@ do
                     return unpack(name_lookup, find_lower_bound(prefix, index, from), find_upper_bound(prefix, index, to))
                 end
 
-                if from == to then
+                if from > to then
                     return
                 end
 
