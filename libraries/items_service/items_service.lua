@@ -31,6 +31,7 @@ local items, items_type = server.new('items', struct.struct({
     bags                = {item_type[bag_size + 1][bag_count]},
     sizes               = {struct.int32[bag_count]},
     gil                 = {struct.int32},
+    ready               = {struct.bool},
 }))
 
 local items_sizes = items.sizes
@@ -268,10 +269,18 @@ do
 end
 
 packet.incoming:register_init({
+    [{0x01B}] = function()
+        items.ready = false
+    end,
+
     [{0x01C}] = function(p)
         for bag = 0, bag_count - 1 do
             items_sizes[bag] = p.size[bag] - 1
         end
+    end,
+
+    [{0x01D}] = function()
+        items.ready = true
     end,
 
     [{0x01E}] = function(p)
