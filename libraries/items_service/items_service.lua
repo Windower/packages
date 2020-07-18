@@ -1,13 +1,12 @@
 local account = require('account')
 local channel = require('core.channel')
 local client_data_items = require('client_data.items')
-local math = require('math')
 local packet = require('packet')
 local resources = require('resources')
 local server = require('shared.server')
 local string = require('string.ext')
 local struct = require('struct')
-local table = require('table')
+local table = require('table.ext')
 
 local item_type = struct.struct({
     id                  = {struct.int32},
@@ -106,7 +105,7 @@ do
     end
 
     do
-        local math_floor = math.floor
+        local table_prefix_search = table.prefix_search
         local table_sort = table.sort
 
         local name_lookup = {}
@@ -118,47 +117,6 @@ do
         end
 
         table_sort(name_lookup)
-
-        local binary_search
-        do
-            local find_lower_bound = function(prefix, index, from)
-                for i = index - 1, from, -1 do
-                    if not name_lookup[i]:starts_with(prefix) then
-                        return i + 1
-                    end
-                end
-
-                return from
-            end
-
-            local find_upper_bound = function(prefix, index, to)
-                for i = index + 1, to, 1 do
-                    if not name_lookup[i]:starts_with(prefix) then
-                        return i - 1
-                    end
-                end
-
-                return to
-            end
-
-            binary_search = function(prefix, from, to)
-                local index = math_floor((to + from) / 2)
-                local entry = name_lookup[index]
-                if entry:starts_with(prefix) then
-                    return unpack(name_lookup, find_lower_bound(prefix, index, from), find_upper_bound(prefix, index, to))
-                end
-
-                if from > to then
-                    return
-                end
-
-                if entry < prefix then
-                    return binary_search(prefix, index + 1, to)
-                else
-                    return binary_search(prefix, from, index - 1)
-                end
-            end
-        end
 
         local map_to_ids = function(...)
             local res = {}
@@ -181,7 +139,7 @@ do
         end
 
         search_server.env.search_prefix = function(prefix)
-            return map_to_ids(binary_search(prefix, 1, name_lookup_count))
+            return map_to_ids(table_prefix_search(name_lookup, prefix))
         end
     end
 end
