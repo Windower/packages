@@ -158,14 +158,6 @@ packet.incoming:register_init({
         data.item_level = p.item_level_over_99 + p.main_job_level
         data.exp = p.exp
         data.exp_required = p.exp_required
-        local main_job_id = p.main_job_id
-        local sub_job_id = p.sub_job_id
-        if trigger_job_change or data.main_job_id ~= main_job_id or data.sub_job_id ~= sub_job_id then
-            data.main_job_id = main_job_id
-            data.sub_job_id = sub_job_id
-            data.job_change:trigger()
-            trigger_job_change = false
-        end
     end,
 
     [{0x062}] = function(p)
@@ -194,10 +186,6 @@ packet.incoming:register_init({
         data.tp = p.tp
         data.hp_percent = p.hp_percent
         data.mp_percent = p.mp_percent
-        data.main_job_id = p.main_job_id
-        data.main_job_level = p.main_job_level
-        data.sub_job_id = p.sub_job_id
-        data.sub_job_level = p.sub_job_level
     end,
 
     [{0x0E2}] = function(p)
