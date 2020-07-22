@@ -2,43 +2,84 @@ local account = require('account')
 local chat = require('core.chat')
 local ffi = require('ffi')
 local file = require('file')
+local queue = require('queue')
 local os = require('os')
 local string = require('string.ext')
-local unicode = require('core.unicode')
+local win32 = require('win32')
 local windower = require('core.windower')
 
-ffi.cdef[[
-    bool CreateDirectoryW(wchar_t*, void*);
-    int GetLastError();
-]]
-
-local C = ffi.C
-
-local log_file = nil
-local log_day = nil
-
-local base_path = windower.user_path .. '\\'
-C.CreateDirectoryW(unicode.to_utf16(base_path .. '..'), nil)
-C.CreateDirectoryW(unicode.to_utf16(base_path), nil)
+local log_file
 
 local update_log = function()
-    local dir = base_path .. account.name
-    C.CreateDirectoryW(unicode.to_utf16(dir), nil)
-
-    local date = os.date('*t')
-    local file_timestamp = string.format('%.4u-%.2u-%.2u.log', date.year, date.month, date.day)
-
-    log_file = file.new(dir .. '\\' .. file_timestamp)
-    log_day = date.day
-end
-
-chat.text_added:register(function(obj)
-    if log_day ~= os.date('%d') then
-        update_log()
+    if not account.logged_in then
+        log_file = nil
+        return
     end
 
-    log_file:log(obj.text:trim())
+    local date = os.date('*t')
+    local timestamp = string.format('%.4u-%.2u-%.2u.log', date.year, date.month, date.day)
+
+    log_file = file.new(windower.user_path .. '\\' .. account.name .. '\\' .. timestamp)
+    log_file:create_directories()
+end
+
+local lines = queue() -- TODO Remove when the thing is implemented
+
+chat.text_added:register(function(obj)
+    for k,v in pairs(obj) do
+        print(k,v)
+    end
+    lines:add(os.date('%X | ') .. obj.text:trim())
+
+    if account.logged_in then
+        while lines:any() do
+            log_file:log(lines:pop())
+        end
+    end
 end)
+
+account.login:register(function()
+    update_log()
+end)
+account.logout:register(update_log)
+
+local start
+do -- TODO os.time: Remove all of this
+    local get_system_time_as_file_time = win32.def({
+        name = 'GetSystemTimeAsFileTime',
+        returns = 'void',
+        parameters = {
+            'FILETIME*',
+        },
+    })
+
+    local file_time_to_local_file_time = win32.def({
+        name = 'FileTimeToLocalFileTime',
+        returns = 'BOOL',
+        parameters = {
+            'FILETIME const*',
+            'FILETIME*',
+        },
+    })
+
+    local utc_time = ffi.new('FILETIME')
+    local local_time = ffi.new('FILETIME')
+
+    get_system_time_as_file_time(utc_time)
+    file_time_to_local_file_time(utc_time, local_time)
+
+    local now = local_time.dwHighDateTime * 429.4967296 + local_time.dwLowDateTime / 10000000 - 11644473600
+    start = now - os.clock()
+end
+
+coroutine.schedule(function()
+    while true do
+        coroutine.sleep(24 * 60 * 60 - (start + os.clock()) % (24 * 60 * 60))
+        update_log()
+    end
+end)
+
+update_log()
 
 --[[
 Copyright © 2018, GenericHero
