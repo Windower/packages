@@ -26,9 +26,6 @@ end
 local lines = queue() -- TODO Remove when the thing is implemented
 
 chat.text_added:register(function(obj)
-    for k,v in pairs(obj) do
-        print(k,v)
-    end
     lines:add(os.date('%X | ') .. obj.text:trim())
 
     if account.logged_in then
