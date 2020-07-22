@@ -623,8 +623,12 @@ do
         local declared = declared_cache[name]
         if declared then
             local tag = declared.tag
-            ffi_cdef('typedef struct ' .. tag .. ' ' .. name .. ';')
-            ffi_cdef('struct ' .. tag .. ' ' .. string_sub(ftype.cdef, 7) .. ';')
+            ffi_cdef([[
+                typedef struct ]] .. tag .. ' ' .. name .. [[;
+                #pragma pack(push, 1)
+                struct ]] .. tag .. ' ' .. string_sub(ftype.cdef, 7) .. [[;
+                #pragma pack(pop)
+            ]])
             typedefs[name] = tag
 
             for i = 1, #declared.ptrs do
@@ -633,15 +637,21 @@ do
 
             declared_cache[name] = nil
         else
-            ffi_cdef('typedef ' .. ftype.cdef .. ' ' .. name .. ';')
+            ffi_cdef([[
+                #pragma pack(push, 1)
+                typedef ]] .. ftype.cdef .. ' ' .. name .. [[;
+                #pragma pack(pop)
+            ]])
             typedefs[name] = ftype.cdef
         end
     end
 
     struct_declare = function(name)
         local tag = name .. '_tag'
-        ffi_cdef('struct ' .. tag .. ';')
-        ffi_cdef('typedef struct ' .. tag .. ' ' .. name .. ';')
+        ffi_cdef([[
+            struct ]] .. tag .. [[;
+            typedef struct ]] .. tag .. ' ' .. name .. [[;
+        ]])
         typedefs[name] = tag
 
         declared_cache[name] = {
