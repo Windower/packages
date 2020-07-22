@@ -1522,6 +1522,27 @@ types.incoming[0x051] = struct({
     -- 0x12: May varying meaningfully, but it's unclear
 })
 
+-- NPC Release
+types.incoming[0x052] = multiple({
+    base = struct({
+        type            = {0x00, uint8},
+    }),
+
+    key = 'type',
+
+    lookups = {
+
+        -- Regular release/exit, always 0
+        [0x01] = struct({
+        }),
+
+        -- External abort (Event Skipped)
+        [0x02] = struct({
+            menu_id         = {0x01, uint16},
+        }),
+    }
+})
+
 -- System message
 -- This packet is used for system messages.
 -- The most commonly encountered is the logout counter (id = 0x0007).
