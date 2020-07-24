@@ -7,7 +7,6 @@ local C = ffi.C
 
 local ffi_cdef = ffi.cdef
 local ffi_load = ffi.load
-local ffi_typeof = ffi.typeof
 local table_concat = table.concat
 
 ffi.cdef[[
