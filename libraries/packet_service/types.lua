@@ -123,7 +123,6 @@ local flags = tag(uint32, 'flags')
 local title = tag(uint16, 'titles')
 local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
 local status_effect = tag(uint8, 'buffs')
-local skill = tag(uint8, 'skills')
 local indi = tag(uint8, 'indi')
 local ip = tag(uint32, 'ip')
 local chat = tag(uint8, 'chat')
@@ -135,6 +134,12 @@ local fourcc = string(0x04)
 
 local ls_name = packed_string(0x0F, '`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
 -- local item_inscription = packed_string(0x0C, '\x000123456798ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{')
+
+local skill = struct({
+    skill               = {0x00, bit(uint8, 6), offset = 0},
+    skillup             = {0x00, boolbit(uint8), offset = 6},
+    desynth             = {0x00, boolbit(uint8), offset = 7},
+})
 
 local stats = struct({
     str                 = {0x00, int16},
@@ -248,7 +253,7 @@ local shop_item = struct({
     price               = {0x00, uint32},
     item_id             = {0x04, item},
     shop_slot           = {0x06, uint8},
-    craft_skill_id      = {0x08, skill}, -- Zero on normal shops, has values that correlate to res\skills.
+    craft_skill_id      = {0x08, uint8}, -- Zero on normal shops, has values that correlate to res\skills.
     craft_rank          = {0x0A, uint16}, -- Correlates to Rank able to purchase product from GuildNPC
 })
 
@@ -1525,6 +1530,11 @@ types.incoming[0x051] = struct({
 -- NPC Release
 types.incoming[0x052] = multiple({
     base = struct({
+        -- 0 Standard
+        -- 1 Event
+        -- 2 Event Skipped
+        -- 3 String Event
+        -- 4 Fishing
         type            = {0x00, uint8},
     }),
 
