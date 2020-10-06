@@ -1,4 +1,4 @@
-local scanner = require('scanner')
+local scanner = require('core.scanner')
 local ffi = require('ffi')
 
 local language_check
