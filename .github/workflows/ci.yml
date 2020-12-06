@@ -56,7 +56,7 @@ jobs:
     runs-on: windows-2019
     steps:
       - name: Set up environment
-        uses: microsoft/setup-msbuild@v1.0.0
+        uses: microsoft/setup-msbuild@v1.0.2
       - name: Checkout
         uses: actions/checkout@v2
       - name: Stage files
