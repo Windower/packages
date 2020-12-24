@@ -114,8 +114,6 @@ meta.__add_element = function(l, el)
 end
 
 local remove_key = function(l, i, length)
-    local length = l.length
-
     local new_length = length - 1
     for key = i, new_length do
         l[key] = rawget(l, key + 1)

@@ -14,6 +14,7 @@ local type = type
 local struct_metatype
 local struct_array
 local struct_struct
+local struct_flags
 local struct_name
 local struct_declare
 local struct_ptr
@@ -598,6 +599,20 @@ do
 end
 
 do
+    local math_floor = math.floor
+
+    struct_flags = function(info, values)
+        local fields = {}
+
+        for key, position in pairs(values) do
+            fields[key] = {math_floor(position / 8), struct_boolbit(struct_uint8), offset = position % 8}
+        end
+
+        return struct_struct(info, fields)
+    end
+end
+
+do
     local ffi_cdef = ffi.cdef
     local string_sub = string.sub
     local string_gsub = string.gsub
@@ -1160,6 +1175,7 @@ return {
     metatype = struct_metatype,
     array = struct_array,
     struct = struct_struct,
+    flags = struct_flags,
     name = struct_name,
     declare = struct_declare,
     ptr = struct_ptr,

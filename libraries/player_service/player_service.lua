@@ -85,21 +85,21 @@ packet.incoming:register_init({
             return
         end
 
-        if p.update_position then
+        if p.update.position then
             data.movement_speed = p.movement_speed / 10
             data.animation_speed = p.animation_speed / 10
         end
 
-        if p.update_vitals then
+        if p.update.vitals then
             data.hp_percent = p.hp_percent
             data.state_id = p.state_id
         end
 
-        if p.update_name then
+        if p.update.name then
             data.name = p.name
         end
 
-        if p.update_model then
+        if p.update.model then
             data.race_id = p.race_id
             data.face_id = p.face_model_id
 
