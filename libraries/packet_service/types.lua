@@ -1,5 +1,26 @@
 local math = require('math')
-local struct = require('struct')
+local struct_lib = require('struct')
+
+local struct
+do
+    local raw_struct = struct_lib.struct
+
+    struct = function(info, fields)
+        info, fields = fields and info or {}, fields or info
+
+        for _, field in pairs(fields) do
+            local ftype = field[2]
+            if ftype and ftype.vl_constructor then
+                info.size = 0x100
+            end
+        end
+
+        return raw_struct(info, fields)
+    end
+end
+
+local array = struct_lib.array
+local flags = struct_lib.flags
 
 local bit_get
 local bit_set
@@ -40,41 +61,28 @@ do
     end
 end
 
-local tag = struct.tag
-local string = struct.string
-local data = struct.data
-local packed_string = struct.packed_string
+local tag = struct_lib.tag
+local string = struct_lib.string
+local data = struct_lib.data
+local packed_string = struct_lib.packed_string
 
-local int8 = struct.int8
-local int16 = struct.int16
-local int32 = struct.int32
-local int64 = struct.int64
-local uint8 = struct.uint8
-local uint16 = struct.uint16
-local uint32 = struct.uint32
-local uint64 = struct.uint64
-local float = struct.float
-local double = struct.double
-local bool = struct.bool
+local int8 = struct_lib.int8
+local int16 = struct_lib.int16
+local int32 = struct_lib.int32
+local int64 = struct_lib.int64
+local uint8 = struct_lib.uint8
+local uint16 = struct_lib.uint16
+local uint32 = struct_lib.uint32
+local uint64 = struct_lib.uint64
+local float = struct_lib.float
+local double = struct_lib.double
+local bool = struct_lib.bool
 
-local bit = struct.bit
-local boolbit = struct.boolbit
-local bitfield = struct.bitfield
+local bit = struct_lib.bit
+local boolbit = struct_lib.boolbit
+local bitfield = struct_lib.bitfield
 
-local time = struct.time
-
-local struct = function(info, fields)
-    info, fields = fields and info or {}, fields or info
-
-    for _, field in pairs(fields) do
-        local ftype = field[2]
-        if ftype and ftype.vl_constructor then
-            info.size = 0x100
-        end
-    end
-
-    return struct.struct(info, fields)
-end
+local time = struct_lib.time
 
 local multiple
 do
@@ -119,7 +127,6 @@ local bag = tag(uint8, 'bags')
 local slot = tag(uint8, 'slots')
 local item = tag(uint16, 'items')
 local item_status = tag(uint8, 'item_status')
-local flags = tag(uint32, 'flags')
 local title = tag(uint16, 'titles')
 local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
 local status_effect = tag(uint8, 'buffs')
@@ -416,12 +423,14 @@ types.incoming[0x00B] = struct({cache = {'type'}}, {
 types.incoming[0x00D] = struct({
     player_id           = {0x00, entity},
     player_index        = {0x04, entity_index},
-    update_position     = {0x06, boolbit(uint8), offset=0}, -- Position, Rotation, Target, Speed
-    update_status       = {0x06, boolbit(uint8), offset=1}, -- Not used for 0x00D
-    update_vitals       = {0x06, boolbit(uint8), offset=2}, -- HP%, Status, Flags, LS color, "Face Flags"
-    update_name         = {0x06, boolbit(uint8), offset=3}, -- Name
-    update_model        = {0x06, boolbit(uint8), offset=4}, -- Race, Face, Gear models
-    despawn             = {0x06, boolbit(uint8), offset=5}, -- Only set if player runs out of range or zones
+    update              = {0x06, flags({size = 0x01}, {
+        position            = 0x00, -- Position, Rotation, Target, Speed
+        status              = 0x01, -- Not used for 0x00D
+        vitals              = 0x02, -- HP%, Status, Flags, LS color, "Face Flags"
+        name                = 0x03, -- Name
+        model               = 0x04, -- Race, Face, Gear models
+        despawn             = 0x05, -- Only set if player runs out of range or zones
+    })},
     heading             = {0x07, uint8},
     x                   = {0x08, float},
     z                   = {0x0C, float},
@@ -432,7 +441,7 @@ types.incoming[0x00D] = struct({
     animation_speed     = {0x19, uint8}, -- 32 represents 100%
     hp_percent          = {0x1A, percent},
     state_id            = {0x1B, state},
-    flags               = {0x1C, flags},
+    flags               = {0x1C, uint32},
     linkshell_red       = {0x20, uint8},
     linkshell_green     = {0x21, uint8},
     linkshell_blue      = {0x22, uint8},
@@ -466,12 +475,14 @@ types.incoming[0x00D] = struct({
 types.incoming[0x00E] = struct({
     npc_id              = {0x00, entity},
     npc_index           = {0x04, entity_index},
-    update_position     = {0x06, boolbit(uint8), offset=0}, -- Position, Rotation, Walk Count
-    update_status       = {0x06, boolbit(uint8), offset=1}, -- Claimer ID
-    update_vitals       = {0x06, boolbit(uint8), offset=2}, -- HP%, Status, Flags
-    update_name         = {0x06, boolbit(uint8), offset=3}, -- Name
-    update_model        = {0x06, boolbit(uint8), offset=4}, -- Race, Face, Gear models
-    despawn             = {0x06, boolbit(uint8), offset=5}, -- Only set if player runs out of range or zones
+    update              = {0x06, flags({size = 0x01}, {
+        position            = 0x00, -- Position, Rotation, Walk Count
+        status              = 0x01, -- Claimer ID
+        vitals              = 0x02, -- HP%, Status, Flags
+        name                = 0x03, -- Name
+        model               = 0x04, -- Race, Face, Gear models
+        despawn             = 0x05, -- Only set if player runs out of range or zones
+    })},
     heading             = {0x07, uint8},
     x                   = {0x08, float},
     z                   = {0x0C, float},
@@ -480,7 +491,7 @@ types.incoming[0x00E] = struct({
     -- target index?
     hp_percent          = {0x1A, percent},
     state_id            = {0x1B, state},
-    flags               = {0x1C, flags},
+    flags               = {0x1C, uint32},
     claimer_id          = {0x28, entity},
     model_id            = {0x2E, uint16},
     name                = {0x30, string()},
@@ -489,8 +500,10 @@ types.incoming[0x00E] = struct({
 -- Incoming Chat
 types.incoming[0x017] = struct({
     chat                = {0x00, chat},
-    gm                  = {0x01, boolbit(uint8), offset=0},
-    formatted           = {0x01, boolbit(uint8), offset=3},
+    flags               = {0x01, flags({size = 0x01}, {
+        gm                  = 0x00,
+        formatted           = 0x03,
+    })},
     zone                = {0x02, zone},
     name                = {0x04, pc_name},
     message             = {0x14, string()},
@@ -1084,7 +1097,6 @@ types.incoming[0x03D] = struct({
 types.incoming[0x03E] = struct({
     _known1             = {0x00, uint8, const = 0x04},
 })
-
 
 -- Shop Buy Response
 types.incoming[0x03F] = struct({
@@ -1839,9 +1851,11 @@ types.incoming[0x063] = multiple({
         [0x02] = struct({
             limit_points    = {0x04, uint16},
             merit_points    = {0x06, uint8},
-            merit_switch    = {0x07, boolbit(uint8), offset=7},
-            level_capped    = {0x07, boolbit(uint8), offset=6},
-            merits_unlocked = {0x07, boolbit(uint8), offset=5}, -- Merits unlocked and/or limit points earnable? Needs confirmation from lower level characters.
+            flags           = {0x07, flags({size = 0x01}, {
+                merits_unlocked = 0x05, -- Merits unlocked and/or limit points earnable? Needs confirmation from lower level characters.
+                level_capped    = 0x06,
+                merit_switch    = 0x07,
+            })},
             merit_points_max= {0x08, uint8},
         }),
 

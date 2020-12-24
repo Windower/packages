@@ -1,32 +1,30 @@
-local struct = setmetatable(require('struct'), {
-    __call = function(t, ...)
-        return t.struct(...)
-    end,
-})
+local struct_lib = require('struct')
 
-local array = struct.array
+local struct = struct_lib.struct
+local array = struct_lib.array
+local flags = struct_lib.flags
 
-local tag = struct.tag
-local string = struct.string
-local data = struct.data
-local packed_string = struct.packed_string
+local tag = struct_lib.tag
+local string = struct_lib.string
+local data = struct_lib.data
+local packed_string = struct_lib.packed_string
 
-local int8 = struct.int8
-local int16 = struct.int16
-local int32 = struct.int32
-local int64 = struct.int64
-local uint8 = struct.uint8
-local uint16 = struct.uint16
-local uint32 = struct.uint32
-local uint64 = struct.uint64
-local float = struct.float
-local double = struct.double
-local bool = struct.bool
+local int8 = struct_lib.int8
+local int16 = struct_lib.int16
+local int32 = struct_lib.int32
+local int64 = struct_lib.int64
+local uint8 = struct_lib.uint8
+local uint16 = struct_lib.uint16
+local uint32 = struct_lib.uint32
+local uint64 = struct_lib.uint64
+local float = struct_lib.float
+local double = struct_lib.double
+local bool = struct_lib.bool
 
-local bit = struct.bit
-local boolbit = struct.boolbit
+local bit = struct_lib.bit
+local boolbit = struct_lib.boolbit
 
-local ptr = struct.ptr
+local ptr = struct_lib.ptr
 
 local entity_id = tag(uint32, 'entity')
 local entity_index = tag(uint16, 'entity_index')
@@ -94,7 +92,7 @@ local model = struct({
     range_model_id          = {0xE, uint16},
 })
 
-struct.declare('entity')
+struct_lib.declare('entity')
 
 local display = struct({
     position                = {0x34, world_coord},
@@ -145,37 +143,37 @@ local entity = struct({
     face_model_id           = {0x0FC, uint16},
     model                   = {0x0FE, model},
     freeze                  = {0x11C, bool},
-    flags                   = {0x120, struct({size = 0x18}, {
-        costume                 = {0x00, boolbit(uint8), offset = 5},
-        spawned                 = {0x01, boolbit(uint8), offset = 1},
-        enemy                   = {0x01, boolbit(uint8), offset = 5},
-        hidden                  = {0x01, boolbit(uint8), offset = 6},
-        invisible               = {0x05, boolbit(uint8), offset = 4},
-        seeking                 = {0x06, boolbit(uint8), offset = 4},
-        autogroup               = {0x06, boolbit(uint8), offset = 5},
-        away                    = {0x06, boolbit(uint8), offset = 6},
-        anonymous               = {0x06, boolbit(uint8), offset = 7},
-        help                    = {0x07, boolbit(uint8), offset = 0},
-        temp_logged             = {0x07, boolbit(uint8), offset = 2},
-        linkshell               = {0x07, boolbit(uint8), offset = 3},
-        connection_lost         = {0x07, boolbit(uint8), offset = 4},
-        object                  = {0x08, boolbit(uint8), offset = 3},
-        bazaar                  = {0x09, boolbit(uint8), offset = 1},
-        promotion               = {0x09, boolbit(uint8), offset = 3},
-        promotion_2             = {0x09, boolbit(uint8), offset = 4},
-        gm                      = {0x09, boolbit(uint8), offset = 5},
-        maintenance             = {0x09, boolbit(uint8), offset = 6},
-        name_deletion           = {0x0C, boolbit(uint8), offset = 7},
-        charmed                 = {0x0D, boolbit(uint8), offset = 5},
-        attackable              = {0x0F, boolbit(uint8), offset = 1},
-        name_hidden             = {0x10, boolbit(uint8), offset = 7},
-        mentor                  = {0x11, boolbit(uint8), offset = 4},
-        new_player              = {0x11, boolbit(uint8), offset = 5},
-        trial_account           = {0x11, boolbit(uint8), offset = 6},
-        visible_distance        = {0x11, boolbit(uint8), offset = 7},
-        transparent             = {0x12, boolbit(uint8), offset = 3},
-        hp_cloak                = {0x12, boolbit(uint8), offset = 4},
-        level_sync              = {0x12, boolbit(uint8), offset = 7},
+    flags                   = {0x120, flags({size = 0x18}, {
+        costume                 = 0x05,
+        spawned                 = 0x09,
+        enemy                   = 0x0D,
+        hidden                  = 0x0E,
+        invisible               = 0x2C,
+        seeking                 = 0x34,
+        autogroup               = 0x35,
+        away                    = 0x36,
+        anonymous               = 0x37,
+        help                    = 0x38,
+        temp_logged             = 0x3A,
+        linkshell               = 0x3B,
+        connection_lost         = 0x3C,
+        object                  = 0x43,
+        bazaar                  = 0x49,
+        promotion               = 0x4B,
+        promotion_2             = 0x4C,
+        gm                      = 0x4D,
+        maintenance             = 0x4E,
+        name_deletion           = 0x67,
+        charmed                 = 0x6D,
+        attackable              = 0x79,
+        name_hidden             = 0x87,
+        mentor                  = 0x8C,
+        new_player              = 0x8D,
+        trial_account           = 0x8E,
+        visible_distance        = 0x8F,
+        transparent             = 0x93,
+        hp_cloak                = 0x94,
+        level_sync              = 0x97,
     })},
     _unkonwn_ptr_2          = {0x150, ptr()}, -- Sometimes same as _unknown_1
     _unknown_float_1        = {0x158, float}, -- Always 4?
@@ -188,19 +186,19 @@ local entity = struct({
     animation_step          = {0x1B6, uint16},
     emote_id                = {0x1BC, uint16},
     emote_name              = {0x1C0, fourcc},
-    entity_flags            = {0x1CC, struct({size = 0x02}, {
-        pc                      = {0x00, boolbit(uint8), offset = 0},
-        npc                     = {0x00, boolbit(uint8), offset = 1},
-        party                   = {0x00, boolbit(uint8), offset = 2},
-        alliance                = {0x00, boolbit(uint8), offset = 3},
-        enemy                   = {0x00, boolbit(uint8), offset = 4},
-        object                  = {0x00, boolbit(uint8), offset = 5},
-        elevator                = {0x00, boolbit(uint8), offset = 6},
-        ship                    = {0x00, boolbit(uint8), offset = 7},
-        ally                    = {0x01, boolbit(uint8), offset = 0},
-        player                  = {0x01, boolbit(uint8), offset = 1},
-        fellow                  = {0x01, boolbit(uint8), offset = 3},
-        trust                   = {0x01, boolbit(uint8), offset = 4},
+    entity_flags            = {0x1CC, flags({size = 0x02}, {
+        pc                      = 0x00,
+        npc                     = 0x01,
+        party                   = 0x02,
+        alliance                = 0x03,
+        enemy                   = 0x04,
+        object                  = 0x05,
+        elevator                = 0x06,
+        ship                    = 0x07,
+        ally                    = 0x08,
+        player                  = 0x09,
+        fellow                  = 0x0B,
+        trust                   = 0x0C,
     })},
     linkshell_color         = {0x1D0, linkshell_color},
     campaign_mode           = {0x1D6, bool},

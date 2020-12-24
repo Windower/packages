@@ -186,7 +186,7 @@ du:register('auto_update', auto_update_enable, '<enabled:lookup_boolean>')
 -- Model changes for other players
 packet.incoming[0x00D]:register(function(p, info)
 
-    if p.update_model then
+    if p.update.model then
         local entity = entities[p.player_index]
         if entity then
             local group = 'others'
@@ -206,7 +206,7 @@ packet.incoming[0x00D]:register(function(p, info)
             local bmn = options.blink[group]
 
             if bmn.always or (bmn.target and is_target) then
-                p.update_model = false
+                p.update.model = false
             elseif options.dress[entity.name] then
                 p.race_id = options.dress[entity.name].race_model_id or p.race_id
                 p.face_model_id = options.dress[entity.name].face_model_id or p.face_model_id
@@ -225,7 +225,7 @@ packet.incoming[0x051]:register(function(p, info)
     local bmn = options.blink['self']
 
     if bmn.always or (bmn.target and have_target) then
-        p.update_model = false
+        p.update.model = false
     elseif options.dress[player.name] then
         p.race_id = options.dress[player.name].race_model_id or p.race_id
         p.face_model_id = options.dress[player.name].face_model_id or p.face_model_id

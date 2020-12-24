@@ -1,6 +1,6 @@
 <package>
   <name>dress_up</name>
-  <version>0.1.0.2</version>
+  <version>0.1.0.3</version>
   <type>addon</type>
   <dependencies>
     <dependency>party</dependency>
