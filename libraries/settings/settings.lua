@@ -58,6 +58,7 @@ local format_table
 do
     local string_match = string.match
     local string_rep = string.rep
+    local string_gsub = string.gsub
     local table_concat = table.concat
 
     local format_key = function(key)
@@ -73,7 +74,7 @@ do
         if value_type == 'table' then
             return format_table(value, nested + 1)
         elseif value_type == 'string' then
-            return '\'' .. value .. '\''
+            return '\'' .. string_gsub(value, '\'', '\\\'') .. '\''
         else
             return tostring(value)
         end
