@@ -1,6 +1,6 @@
 <package>
   <name>settings</name>
-  <version>3.0.2.4</version>
+  <version>3.0.2.5</version>
   <type>library</type>
   <dependencies>
     <dependency>account</dependency>
