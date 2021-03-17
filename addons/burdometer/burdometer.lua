@@ -1,8 +1,8 @@
-local burden = require("burden")
-local string = require("string")
-local settings = require("settings")
+local burden = require('burden')
+local string = require('string')
+local settings = require('settings')
 
-local ui = require("core.ui")
+local ui = require('core.ui')
 local command = require('core.command')
 local windower = require('core.windower')
 
@@ -81,18 +81,18 @@ local function draw_burden(element, value, y)
 
     ui.location(0, 0 + y)
     ui.size(16, 16)
-    ui.image(windower.package_path .. `\\icons\\` .. element .. ".png", image_color)
+    ui.image(windower.package_path .. '\\icons\\' .. element .. '.png', image_color)
 end
 
 local ele_order = {
-    "fire",
-    "earth",
-    "water",
-    "wind",
-    "ice",
-    "thunder",
-    "light",
-    "dark",
+    'fire',
+    'earth',
+    'water',
+    'wind',
+    'ice',
+    'thunder',
+    'light',
+    'dark',
 }
 ui.display(function()
     local height = 0
