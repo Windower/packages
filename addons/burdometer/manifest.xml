@@ -1,6 +1,6 @@
 <package>
   <name>burdometer</name>
-  <version>0.9.0.0</version>
+  <version>0.9.0.1</version>
   <type>addon</type>
   <dependencies>
     <dependency>set</dependency>
