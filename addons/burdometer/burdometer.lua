@@ -1,10 +1,11 @@
 local burden = require("burden")
 local string = require("string")
 local settings = require("settings")
-local command = require('core.command')
-
 
 local ui = require("core.ui")
+local command = require('core.command')
+local windower = require('core.windower')
+
 
 local defaults = {
     ui = {
@@ -80,7 +81,7 @@ local function draw_burden(element, value, y)
 
     ui.location(0, 0 + y)
     ui.size(16, 16)
-    ui.image([[D:\Program Files (x86)\Windower 5\files\packages\burdometer\icons\]] .. element .. ".png", image_color)
+    ui.image(windower.package_path .. `\\icons\\` .. element .. ".png", image_color)
 end
 
 local ele_order = {
@@ -121,7 +122,7 @@ ui.display(function()
 end)
 
 --[[
-Copyright © 2020 Windower Dev Team
+Copyright © 2020,2021 Windower Dev Team
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
