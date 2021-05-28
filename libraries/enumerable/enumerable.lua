@@ -1118,6 +1118,19 @@ local result = {
         local meta = getmetatable(t)
         return meta ~= nil and meta_cache[meta]
     end,
+    empty = function()
+        return empty_converter({}, {})
+    end,
+    range = function(start, count)
+        start, count = count and start or 0, count or start
+
+        local t = {}
+        for i = 1, count do
+            t[i] = start + i - 1
+        end
+
+        return empty_converter(t, {})
+    end,
 }
 
 for name, fn in pairs(enumerable) do
