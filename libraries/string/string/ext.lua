@@ -3,7 +3,11 @@ local table = require('table')
 
 local pairs = pairs
 local tostring = tostring
+local string_byte = string.byte
+local string_char = string.char
 local string_find = string.find
+local string_format = string.format
+local string_gmatch = string.gmatch
 local string_gsub = string.gsub
 local string_lower = string.lower
 local string_match = string.match
@@ -75,6 +79,64 @@ end
 
 string.normalize = function(str)
     return (string_gsub(string_lower(str), '%W+', ''))
+end
+
+do
+    local hex = {}
+    for i = 0, 0xFF do
+        hex[string_char(i)] = string_format('%.2X', i)
+    end
+
+    string.hex = function(str, delim)
+        if delim == nil or delim == '' then
+            return (string_gsub(str, '.', hex))
+        end
+
+        local chars = {}
+        local chars_count = 0
+        for char in string_gmatch(str, '.') do
+            chars_count = chars_count + 1
+            chars[chars_count] = hex[char]
+        end
+
+        return table_concat(chars, delim)
+    end
+end
+
+do
+    local hex = {}
+    do
+        local start_digit = string_byte('0')
+        local start_upper = string_byte('A')
+        local start_lower = string_byte('a')
+
+        for i = 0, 9 do
+            hex[string_char(start_digit + i)] = i
+        end
+        for i = 0, 5 do
+            hex[string_char(start_upper + i)] = 10 + i
+            hex[string_char(start_lower + i)] = 10 + i
+        end
+    end
+
+    string.parse_hex = function(str)
+        local chars = {}
+        local chars_count = 0
+        local high = nil
+        for char in string_gmatch(str, '.') do
+            if char ~= ' ' then
+                local value = hex[char]
+                if high == nil then
+                    high = value * 0x10
+                else
+                    chars_count = chars_count + 1
+                    chars[chars_count] = string_char(high + value)
+                    high = nil
+                end
+            end
+        end
+        return table_concat(chars)
+    end
 end
 
 return string
