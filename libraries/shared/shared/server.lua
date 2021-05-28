@@ -1,6 +1,7 @@
 require('core.event') -- Required for the serializer
 local ffi = require('ffi')
 local channel = require('core.channel')
+local pin = require('core.pin')
 local serializer = require('core.serializer')
 local struct = require('struct')
 local windower = require('core.windower')
@@ -26,7 +27,7 @@ local heap = ffi_gc(C.HeapCreate(0, 0, 0), function(heap)
 end)
 
 local ptr_cache = setmetatable({}, {
-    __mode = 'k'
+    __mode = 'k',
 })
 
 local destroy = function(cdata)
@@ -47,7 +48,6 @@ local new_ptr = function(ftype)
     return ffi_cast(ftype.name .. '*', C.HeapAlloc(heap, 8, ftype.size))
 end
 
-local servers = {}
 local service_name = windower.package_path:gsub('(.+\\)', '')
 
 return {
@@ -55,7 +55,7 @@ return {
         name, ftype = ftype and name or 'data', ftype or name
 
         local server = channel_new(service_name .. '_' .. name)
-        servers[name] = server
+        pin(server)
 
         local ptr = new_ptr(ftype)
         server.data = {
