@@ -663,13 +663,9 @@ types.incoming[0x028] = struct({
             local current = 110
 
             local get = function(length)
-                local value = bit_get(payload, current, length)
+                local bit_value = bit_get(payload, current, length)
                 current = current + length
-                return value
-            end
-
-            local skip = function(length)
-                current = current + length
+                return bit_value
             end
 
             local targets = {}
@@ -680,13 +676,14 @@ types.incoming[0x028] = struct({
 
                 for j = 1, action_count do
                     local reaction = get(5)
-                    local animation = get(11)
-                    local effect = get(5)
-                    local stagger = get(6)
+                    local animation = get(12)
+                    local effect = get(4)
+                    local stagger = get(3)
+                    local knockback = get(3)
                     local param = get(17)
                     local message = get(10)
 
-                    skip(31) -- Message Modifier? If you get a complete (Resist!) this is set to 2 otherwise a regular Resist is 0.
+                    current = current + 31 -- Message Modifier? If you get a complete (Resist!) this is set to 2 otherwise a regular Resist is 0.
 
                     local has_add_effect = get(1) == 1
                     local add_effect
@@ -715,6 +712,7 @@ types.incoming[0x028] = struct({
                         animation = animation,
                         effect = effect,
                         stagger = stagger,
+                        knockback = knockback,
                         param = param,
                         message = message,
                         has_add_effect = has_add_effect,
@@ -732,8 +730,59 @@ types.incoming[0x028] = struct({
             end
             return targets
         end,
-        set = function(p)
-            error('todo...')
+        set = function(p, value)
+            local payload = p._payload
+            local current = 110
+
+            local set = function(length, bit_value)
+                bit_set(payload, current, length, bit_value)
+                current = current + length
+            end
+
+            local target_count = #value
+            p.target_count = target_count
+
+            for i = 1, target_count do
+                local target = value[i]
+                set(32, target.id)
+
+                local action_count = target.action_count
+                set(4, action_count)
+
+                for j = 1, action_count do
+                    local action = target.actions[j]
+
+                    set(5, action.reaction)
+                    set(12, action.animation)
+                    set(4, action.effect)
+                    set(3, action.stagger)
+                    set(3, action.knockback)
+                    set(17, action.param)
+                    set(10, action.message)
+
+                    current = current + 31 -- Message Modifier? If you get a complete (Resist!) this is set to 2 otherwise a regular Resist is 0.
+
+                    local has_add_effect = action.has_add_effect
+                    set(1, has_add_effect and 1 or 0)
+                    if has_add_effect then
+                        local add_effect = action.add_effect
+                        set(6, add_effect.animation)
+                        set(4, add_effect.effect)
+                        set(17, add_effect.param)
+                        set(10, add_effect.message)
+                    end
+
+                    local has_spike_effect = action.has_spike_effect
+                    set(1, has_spike_effect and 1 or 0)
+                    if has_spike_effect then
+                        local spike_effect = action.spike_effect
+                        set(6, spike_effect.animation)
+                        set(4, spike_effect.effect)
+                        set(14, spike_effect.param)
+                        set(10, spike_effect.message)
+                    end
+                end
+            end
         end,
     },
 })
@@ -2850,10 +2899,6 @@ types.outgoing[0x04E] = multiple({
             price           = {0x04, uint32},
             item_id         = {0x08, item},
             stack           = {0x0C, bool},
-        }),
-
-        -- ???
-        [0x0D] = struct({
         }),
 
         -- Sent when taking a sold item from the list
