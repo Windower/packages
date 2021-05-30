@@ -1,3 +1,4 @@
+local ffi = require('ffi')
 local struct_lib = require('struct')
 
 local struct = struct_lib.struct
@@ -94,21 +95,55 @@ local model = struct({
 
 struct_lib.declare('entity')
 
-local display = struct({
-    position                = {0x34, world_coord},
-    heading                 = {0x48, float},
-    entity                  = {0x70, ptr('entity')},
-    name_color              = {0x78, rgba},
-    linkshell_color         = {0x7C, rgba},
-    _pos2                   = {0xC4, world_coord},
-    _pos3                   = {0xD4, world_coord},
-    _heading2               = {0xE8, float},
-    _speed                  = {0xF4, float}, -- Does not seem to be actual movement speed, but related to it. Animation speed?
-    moving                  = {0xF8, bool},
-    walking                 = {0xFA, bool},
-    frozen                  = {0xFC, bool},
-    nameplate_base          = {0x678, world_coord},
-})
+local display
+do
+    local ffi_cast = ffi.cast
+
+    local generator_point = struct({size = 0x1A}, {
+        bone_index              = {0x00, uint8},
+        offset                  = {0x0E, vector_3f},
+    })
+
+    local char_ptr = ffi.typeof('char*')
+    local generator_point_ptr = ffi.typeof(generator_point.name .. '*')
+
+    display = struct({
+        position                = {0x34, world_coord},
+        heading                 = {0x48, float},
+        entity                  = {0x70, ptr('entity')},
+        name_color              = {0x78, rgba},
+        linkshell_color         = {0x7C, rgba},
+        _pos2                   = {0xC4, world_coord},
+        _pos3                   = {0xD4, world_coord},
+        _heading2               = {0xE8, float},
+        _speed                  = {0xF4, float}, -- Does not seem to be actual movement speed, but related to it. Animation speed?
+        moving                  = {0xF8, bool},
+        walking                 = {0xFA, bool},
+        frozen                  = {0xFC, bool},
+        nameplate_base          = {0x678, world_coord},
+        _skeleton_base          = {0x6B8, ptr(struct({
+            _skeleton_offset        = {0x0C, ptr(struct({
+                skeleton                = {0x00, ptr(struct({
+                    bone_count              = {0x32, uint16},
+                }))}
+            }))},
+        }))},
+        nameplate_position      = {get = function(cdata)
+            local skeleton_ptr = cdata._skeleton_base._skeleton_offset.skeleton
+            local buffer_ptr = ffi_cast(char_ptr, skeleton_ptr) + 0x30
+            local skeleton_size = 0x04
+            local bone_size = 0x1E
+            local generators = ffi_cast(generator_point_ptr, buffer_ptr + skeleton_size + bone_size * skeleton_ptr.bone_count + 4)
+            local base = cdata.nameplate_base
+            return {
+                x = base.x,
+                y = base.y,
+                z = base.z + generators[2].offset.z,
+                w = base.w,
+            }
+        end},
+    })
+end
 
 local entity = struct({
     position_display        = {0x004, world_coord},
@@ -210,8 +245,8 @@ local entity = struct({
     fellow_index            = {0x29C, entity_index},
     owner_index             = {0x29E, entity_index},
     heading                 = {
-        get = function(data) return data.rotation.z end,
-        set = function(data, value) data.rotation.z = value end,
+        get = function(cdata) return cdata.rotation.z end,
+        set = function(cdata, value) cdata.rotation.z = value end,
     },
     -- TODO: Verify
     -- npc_talking             = {0x0AC, uint32},
@@ -505,6 +540,19 @@ types.music = struct({signature = '668B490625FFFF000066C705????????FFFF66890C45'
 types.map_table = struct({signature = '8A5424188B7424148B7C2410B9&'}, {
     ptr = {0x00, ptr(map_entry)},
 })
+
+local entity_chat_info = flags({size = 0x04}, {
+    named                   = 0x00,
+    named2                  = 0x01,
+    no_article              = 0x02,
+    plural                  = 0x03,
+    bit4                    = 0x04,
+    bit5                    = 0x05,
+    bit6                    = 0x06,
+    bit7                    = 0x07,
+})
+
+types.entity_chat_info_array = array({signature = 'C1E20224FB33D089148D'}, entity_chat_info, 0x900)
 
 return types
 
