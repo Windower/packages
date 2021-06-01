@@ -1,36 +1,67 @@
 local expression = {}
 
-expression.is = function(eq)
+local expression_is
+local expression_is_not
+local expression_min
+local expression_max
+local expression_between
+local expression_one_of
+local expression_not_one_of
+local expression_index
+local expression_method
+local expression_chain
+local expression_neg
+local expression_empty
+local expression_id
+local expression_exists
+local expression_eq
+local expression_neq
+local expression_lt
+local expression_leq
+local expression_gt
+local expression_geq
+local expression_const
+local expression_const_true
+local expression_const_false
+
+expression_empty = function()
+end
+
+expression_id = function(...)
+    return ...
+end
+
+expression_is = function(eq)
     return function(value)
         return value == eq
     end
 end
 
-expression.is_not = function(neq)
+expression_is_not = function(neq)
     return function(value)
         return value ~= neq
     end
 end
 
-expression.min = function(min)
+expression_min = function(min)
     return function(value)
         return value >= min
     end
 end
 
-expression.max = function(max)
+expression_max = function(max)
     return function(value)
         return value <= max
     end
 end
 
-expression.between = function(min, max)
+expression_between = function(min, max)
     return function(value)
         return min <= value and value <= max
     end
 end
 
-expression.one_of = function(...)
+expression_one_of = function(...)
     local length = select('#', ...)
     local args = {...}
     return function(value)
@@ -44,7 +75,7 @@ expression.one_of = function(...)
     end
 end
 
-expression.not_one_of = function(...)
+expression_not_one_of = function(...)
     local length = select('#', ...)
     local args = {...}
     return function(value)
@@ -58,93 +89,127 @@ expression.not_one_of = function(...)
     end
 end
 
-local selector = function(callable)
-    return setmetatable({}, {
-        __call = function(_, value)
-            return callable(value)
-        end,
-        __index = function(_, k)
-            return function(_, ...)
-                local inner = expression[k](...)
-                return function(value)
-                    return inner(callable(value))
+do
+    local selector = function(callable)
+        return setmetatable({}, {
+            __call = function(_, value)
+                return callable(value)
+            end,
+            __index = function(_, k)
+                return function(_, ...)
+                    local inner = expression[k](...)
+                    return function(value)
+                        return inner(callable(value))
+                    end
                 end
-            end
-        end,
-    })
+            end,
+        })
+    end
+
+    expression_index = function(field_name)
+        return selector(function(value)
+            return value[field_name]
+        end)
+    end
 end
 
-expression.index = function(field_name)
-    return selector(function(value)
-        return value[field_name]
-    end)
-end
-
-expression.method = function(method_name)
+expression_method = function(method_name)
     return function(value)
         return value[method_name](value)
     end
 end
 
-expression.neg = function(fn)
+expression_chain = function(...)
+    if select('#', ...) == 0 then
+        return expression_id
+    end
+
+    if select('#', ...) == 1 then
+        return (...)
+    end
+
+    local first, second = ...
+    return expression_chain(function(...)
+        return second(first(...))
+    end, select(3, ...))
+end
+
+expression_neg = function(fn)
     return function(...)
         return not fn(...)
     end
 end
 
-expression.empty = function()
-end
-
-expression.id = function(...)
-    return ...
-end
-
-expression.exists = function(value)
+expression_exists = function(value)
     return value ~= nil
 end
 
-expression.eq = function(lhs, rhs)
+expression_eq = function(lhs, rhs)
     return lhs == rhs
 end
 
-expression.neq = function(lhs, rhs)
+expression_neq = function(lhs, rhs)
     return lhs ~= rhs
 end
 
-expression.lt = function(lhs, rhs)
+expression_lt = function(lhs, rhs)
     return lhs < rhs
 end
 
-expression.leq = function(lhs, rhs)
+expression_leq = function(lhs, rhs)
     return lhs <= rhs
 end
 
-expression.gt = function(lhs, rhs)
+expression_gt = function(lhs, rhs)
     return lhs > rhs
 end
 
-expression.geq = function(lhs, rhs)
+expression_geq = function(lhs, rhs)
     return lhs >= rhs
 end
 
-expression.const = function(value)
+expression_const = function(value)
     return function()
         return value
     end
 end
 
-expression.const_true = function()
+expression_const_true = function()
     return true
 end
 
-expression.const_false = function()
+expression_const_false = function()
     return false
 end
+
+expression.is = expression_is
+expression.is_not = expression_is_not
+expression.min = expression_min
+expression.max = expression_max
+expression.between = expression_between
+expression.one_of = expression_one_of
+expression.not_one_of = expression_not_one_of
+expression.index = expression_index
+expression.method = expression_method
+expression.chain = expression_chain
+expression.neg = expression_neg
+expression.empty = expression_empty
+expression.id = expression_id
+expression.exists = expression_exists
+expression.eq = expression_eq
+expression.neq = expression_neq
+expression.lt = expression_lt
+expression.leq = expression_leq
+expression.gt = expression_gt
+expression.geq = expression_geq
+expression.const = expression_const
+expression.const_true = expression_const_true
+expression.const_false = expression_const_false
 
 return expression
 
 --[[
-Copyright © 2019, Windower Dev Team
+Copyright © 2021, Windower Dev Team
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
