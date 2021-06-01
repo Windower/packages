@@ -1,6 +1,6 @@
 <package>
   <name>memory</name>
-  <version>2.3.0.0</version>
+  <version>2.4.0.0</version>
   <type>library</type>
   <dependencies>
     <dependency>struct</dependency>

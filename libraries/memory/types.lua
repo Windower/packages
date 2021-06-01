@@ -333,6 +333,24 @@ local map_entry = struct({
     offset_y                = {0x0C, int16},
 })
 
+local window_dimensions = struct({
+    x                       = {0x00, uint16},
+    y                       = {0x02, uint16},
+    width                   = {0x04, uint16},
+    height                  = {0x06, uint16},
+})
+
+local chat_window_data = struct({
+    dimensions              = {0x40, window_dimensions},
+    active                  = {0x4D, bool},
+    max_lines               = {0x4E, uint16},
+    min_lines               = {0x50, uint16},
+    width                   = {0x52, uint16},
+    resize_time             = {0x54, uint16},
+    timestamp_format        = {0x56, uint8}, -- 0 off, 1 HH:MM, 2 HH:MM:SS
+    reactive_sizing         = {0x58, bool},
+})
+
 local types = {}
 
 types.language_filter = struct({signature = '84C0750333C0C38B0D', offsets = {0x20}}, {
@@ -456,6 +474,11 @@ types.chat_input = struct({signature = '3BCB74148B01FF502084C0740B8B0D', offsets
     move_counter            = {0xEC30, uint8},
     display                 = {0xEC34, chat_input_buffer},
     open                    = {0xEF22, bool},
+})
+
+types.chat_window_info = struct({signature = '85C0753B8B15'}, {
+    window_1                = {0x00, ptr(chat_window_data)},
+    window_2                = {0x04, ptr(chat_window_data)},
 })
 
 types.follow = struct({signature = '8BCFE8????FFFF8B0D????????E8????????8BE885ED750CB9'}, {
