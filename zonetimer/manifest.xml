@@ -1,0 +1,10 @@
+<package>
+  <name>zonetimer</name>
+  <version>1.0.0.0</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>settings</dependency>
+    <dependency>world</dependency>
+    <dependency>packets</dependency>
+  </dependencies>
+</package>
