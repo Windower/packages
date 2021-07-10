@@ -101,6 +101,9 @@ ui.display(function()
             height = height + 18
         end
     end
+    if burden_window.state.style == 'layout' then
+        height = 144
+    end
     burden_window.state.height = height
 
     burden_window.state, burden_window.closed = ui.window('burden_window', burden_window.state, function()
