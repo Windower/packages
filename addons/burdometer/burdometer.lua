@@ -25,7 +25,7 @@ local burden_window = {
         y = options.ui.y,
         width = 118,
         height = 144,
-        color = options.window_style == 'chromeless' and ui.color.rgb(0,0,0,40) or nil,
+        color = options.window_style == 'chromeless' and ui.color.transparent or nil,
         resizable = false,
         moveable = true,
     }
@@ -43,11 +43,11 @@ local function set_window_style(style)
     options.window_style = style
 
     burden_window.state.style = style
-    burden_window.state.color = options.window_style == 'chromeless' and ui.color.rgb(0,0,0,40) or nil
+    burden_window.state.color = options.window_style == 'chromeless' and ui.color.transparent or nil
 
     settings.save()
 end
-cmd:register('style', set_window_style, '<window_style:one_of(chromeless,normal)>')
+cmd:register('style', set_window_style, '<window_style:one_of(chromeless,normal,layout)>')
 
 
 local function draw_burden(element, value, y)
@@ -100,6 +100,9 @@ ui.display(function()
         if v ~= 0 then
             height = height + 18
         end
+    end
+    if burden_window.state.style == 'layout' then
+        height = 144
     end
     burden_window.state.height = height
 
