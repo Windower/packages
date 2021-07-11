@@ -5,11 +5,6 @@ local packet = require('packet')
 local server = require('shared.server')
 local struct = require('struct')
 
-local item_type = struct.struct({
-    item_id = {struct.int32},
-    raw     = {struct.int32},
-})
-
 local data = server.new(struct.struct({
     index           = {struct.int32},
     id              = {struct.int32},
@@ -22,13 +17,17 @@ local data = server.new(struct.struct({
     tp              = {struct.int32},
     active          = {struct.bool},
     automaton       = {struct.struct({
-        active              = {struct.bool},
-        head                = {item_type},
-        frame               = {item_type},
-        attachments         = {item_type[12]},
-        available_heads     = {struct.bitfield(4)},
-        available_frames    = {struct.bitfield(4)},
-        available_attach    = {struct.bitfield(32)},
+        active = {struct.bool},
+        equipment = {struct.struct({
+            head_id        = {struct.int32},
+            frame_id       = {struct.int32},
+            attachment_ids = {struct.int32[12]},
+        })},
+        inventory = {struct.struct({
+            _heads       = {struct.bool[32]},
+            _frames      = {struct.bool[32]},
+            _attachments = {struct.bool[256]},
+        })},
         name        = {struct.string(0x10)},
         hp          = {struct.int32},
         hp_max      = {struct.int32},
@@ -99,18 +98,19 @@ packet.incoming:register_init({
         end
     end,
     [{0x044,0x12}] = function(p)
-
-        data.automaton.head.raw         = p.automaton_head
-        data.automaton.head.item_id     = p.automaton_head + 0x2000
-        data.automaton.frame.raw        = p.automaton_frame
-        data.automaton.frame.item_id    = p.automaton_frame + 0x2000
+        data.automaton.equipment.head_id  = p.automaton_head + 0x2000
+        data.automaton.equipment.frame_id = p.automaton_frame + 0x2000
+        local i
         for i=0, 11 do
-            data.automaton.attachments[i].raw = p.attachments[i]
-            data.automaton.attachments[i].item_id = p.attachments[i] + 0x2100
+            data.automaton.equipment.attachment_ids[i] = p.attachments[i] + 0x2100
         end
-        ffi.copy(data.automaton._available_heads, p._available_heads, 4)
-        ffi.copy(data.automaton._available_frames, p._available_frames, 4)
-        ffi.copy(data.automaton._available_attach, p._available_attach, 32)
+        for i = 0, 31 do
+            data.automaton.inventory._heads[i] = p.available_heads[i]
+            data.automaton.inventory._frames[i] = p.available_frames[i]
+        end
+        for i = 0, 255 do
+            data.automaton.inventory._attachments[i] = p.available_attach[i]
+        end
         data.automaton.name         = p.pet_name
         data.automaton.hp           = p.hp
         data.automaton.hp_max       = p.hp_max
@@ -123,19 +123,19 @@ packet.incoming:register_init({
         data.automaton.magic        = p.magic
         data.automaton.magic_max    = p.magic_max
         data.automaton.str_base     = p.str
-        data.automaton.str_bonus    = p.str_bonus
+        data.automaton.str_bonus    = p.str_modifier
         data.automaton.dex_base     = p.dex
-        data.automaton.dex_bonus    = p.dex_bonus
+        data.automaton.dex_bonus    = p.dex_modifier
         data.automaton.vit_base     = p.vit
-        data.automaton.vit_bonus    = p.vit_bonus
+        data.automaton.vit_bonus    = p.vit_modifier
         data.automaton.agi_base     = p.agi
-        data.automaton.agi_bonus    = p.agi_bonus
+        data.automaton.agi_bonus    = p.agi_modifier
         data.automaton.int_base     = p.int
-        data.automaton.int_bonus    = p.int_bonus
+        data.automaton.int_bonus    = p.int_modifier
         data.automaton.mnd_base     = p.mnd
-        data.automaton.mnd_bonus    = p.mnd_bonus
+        data.automaton.mnd_bonus    = p.mnd_modifier
         data.automaton.chr_base     = p.chr
-        data.automaton.chr_bonus    = p.chr_bonus
+        data.automaton.chr_bonus    = p.chr_modifier
 
         local active = data.active and (data.name == data.automaton.name)
 

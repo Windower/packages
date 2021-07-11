@@ -1,10 +1,11 @@
+local table = require('table')
+
 local client = require('shared.client')
 local entities = require('entities')
 local items = require('client_data.items')
 
+
 local data, ftype = client.new('pet_service')
-
-
 
 ftype.fields.target_entity = {
     get = function(data)
@@ -12,13 +13,127 @@ ftype.fields.target_entity = {
     end,
 }
 
-
-ftype.fields.automaton.type.fields.attachments.type.base.fields.item = {
+ftype.fields.automaton.type.fields.equipment.type.fields.head = {
     get = function(data)
-        return items[data.item_id]
+        return items[data.head_id]
     end,
 }
 
+ftype.fields.automaton.type.fields.equipment.type.fields.frame = {
+    get = function(data)
+        return items[data.frame_id]
+    end,
+}
+
+ftype.fields.automaton.type.fields.equipment.type.fields.attachments = {
+    get = function(data)
+        return setmetatable({}, {
+            __index = function(t, k)
+                local item_id = data.attachment_ids[k]
+                if item_id == 0 then
+                    return nil
+                else
+                    return items[data.attachment_ids[k]]
+                end
+            end,
+        })
+    end,
+}
+
+ftype.fields.automaton.type.fields.inventory.type.fields.heads = {
+    get = function(data)
+        local t = {}
+        local i
+        for i = 0, 8 do
+            if data.automaton.inventory._heads[i] then
+                table:append(t,items[i+0x2000])
+            end
+        end
+    end
+}
+
+ftype.fields.automaton.type.fields.inventory.type.fields.heads = {
+    get = function(data)
+        local t = {}
+        local i
+        for i = 0, 21 do
+            if data.automaton.inventory._heads[i] then
+                table:append(t,items[i+0x2020])
+            end
+        end
+    end
+}
+
+ftype.fields.automaton.type.fields.inventory.type.fields.heads = {
+    get = function(data)
+        local t = {}
+        local i
+        for i = 0, 31 do
+            if data.automaton.inventory._heads[i] then
+                table:append(t,items[i+0x2020])
+            end
+        end
+    end
+}
+
+ftype.fields.automaton.type.fields.inventory.type.fields.attachments = {
+    get = function(data)
+        local t = {}
+        local i
+        for i = 0, 255 do
+            if data.automaton.inventory._attachments[i] then
+                table:append(t,items[i+0x2100])
+            end
+        end
+    end
+}
+
+ftype.fields.automaton.type.fields.inventory.type.fields.has_head = {
+    data = function(_, item)
+        local id = nil
+        if type(item) == 'number' then
+            id = item
+        elseif type(item) == 'table' and item.id then
+            id = item.id
+        end
+        if id and id >= 0x2000 and id < 0x2020 then
+            return data.automaton.inventory._heads[id-0x2000]
+        end
+        return nil
+    end,
+}
+
+ftype.fields.automaton.type.fields.inventory.type.fields.has_frame = {
+    data = function(_, item)
+        local id = nil
+        if type(item) == 'number' then
+            id = item
+        elseif type(item) == 'table' and item.id then
+            id = item.id
+        end
+        if id and id >= 0x2020 and id < 0x2040 then
+            return data.automaton.inventory._frames[id-0x2020]
+        end
+        return nil
+    end,
+}
+
+ftype.fields.automaton.type.fields.inventory.type.fields.has_attachment = {
+    data = function(_, item)
+        local id = nil
+        if type(item) == 'number' then
+            id = item
+        elseif type(item) == 'table' and item.id then
+            id = item.id
+        end
+        if id and id >= 0x2100 and id < 0x2200 then
+            return data.automaton.inventory._attachments[id-0x2100]
+        end
+        return false
+    end,
+}
+
+--[[
 ftype.fields.automaton.type.fields.heads_available = {
     get = function(data)
         return setmetatable({}, {
@@ -48,6 +163,7 @@ ftype.fields.automaton.type.fields.attach_available = {
         })
     end,
 }
+--]]
 
 return data
 
