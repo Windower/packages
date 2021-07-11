@@ -133,38 +133,6 @@ ftype.fields.automaton.type.fields.inventory.type.fields.has_attachment = {
     end,
 }
 
---[[
-ftype.fields.automaton.type.fields.heads_available = {
-    get = function(data)
-        return setmetatable({}, {
-            __index = function(t, k)
-                return data.available_heads[k - 0x2000]
-            end,
-        })
-    end,
-}
-
-ftype.fields.automaton.type.fields.frames_available = {
-    get = function(data)
-        return setmetatable({}, {
-            __index = function(t, k)
-                return data.available_frames[k - 0x2020]
-            end,
-        })
-    end,
-}
-
-ftype.fields.automaton.type.fields.attach_available = {
-    get = function(data)
-        return setmetatable({}, {
-            __index = function(t, k)
-                return data.available_attach[k - 0x2100]
-            end,
-        })
-    end,
-}
---]]
-
 return data
 
 --[[
