@@ -31,6 +31,17 @@ local burden_window = {
     }
 }
 
+do
+    local handle_options_change = function(options)
+        burden_window.state.x = options.ui.x
+        burden_window.state.y = options.ui.y
+        burden_window.state.style = options.window_style
+        burden_window.state.color = options.window_style == 'chromeless' and ui.color.transparent or nil
+    end
+
+    settings.settings_change:register(handle_options_change)
+end
+
 local cmd = command.new('burden')
 
 local function move_window(x,y)
@@ -94,6 +105,7 @@ local ele_order = {
     'light',
     'dark',
 }
+
 ui.display(function()
     local height = 0
     for _, v in pairs(burden) do
