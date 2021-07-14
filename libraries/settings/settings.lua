@@ -315,6 +315,7 @@ do
 
         local setting = settings.set(path, value, id)
         settings.save(id)
+        settings.settings_change:trigger(info_cache[id or 'settings'].options)
 
         query_client:call(query_response, path, setting)
     end)
