@@ -138,6 +138,7 @@ packet.incoming:register_init({
         data.automaton.chr_bonus    = p.chr_modifier
 
         data.automaton.active = data.active and (data.name == data.automaton.name)
+    end,
 })
 
 --[[
