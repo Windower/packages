@@ -1,8 +1,9 @@
 local os = require("os")
-local set = require("set")
-local player = require("player")
-local packet = require("packet")
+
 local equipment = require("equipment")
+local packet = require("packet")
+local player = require("player")
+local set = require("set")
 local status_effects = require("status_effects")
 
 local o = {
