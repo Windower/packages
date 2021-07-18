@@ -109,7 +109,7 @@ local ele_order = {
 }
 
 ui.display(function()
-    if not (player.main_job_id == 0x12 or player.sub_job_id == 0x12) then
+    if not (player.main_job_id == 0x12 or player.sub_job_id == 0x12 or burden_window.state.style == 'layout') then
         return
     end
     local height = 0
