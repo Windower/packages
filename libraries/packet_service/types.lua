@@ -1902,9 +1902,9 @@ types.incoming[0x063] = multiple({
             limit_points    = {0x04, uint16},
             merit_points    = {0x06, uint8},
             flags           = {0x07, flags({size = 0x01}, {
-                merits_unlocked = 0x05, -- Merits unlocked and/or limit points earnable? Needs confirmation from lower level characters.
-                level_capped    = 0x06,
-                merit_switch    = 0x07,
+                merits_availabe = 0x05, -- True when the Merit Points menu is enabled. Flase when it's greyed out (i.e. main_job_level < 75).
+                exp_capped      = 0x06, -- True when the player's job name is blue meaning their exp is capped, either due to reaching the max or from the merit switch being on.
+                merit_switch    = 0x07, -- True when the Merit Switch is set to Limit Points
             })},
             merit_points_max= {0x08, uint8},
         }),
