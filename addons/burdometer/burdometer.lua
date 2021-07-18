@@ -1,11 +1,13 @@
-local burden = require('burden')
 local string = require('string')
-local settings = require('settings')
 
 local ui = require('core.ui')
 local command = require('core.command')
 local windower = require('core.windower')
 
+local player = require('player')
+local settings = require('settings')
+
+local burden = require('burden')
 
 local defaults = {
     ui = {
@@ -107,6 +109,9 @@ local ele_order = {
 }
 
 ui.display(function()
+    if not (player.main_job_id == 0x12 or player.sub_job_id == 0x12 or burden_window.state.style == 'layout') then
+        return
+    end
     local height = 0
     for _, v in pairs(burden) do
         if v ~= 0 then
