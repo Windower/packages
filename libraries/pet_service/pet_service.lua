@@ -137,17 +137,7 @@ packet.incoming:register_init({
         data.automaton.chr_base     = p.chr
         data.automaton.chr_bonus    = p.chr_modifier
 
-        local active = data.active and (data.name == data.automaton.name)
-
-        data.automaton.active = active
-
-        if p.hp_max ~= 0 and active then
-            data.hp_percent = math.floor(100 * p.hp / p.hp_max)
-        end
-        if p.mp_max ~= 0 and active then
-            data.mp_percent = math.floor(100 * p.mp / p.mp_max)
-        end
-    end
+        data.automaton.active = data.active and (data.name == data.automaton.name)
 })
 
 --[[
