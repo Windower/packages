@@ -67,8 +67,8 @@ enumerable.all = function(t, fn)
 end
 
 enumerable.contains = function(t, search)
-    for _, el in pairs(t) do
-        if el == search then
+    for _, value in pairs(t) do
+        if value == search then
             return true
         end
     end
@@ -179,8 +179,8 @@ enumerable.aggregate = function(t, initial, accumulator, selector)
         key, res = iterator(table, key)
     end
 
-    for key, el in iterator, table, key do
-        res = accumulator(res, el, key, t)
+    for key, value in iterator, table, key do
+        res = accumulator(res, value, key, t)
     end
 
     return selector ~= nil and selector(res) or res
@@ -207,12 +207,21 @@ end
 enumerable.to_table = function(t)
     local arr = {}
     local count = 0
-    for _, el in pairs(t) do
+    for _, value in pairs(t) do
         count = count + 1
-        arr[count] = el
+        arr[count] = value
     end
 
     return arr, count
+end
+
+enumerable.to_dictionary = function(t, key_fn, value_fn)
+    local dict = {}
+    for key, value in pairs(t) do
+        dict[key_fn(key)] = value_fn(value)
+    end
+
+    return dict
 end
 
 local enumerable_to_table = enumerable.to_table
@@ -884,8 +893,8 @@ local build_index_table = function(constructor, converter, add, remove, methods)
     index_table.remove = remove
     index_table.copy = function(original, ...)
         local res = constructor()
-        for key, el in pairs(original) do
-            add(res, el, key)
+        for key, value in pairs(original) do
+            add(res, value, key)
         end
 
         return res
@@ -965,8 +974,8 @@ local configure_metatable = function(meta, methods, name)
     if meta.__convert == nil then
         meta.__convert = function(t)
             local res = constructor()
-            for _, el in pairs(t) do
-                add(res, el)
+            for _, value in pairs(t) do
+                add(res, value)
             end
             return res
         end
