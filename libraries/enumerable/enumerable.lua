@@ -67,8 +67,8 @@ enumerable.all = function(t, fn)
 end
 
 enumerable.contains = function(t, search)
-    for _, el in pairs(t) do
-        if el == search then
+    for _, value in pairs(t) do
+        if value == search then
             return true
         end
     end
@@ -179,7 +179,7 @@ enumerable.aggregate = function(t, initial, accumulator, selector)
         key, res = iterator(table, key)
     end
 
-    for key, el in iterator, table, key do
+    for key, value in iterator, table, key do
         res = accumulator(res, el, key, t)
     end
 
@@ -207,12 +207,21 @@ end
 enumerable.to_table = function(t)
     local arr = {}
     local count = 0
-    for _, el in pairs(t) do
+    for _, value in pairs(t) do
         count = count + 1
         arr[count] = el
     end
 
     return arr, count
+end
+
+enumerable.to_dictionary = function(t, key_fn, value_fn)
+    local dict = {}
+    for key, value in pairs(t) do
+        dict[key_fn(key)] = value_fn(value)
+    end
+
+    return dict
 end
 
 local enumerable_to_table = enumerable.to_table
