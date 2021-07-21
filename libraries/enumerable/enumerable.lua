@@ -180,7 +180,7 @@ enumerable.aggregate = function(t, initial, accumulator, selector)
     end
 
     for key, value in iterator, table, key do
-        res = accumulator(res, el, key, t)
+        res = accumulator(res, value, key, t)
     end
 
     return selector ~= nil and selector(res) or res
@@ -209,7 +209,7 @@ enumerable.to_table = function(t)
     local count = 0
     for _, value in pairs(t) do
         count = count + 1
-        arr[count] = el
+        arr[count] = value
     end
 
     return arr, count
@@ -893,8 +893,8 @@ local build_index_table = function(constructor, converter, add, remove, methods)
     index_table.remove = remove
     index_table.copy = function(original, ...)
         local res = constructor()
-        for key, el in pairs(original) do
-            add(res, el, key)
+        for key, value in pairs(original) do
+            add(res, value, key)
         end
 
         return res
@@ -974,8 +974,8 @@ local configure_metatable = function(meta, methods, name)
     if meta.__convert == nil then
         meta.__convert = function(t)
             local res = constructor()
-            for _, el in pairs(t) do
-                add(res, el)
+            for _, value in pairs(t) do
+                add(res, value)
             end
             return res
         end
