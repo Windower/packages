@@ -128,7 +128,7 @@ local automaton = {
         elseif attachment_id == nil then
             print(attachment .. ' is an invalid attachment!')
         else
-            error(attachment .. ' is not availible!')
+            print(attachment .. ' is not availible!')
         end
     end,
 }
