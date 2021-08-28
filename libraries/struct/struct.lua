@@ -531,7 +531,7 @@ do
                 for i = 0, count - 1 do
                     local result = value[i + 1]
                     if result ~= nil then
-                        cdata[i] = value[i + 1]
+                        cdata[i] = result
                     end
                 end
                 value = cdata
