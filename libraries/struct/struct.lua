@@ -528,9 +528,11 @@ do
         return function(instance, index, value)
             if type(value) == 'table' then
                 local cdata = struct_new(name)
-                local length = math_min(#value, count)
-                for i = 0, length - 1 do
-                    cdata[i] = value[i + 1]
+                for i = 0, count - 1 do
+                    local result = value[i + 1]
+                    if result ~= nil then
+                        cdata[i] = result
+                    end
                 end
                 value = cdata
             end
