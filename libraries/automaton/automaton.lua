@@ -104,9 +104,14 @@ ftype.fields.equip_head = {
     data = function(data, head)
         if head ~= data.head.name then
             local head_id = get_assembly_id(head)
+            if player.sub_job_id ~= 0x12 and player.main_job_id ~= 0x12 then
+                error('Player\'s job is not Puppetmaster!')
+            end
+
             if head_id == nil then
                 error(head .. ' is an invalid head!')
             end
+
             if not data.available_heads[head_id] then
                 error(head .. ' is not availible!')
             end
@@ -126,19 +131,25 @@ ftype.fields.equip_frame = {
     data = function(data, frame)
         if frame ~= data.frame.name then
             local frame_id = get_assembly_id(frame)
-            if frame_id and data.available_frames[frame_id - 32] then
-                packet.outgoing[0x102][0x12]:inject({
-                    job = 0x12,
-                    is_sub = player.sub_job == 0x12,
+            if player.sub_job_id ~= 0x12 and player.main_job_id ~= 0x12 then
+                error('Player\'s job is not Puppetmaster!')
+            end
 
-                    item_index = frame_id,
-                    frame = frame_id
-                })
-            elseif frame_id == nil then
+            if frame_id == nil then
                 error(frame .. ' is an invalid frame!')
-            else
+            end
+
+            if not data.available_frames[frame_id - 32] then
                 error(frame .. ' is not availible!')
             end
+
+            packet.outgoing[0x102][0x12]:inject({
+                job = 0x12,
+                is_sub = player.sub_job == 0x12,
+
+                item_index = frame_id,
+                frame = frame_id
+            })
         end
     end,
 }
@@ -146,22 +157,28 @@ ftype.fields.equip_frame = {
 ftype.fields.equip_attachment = {
     data = function(data, slot, attachment)
         local attachment_id = get_attachment_id(attachment)
-        if attachment_id and data.available_attachments[attachment_id] then
-            local untraditional_equip = {
-                job = 0x12,
-                is_sub = player.sub_job == 0x12,
+        if player.sub_job_id ~= 0x12 and player.main_job_id ~= 0x12 then
+            error('Player\'s job is not Puppetmaster!')
+        end
 
-                item_index = attachment_id,
-                slots = {}
-            }
-
-            untraditional_equip.slots[slot] = attachment_id;
-            packet.outgoing[0x102][0x12]:inject(untraditional_equip)
-        elseif attachment_id == nil then
+        if attachment_id == nil then
             error(attachment .. ' is an invalid attachment!')
-        else
+        end
+
+        if not data.available_attachments[attachment_id] then
             error(attachment .. ' is not availible!')
         end
+
+        local payload = {
+            job = 0x12,
+            is_sub = player.sub_job == 0x12,
+
+            item_index = attachment_id,
+            slots = {}
+        }
+
+        payload.slots[slot] = attachment_id;
+        packet.outgoing[0x102][0x12]:inject(payload)
     end,
 }
 
