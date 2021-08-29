@@ -57,9 +57,21 @@ local get_assembly_id = function(part)
     return assembly_id
 end
 
-local automaton = {
-    remove_all = function()
-        local untraditional_equip = {
+ftype.fields.validate_head = {
+    data = get_assembly_id
+}
+
+ftype.fields.validate_frame = {
+    data = get_assembly_id
+}
+
+ftype.fields.validate_attachment = {
+    data = get_attachment_id
+}
+
+ftype.fields.remove_all = {
+    data = function(_)
+        local pay_load = {
             job = 0x12,
             is_sub = player.sub_job == 0x12,
 
@@ -68,32 +80,37 @@ local automaton = {
         }
 
         for k, v in pairs(data.attachments) do
-            untraditional_equip.slots[k + 1] = v.id
+            pay_load.slots[k + 1] = v.id
         end
 
-        packet.outgoing[0x102][0x12]:inject(untraditional_equip)
+        packet.outgoing[0x102][0x12]:inject(pay_load)
     end,
+}
 
-    equip_head = function(head)
+ftype.fields.equip_head = {
+    data = function(data, head)
         if head ~= data.head.name then
             local head_id = get_assembly_id(head)
-            if head_id and data.available_heads[head_id] then
-                packet.outgoing[0x102][0x12]:inject({
-                    job = 0x12,
-                    is_sub = player.sub_job == 0x12,
-
-                    item_index = head_id,
-                    head = head_id
-                })
-            elseif head_id == nil then
-                print(head .. ' is an invalid head!')
-            else
-                print(head .. ' is not availible!')
+            if head_id == nil then
+                error(head .. ' is an invalid head!')
             end
+            if not data.available_heads[head_id] then
+                error(head .. ' is not availible!')
+            end
+
+            packet.outgoing[0x102][0x12]:inject({
+                job = 0x12,
+                is_sub = player.sub_job == 0x12,
+
+                item_index = head_id,
+                head = head_id
+            })
         end
     end,
+}
 
-    equip_frame = function(frame)
+ftype.fields.equip_frame = {
+    data = function(data, frame)
         if frame ~= data.frame.name then
             local frame_id = get_assembly_id(frame)
             if frame_id and data.available_frames[frame_id - 32] then
@@ -105,14 +122,16 @@ local automaton = {
                     frame = frame_id
                 })
             elseif frame_id == nil then
-                print(frame .. ' is an invalid frame!')
+                error(frame .. ' is an invalid frame!')
             else
                 error(frame .. ' is not availible!')
             end
         end
     end,
+}
 
-    equip_attachment = function(slot, attachment)
+ftype.fields.equip_attachment = {
+    data = function(data, slot, attachment)
         local attachment_id = get_attachment_id(attachment)
         if attachment_id and data.available_attachments[attachment_id] then
             local untraditional_equip = {
@@ -120,24 +139,20 @@ local automaton = {
                 is_sub = player.sub_job == 0x12,
 
                 item_index = attachment_id,
-                slots = {0,0,0,0,0,0,0,0,0,0,0,0}
+                slots = {}
             }
 
             untraditional_equip.slots[slot] = attachment_id;
             packet.outgoing[0x102][0x12]:inject(untraditional_equip)
         elseif attachment_id == nil then
-            print(attachment .. ' is an invalid attachment!')
+            error(attachment .. ' is an invalid attachment!')
         else
-            print(attachment .. ' is not availible!')
+            error(attachment .. ' is not availible!')
         end
     end,
 }
 
-local mt_automaton = {
-    __index = data
-}
-
-return setmetatable(automaton, mt_automaton)
+return data
 
 --[[
 Copyright © 2021, Windower Dev Team
