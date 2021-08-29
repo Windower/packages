@@ -6,6 +6,5 @@
     <dependency>packet</dependency>
     <dependency>shared</dependency>
     <dependency>struct</dependency>
-    <dependency>resources</dependency>
   </dependencies>
 </package>
