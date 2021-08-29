@@ -1,7 +1,8 @@
+local player = require('player')
 local packet = require('packet')
 local struct = require('struct')
+local account = require('account')
 local server = require('shared.server')
-
 
 local data, ftype = server.new(struct.struct({
     name = {struct.string(0x10)};
@@ -43,6 +44,9 @@ local data, ftype = server.new(struct.struct({
     available_frames= {struct.bitfield(4)},
     available_attachments = {struct.bitfield(32)},
 }))
+
+struct.reset_on(account.logout, data, ftype)
+struct.reset_on(player.job_change, data, ftype)
 
 packet.incoming:register_init({
     [{0x044, 0x12}] = function(p)
