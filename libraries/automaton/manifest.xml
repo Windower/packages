@@ -8,6 +8,7 @@
     <dependency>shared</dependency>
     <dependency>player</dependency>
     <dependency>packet</dependency>
+    <dependency>command</dependency>
     <dependency>resources</dependency>
     <dependency>automaton_service</dependency>
   </dependencies>
