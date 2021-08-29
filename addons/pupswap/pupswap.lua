@@ -6,24 +6,11 @@ local command = require('core.command')
 
 local defaults = {
     equip_delay = 0.5,
-    sets = {
-    --[[
-        <set_name> = {
-            head = "Harliquin Head",
-            frame = "Sharpshot Frame",
-            attachments ={
-                [1] = "Strobe",
-                [2] = "Flashbulb",
-                ...
-                [12]= "Mana Tank",
-            },
-        }
-    ]]--
-    }
+    sets = {}
 }
 local options = settings.load(defaults)
 
-command.arg.register('set_name', '<set_name:string(%w+)>')
+command.arg.register('set_name', '<set_name:string>')
 
 -- Addon command Handlers
 local ps = command.new('ps')
@@ -31,24 +18,37 @@ local ps = command.new('ps')
 local equip_set = function(set_name)
     local set = options.sets[set_name]
     if not automaton.activated then
-        coroutine.schedule(function ()
-            automaton.remove_all()
-            print('[pupswap] equip set: Started')
+        coroutine.schedule(function()
+            automaton:remove_all()
+
+            --TODO: inform user start of set equipping
             coroutine.sleep(options.equip_delay)
-            automaton.equip_head(set.head)
+            if automaton.validate_head_name then
+                automaton:equip_head(set.head)
+            else
+                --TODO: alert user of invalid/unavailible head
+            end
 
             coroutine.sleep(options.equip_delay)
-            automaton.equip_frame(set.frame)
+            if automaton.validate_frame_name then
+                automaton:equip_frame(set.frame)
+            else
+                --TODO: alert user of invalid/unavailible frame
+            end
 
             local equip_attachment = automaton.equip_attachment
             for slot, attachment in pairs(set.attachments) do
                 coroutine.sleep(options.equip_delay)
-                equip_attachment(slot, attachment)
+                if automaton.validate_attachment_name(attachment) then
+                    equip_attachment(automaton, slot, attachment)
+                else
+                    --TODO: alert user of invalid/unavailible attachment
+                end
             end
-            print('[pupswap] equip set: Complete')
+            --TODO: inform user set equip is complete
         end)
     else
-        print('[pupswap] equip set: Failed automaton is currently actived')
+        --TODO: inform user equip failed, automaton is currently active
     end
 end
 ps:register('e', equip_set, '{set_name}')
@@ -85,7 +85,7 @@ ps:register('save', save_set, '{set_name}')
 
 local list_sets = function()
     for set in pairs(options.sets) do
-        print(set)
+        --TODO: show user list of sets.
     end
 end
 ps:register('l', list_sets)
