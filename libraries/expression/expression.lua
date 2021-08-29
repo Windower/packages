@@ -1,5 +1,8 @@
 local expression = {}
 
+local expression_empty
+local expression_id
+local expression_exists
 local expression_is
 local expression_is_not
 local expression_min
@@ -7,28 +10,34 @@ local expression_max
 local expression_between
 local expression_one_of
 local expression_not_one_of
-local expression_index
-local expression_method
-local expression_chain
-local expression_neg
-local expression_empty
-local expression_id
-local expression_exists
 local expression_eq
 local expression_neq
 local expression_lt
 local expression_leq
 local expression_gt
 local expression_geq
+local expression_index
+local expression_lookup
+local expression_method
+local expression_chain
+local expression_neg
 local expression_const
 local expression_const_true
 local expression_const_false
+
+-- general
 
 expression_empty = function()
 end
 
 expression_id = function(...)
     return ...
+end
+
+-- predicates
+
+expression_exists = function(value)
+    return value ~= nil
 end
 
 expression_is = function(eq)
@@ -89,60 +98,7 @@ expression_not_one_of = function(...)
     end
 end
 
-do
-    local selector = function(callable)
-        return setmetatable({}, {
-            __call = function(_, value)
-                return callable(value)
-            end,
-            __index = function(_, k)
-                return function(_, ...)
-                    local inner = expression[k](...)
-                    return function(value)
-                        return inner(callable(value))
-                    end
-                end
-            end,
-        })
-    end
-
-    expression_index = function(field_name)
-        return selector(function(value)
-            return value[field_name]
-        end)
-    end
-end
-
-expression_method = function(method_name)
-    return function(value)
-        return value[method_name](value)
-    end
-end
-
-expression_chain = function(...)
-    if select('#', ...) == 0 then
-        return expression_id
-    end
-
-    if select('#', ...) == 1 then
-        return (...)
-    end
-
-    local first, second = ...
-    return expression_chain(function(...)
-        return second(first(...))
-    end, select(3, ...))
-end
-
-expression_neg = function(fn)
-    return function(...)
-        return not fn(...)
-    end
-end
-
-expression_exists = function(value)
-    return value ~= nil
-end
+-- comparisons
 
 expression_eq = function(lhs, rhs)
     return lhs == rhs
@@ -168,20 +124,91 @@ expression_geq = function(lhs, rhs)
     return lhs >= rhs
 end
 
-expression_const = function(value)
-    return function()
-        return value
+-- accessors
+
+local selector
+
+local expression_mt = {
+    __call = function(callable, value)
+        return callable.fn(value)
+    end,
+    __index = function(callable, k)
+        local fn = expression[k]
+        return function(_, ...)
+            local outer = fn(...)
+            return selector(function(value)
+                return outer(callable.fn(value))
+            end)
+        end
+    end,
+}
+
+selector = function(fn)
+    return setmetatable({fn = fn}, expression_mt)
+end
+
+expression_index = function(field_name)
+    return selector(function(value)
+        return value[field_name]
+    end)
+end
+
+expression_lookup = function(lookup)
+    return selector(function(value)
+        return lookup[value]
+    end)
+end
+
+expression_method = function(method_name)
+    return selector(function(value)
+        return value[method_name](value)
+    end)
+end
+
+do
+    local chain = function(...)
+        if select('#', ...) == 0 then
+            return expression_id
+        end
+
+        if select('#', ...) == 1 then
+            return ...
+        end
+
+        local first, second = ...
+        return expression_chain(function(...)
+            return second(first(...))
+        end, select(3, ...))
+    end
+
+    expression_chain = function(...)
+        return selector(chain(...))
     end
 end
 
-expression_const_true = function()
+expression_neg = function(fn)
+    return selector(function(...)
+        return not fn(...)
+    end)
+end
+
+expression_const = function(value)
+    return selector(function()
+        return value
+    end)
+end
+
+expression_const_true = selector(function()
     return true
-end
+end)
 
-expression_const_false = function()
+expression_const_false = selector(function()
     return false
-end
+end)
 
+expression.empty = expression_empty
+expression.id = expression_id
+expression.exists = expression_exists
 expression.is = expression_is
 expression.is_not = expression_is_not
 expression.min = expression_min
@@ -189,19 +216,17 @@ expression.max = expression_max
 expression.between = expression_between
 expression.one_of = expression_one_of
 expression.not_one_of = expression_not_one_of
-expression.index = expression_index
-expression.method = expression_method
-expression.chain = expression_chain
-expression.neg = expression_neg
-expression.empty = expression_empty
-expression.id = expression_id
-expression.exists = expression_exists
 expression.eq = expression_eq
 expression.neq = expression_neq
 expression.lt = expression_lt
 expression.leq = expression_leq
 expression.gt = expression_gt
 expression.geq = expression_geq
+expression.index = expression_index
+expression.lookup = expression_lookup
+expression.method = expression_method
+expression.chain = expression_chain
+expression.neg = expression_neg
 expression.const = expression_const
 expression.const_true = expression_const_true
 expression.const_false = expression_const_false
