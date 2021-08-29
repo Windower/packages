@@ -1,6 +1,5 @@
 local settings = require('settings')
 local automaton = require('automaton')
-local coroutine = require('coroutine')
 
 local command = require('core.command')
 
@@ -56,11 +55,11 @@ ps:register('equipset', equip_set, '{set_name}')
 
 local deactivate_equip_activate = function (set_name)
     coroutine.schedule(function ()
-        command.input('/pet deactivate <me>', 'user')
+        automaton:deactivate()
         coroutine.sleep(1.5)
         equip_set(set_name)
         coroutine.sleep(options.equip_delay * 14)
-        command.input('/ja activate <me>', 'user')
+        automaton:active()
     end)
 end
 ps:register('dea', deactivate_equip_activate, '{set_name}')

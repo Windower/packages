@@ -2,6 +2,7 @@ local list = require('list')
 local items = require('items')
 local packet = require('packet')
 local player = require('player')
+local command = require('command')
 local resources = require('resources')
 local client = require('shared.client')
 
@@ -67,6 +68,18 @@ ftype.fields.validate_frame = {
 
 ftype.fields.validate_attachment = {
     data = get_attachment_id
+}
+
+ftype.fields.deactivate = {
+    data = function(_)
+        command.input('/pet deactivate <me>', 'user')
+    end
+}
+
+ftype.fields.activate = {
+    data = function(_)
+        command.input('/ja activate <me>', 'user')
+    end
 }
 
 ftype.fields.remove_all = {
