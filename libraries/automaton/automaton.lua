@@ -1,10 +1,12 @@
-local list = require('list')
 local items = require('items')
 local packet = require('packet')
 local player = require('player')
-local command = require('command')
+local exp = require('expression')
 local resources = require('resources')
 local client = require('shared.client')
+local enumerable = require('enumerable')
+
+local command = require('core.command')
 
 local data, ftype = client.new('automaton_service')
 
@@ -37,25 +39,13 @@ ftype.fields.attachments.type.base.fields.item = {
 }
 
 local get_attachment_id = function(attachment)
-    local attachment_id = nil
-    local attachments = list(unpack(items:find_ids(attachment:normalize()) or {}))
-
-    if #attachments ~= 0 then
-        attachment_id = attachments:where(function(id) return res_items[id].category == 'Automaton' end)[1] - attachment_offset
-    end
-
-    return attachment_id
+    local id = enumerable.wrap(items:find_ids(attachment)):first(exp.lookup(res_items):index('category'):is('Automaton'))
+    return id and id - attachment_offset or nil
 end
 
-local get_assembly_id = function(part)
-    local assembly_id = nil
-    local assemblies = list(unpack(items:find_ids(part:normalize()) or {}))
-
-    if #assemblies ~= 0 then
-        assembly_id = assemblies:where(function(id) return res_items[id].category == 'Automaton' end)[1] - assembly_offset
-    end
-
-    return assembly_id
+local get_assembly_id = function(assembly)
+    local id = enumerable.wrap(items:find_ids(assembly)):first(exp.lookup(res_items):index('category'):is('Automaton'))
+    return id and id - assembly_offset or nil
 end
 
 ftype.fields.validate_head = {
