@@ -22,14 +22,13 @@ local equip_set = function(set_name)
 
             --TODO: inform user start of set equipping
             coroutine.sleep(options.equip_delay)
-            if automaton.validate_head_name then
+            if automaton.validate_head_name(set.head) then
                 automaton:equip_head(set.head)
             else
                 --TODO: alert user of invalid/unavailible head
             end
-
             coroutine.sleep(options.equip_delay)
-            if automaton.validate_frame_name then
+            if automaton.validate_frame_name(set.frame) then
                 automaton:equip_frame(set.frame)
             else
                 --TODO: alert user of invalid/unavailible frame
