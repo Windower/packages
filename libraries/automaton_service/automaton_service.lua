@@ -4,6 +4,8 @@ local struct = require('struct')
 local account = require('account')
 local server = require('shared.server')
 
+local assembly_offset, attachment_offset = 0x2000, 0x2100
+
 local data, ftype = server.new(struct.struct({
     name = {struct.string(0x10)};
 
@@ -51,8 +53,8 @@ struct.reset_on(player.job_change, data, ftype)
 packet.incoming:register_init({
     [{0x044, 0x12}] = function(p)
         data.name = p.pet_name
-        data.head_id = p.automaton_head
-        data.frame_id = p.automaton_frame
+        data.head_id = p.automaton_head + assembly_offset
+        data.frame_id = p.automaton_frame + assembly_offset
 
         data.skills.melee = p.melee
         data.skills.magic = p.magic
@@ -62,7 +64,7 @@ packet.incoming:register_init({
         data.skills.ranged_max = p.ranged_max
 
         for k, v in pairs(p.attachments) do
-             data.attachments[k].id = v
+             data.attachments[k].id = v + attachment_offset
              data.attachments[k].slot = k + 1
         end
 

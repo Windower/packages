@@ -83,7 +83,7 @@ ftype.fields.remove_all = {
         }
 
         for k, v in pairs(data.attachments) do
-            pay_load.slots[k + 1] = v.id
+            pay_load.slots[k + 1] = v.id - attachment_offset
         end
 
         packet.outgoing[0x102][0x12]:inject(pay_load)
@@ -129,7 +129,8 @@ ftype.fields.equip_frame = {
                 error(frame .. ' is an invalid frame!')
             end
 
-            if not data.available_frames[frame_id - 32] then
+            local available_frame_offset = 32
+            if not data.available_frames[frame_id - available_frame_offset] then
                 error(frame .. ' is not availible!')
             end
 
