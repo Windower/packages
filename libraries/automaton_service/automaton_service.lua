@@ -42,9 +42,9 @@ local data, ftype = server.new(struct.struct({
         chr_modifier    = {struct.int32},
     })},
 
-    available_heads = {struct.bitfield(4)},
-    available_frames= {struct.bitfield(4)},
-    available_attachments = {struct.bitfield(32)},
+    available_heads = {struct.bool[32]},
+    available_frames= {struct.bool[32]},
+    available_attachments = {struct.bool[256]},
 }))
 
 struct.reset_on(account.logout, data, ftype)
@@ -68,9 +68,14 @@ packet.incoming:register_init({
              data.attachments[k].slot = k + 1
         end
 
-        data.available_heads = p.available_heads
-        data.available_frames = p.available_frames
-        data.available_attachments = p.available_attach
+        for i = 0, 31 do
+            data.available_heads[i] = p.available_heads[i]
+            data.available_frames[i] = p.available_frames[i]
+        end
+
+        for i = 0, 255 do
+            data.available_attachments[i] = p.available_attach[i]
+        end
 
         data.stats.chr = p.chr
         data.stats.str = p.str
