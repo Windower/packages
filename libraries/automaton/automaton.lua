@@ -68,6 +68,10 @@ ftype.fields.validate_attachment_name = {
 
 ftype.fields.remove_all = {
     data = function(_)
+        if player.sub_job_id ~= 0x12 and player.main_job_id ~= 0x12 then
+            error('Player\'s job is not Puppetmaster.')
+        end
+
         local pay_load = {
             job = 0x12,
             is_sub = player.sub_job == 0x12,
