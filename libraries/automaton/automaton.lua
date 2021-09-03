@@ -15,7 +15,7 @@ local assembly_offset, attachment_offset = 0x2000, 0x2100
 
 ftype.fields.head = {
     get = function(data)
-        return resources.items[data.head_id + assembly_offset]
+        return resources.items[data.head_id]
     end
 }
 
@@ -28,13 +28,13 @@ ftype.fields.activated ={
 
 ftype.fields.frame = {
      get = function(data)
-        return resources.items[data.frame_id + assembly_offset]
+        return resources.items[data.frame_id]
     end
 }
 
 ftype.fields.attachments.type.base.fields.item = {
     get = function(data)
-        return resources.items[data.id + attachment_offset]
+        return resources.items[data.id]
     end
 }
 
