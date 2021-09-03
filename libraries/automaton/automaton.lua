@@ -90,29 +90,37 @@ ftype.fields.remove_all = {
     end,
 }
 
+local build_payload = function(part_name, get_id, available, available_offset)
+    if player.sub_job_id ~= 0x12 and player.main_job_id ~= 0x12 then
+        error('Player\'s job is not Puppetmaster.')
+    end
+
+    local id = get_id(part_name:normalize())
+    if id == nil then
+        error(part_name .. ' is invalid.')
+    end
+
+    available_offset = available_offset or 0
+    if not available[id + available_offset] then
+        error(part_name .. ' is not available.')
+    end
+
+    return {
+        job = 0x12,
+        is_sub = player.sub_job == 0x12,
+
+        item_index = id,
+        slots = {},
+    }
+end
+
 ftype.fields.equip_head = {
     data = function(data, head)
         if head ~= data.head.name then
-            local head_id = get_assembly_id(head)
-            if player.sub_job_id ~= 0x12 and player.main_job_id ~= 0x12 then
-                error('Player\'s job is not Puppetmaster!')
-            end
+            local payload = build_payload(head, get_assembly_id, data.available_heads)
+            payload.head = payload.item_index
 
-            if head_id == nil then
-                error(head .. ' is an invalid head!')
-            end
-
-            if not data.available_heads[head_id] then
-                error(head .. ' is not availible!')
-            end
-
-            packet.outgoing[0x102][0x12]:inject({
-                job = 0x12,
-                is_sub = player.sub_job == 0x12,
-
-                item_index = head_id,
-                head = head_id
-            })
+            packet.outgoing[0x102][0x12]:inject(payload)
         end
     end,
 }
@@ -120,55 +128,19 @@ ftype.fields.equip_head = {
 ftype.fields.equip_frame = {
     data = function(data, frame)
         if frame ~= data.frame.name then
-            local frame_id = get_assembly_id(frame)
-            if player.sub_job_id ~= 0x12 and player.main_job_id ~= 0x12 then
-                error('Player\'s job is not Puppetmaster!')
-            end
+            local payload = build_payload(frame, get_assembly_id, data.available_frames, -32)
+            payload.frame = payload.item_index
 
-            if frame_id == nil then
-                error(frame .. ' is an invalid frame!')
-            end
-
-            local available_frame_offset = 32
-            if not data.available_frames[frame_id - available_frame_offset] then
-                error(frame .. ' is not availible!')
-            end
-
-            packet.outgoing[0x102][0x12]:inject({
-                job = 0x12,
-                is_sub = player.sub_job == 0x12,
-
-                item_index = frame_id,
-                frame = frame_id
-            })
+            packet.outgoing[0x102][0x12]:inject(payload)
         end
     end,
 }
 
 ftype.fields.equip_attachment = {
     data = function(data, slot, attachment)
-        local attachment_id = get_attachment_id(attachment)
-        if player.sub_job_id ~= 0x12 and player.main_job_id ~= 0x12 then
-            error('Player\'s job is not Puppetmaster!')
-        end
+        local payload = build_payload(attachment, get_attachment_id, data.available_attachments)
+        payload.slots[slot] = payload.item_index
 
-        if attachment_id == nil then
-            error(attachment .. ' is an invalid attachment!')
-        end
-
-        if not data.available_attachments[attachment_id] then
-            error(attachment .. ' is not availible!')
-        end
-
-        local payload = {
-            job = 0x12,
-            is_sub = player.sub_job == 0x12,
-
-            item_index = attachment_id,
-            slots = {}
-        }
-
-        payload.slots[slot] = attachment_id;
         packet.outgoing[0x102][0x12]:inject(payload)
     end,
 }
