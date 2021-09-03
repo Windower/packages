@@ -38,14 +38,17 @@ ftype.fields.attachments.type.base.fields.item = {
     end
 }
 
+local get_part_id = function(part, offset)
+    local id = enumerable.wrap(items:find_ids(part:normalize())):first(exp.lookup(res_items):index('category'):is('Automaton'))
+    return id and id - offset or nil
+end
+
 local get_attachment_id = function(attachment)
-    local id = enumerable.wrap(items:find_ids(attachment:normalize())):first(exp.lookup(res_items):index('category'):is('Automaton'))
-    return id and id - attachment_offset or nil
+    return get_part_id(attachment, attachment_offset)
 end
 
 local get_assembly_id = function(assembly)
-    local id = enumerable.wrap(items:find_ids(assembly:normalize())):first(exp.lookup(res_items):index('category'):is('Automaton'))
-    return id and id - assembly_offset or nil
+    return get_part_id(assembly, assembly_offset)
 end
 
 ftype.fields.validate_head_name = {
