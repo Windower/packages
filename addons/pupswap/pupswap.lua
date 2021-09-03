@@ -22,26 +22,15 @@ local equip_set = function(set_name)
 
             --TODO: inform user start of set equipping
             coroutine.sleep(options.equip_delay)
-            if automaton.validate_head_name(set.head) then
-                automaton:equip_head(set.head)
-            else
-                --TODO: alert user of invalid/unavailible head
-            end
+            automaton:equip_head(set.head)
+
             coroutine.sleep(options.equip_delay)
-            if automaton.validate_frame_name(set.frame) then
-                automaton:equip_frame(set.frame)
-            else
-                --TODO: alert user of invalid/unavailible frame
-            end
+            automaton:equip_frame(set.frame)
 
             local equip_attachment = automaton.equip_attachment
             for slot, attachment in pairs(set.attachments) do
                 coroutine.sleep(options.equip_delay)
-                if automaton.validate_attachment_name(attachment) then
-                    equip_attachment(automaton, slot, attachment)
-                else
-                    --TODO: alert user of invalid/unavailible attachment
-                end
+                equip_attachment(automaton, slot, attachment)
             end
             --TODO: inform user set equip is complete
         end)
@@ -95,6 +84,42 @@ local set_delay = function(delay)
 end
 ps:register('d', set_delay, '<delay:number>')
 ps:register('delay', set_delay, '<delay:number>')
+
+local validate_set = function(set)
+    local invalid =  {}
+    if not automaton.validate_head_name(set.head) then
+        invalid[#invalid + 1] = set.head
+    end
+
+    if not automaton.validate_frame_name(set.frame) then
+        invalid[#invalid + 1] = set.frame
+    end
+
+    for _, attachment in pairs(set.attachments) do
+        if not automaton.validate_attachment_name(attachment) then
+            print(attachment)
+            invalid[#invalid + 1] = attachment
+        end
+    end
+    return invalid
+end
+
+settings.settings_change:register(function()
+    for name, set in pairs(options.sets) do
+        local invalid = validate_set(set)
+
+        if #invalid > 0 then
+            local invalid_string = ""
+
+            for _, v in ipairs(invalid) do
+                invalid_string = invalid_string .. v .. " "
+            end
+
+            error("Invalid set_name: " .. name .. ", set: " .. invalid_string)
+        end
+    end
+end)
+
 
 --[[
 Copyright © 2021, Windower Dev Team
