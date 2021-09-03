@@ -126,8 +126,8 @@ end
 
 ftype.fields.equip_head = {
     data = function(data, head)
+        local payload = build_payload(head, get_assembly_id, data.available_heads)
         if head ~= data.head.name then
-            local payload = build_payload(head, get_assembly_id, data.available_heads)
             payload.head = payload.item_index
 
             packet.outgoing[0x102][0x12]:inject(payload)
@@ -137,8 +137,8 @@ ftype.fields.equip_head = {
 
 ftype.fields.equip_frame = {
     data = function(data, frame)
+        local payload = build_payload(frame, get_assembly_id, data.available_frames, -32)
         if frame ~= data.frame.name then
-            local payload = build_payload(frame, get_assembly_id, data.available_frames, -32)
             payload.frame = payload.item_index
 
             packet.outgoing[0x102][0x12]:inject(payload)
