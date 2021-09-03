@@ -39,37 +39,31 @@ ftype.fields.attachments.type.base.fields.item = {
 }
 
 local get_attachment_id = function(attachment)
-    local id = enumerable.wrap(items:find_ids(attachment)):first(exp.lookup(res_items):index('category'):is('Automaton'))
+    local id = enumerable.wrap(items:find_ids(attachment:normalize())):first(exp.lookup(res_items):index('category'):is('Automaton'))
     return id and id - attachment_offset or nil
 end
 
 local get_assembly_id = function(assembly)
-    local id = enumerable.wrap(items:find_ids(assembly)):first(exp.lookup(res_items):index('category'):is('Automaton'))
+    local id = enumerable.wrap(items:find_ids(assembly:normalize())):first(exp.lookup(res_items):index('category'):is('Automaton'))
     return id and id - assembly_offset or nil
 end
 
-ftype.fields.validate_head = {
-    data = get_assembly_id
+ftype.fields.validate_head_name = {
+    data = function(name)
+        return get_assembly_id(name) ~= nil
+    end,
 }
 
-ftype.fields.validate_frame = {
-    data = get_assembly_id
+ftype.fields.validate_frame_name = {
+    data = function(name)
+        return get_assembly_id(name) ~= nil
+    end,
 }
 
-ftype.fields.validate_attachment = {
-    data = get_attachment_id
-}
-
-ftype.fields.deactivate = {
-    data = function(_)
-        command.input('/pet deactivate <me>', 'user')
-    end
-}
-
-ftype.fields.activate = {
-    data = function(_)
-        command.input('/ja activate <me>', 'user')
-    end
+ftype.fields.validate_attachment_name = {
+    data = function(name)
+        return get_attachment_id(name) ~= nil
+    end,
 }
 
 ftype.fields.remove_all = {
@@ -88,6 +82,18 @@ ftype.fields.remove_all = {
 
         packet.outgoing[0x102][0x12]:inject(pay_load)
     end,
+}
+
+ftype.fields.deactivate = {
+    data = function(_)
+        command.input('/pet deactivate <me>', 'user')
+    end
+}
+
+ftype.fields.activate = {
+    data = function(_)
+        command.input('/ja activate <me>', 'user')
+    end
 }
 
 local build_payload = function(part_name, get_id, available, available_offset)
