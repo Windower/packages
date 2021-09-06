@@ -10,7 +10,7 @@ local string = require('string')
 
 local defaults = {
     equip_delay = 0.5,
-    sets = {}
+    sets = {},
 }
 local options = settings.load(defaults)
 
@@ -27,8 +27,10 @@ window.state = {
     moveable = true,
     closable = true,
 }
+
 local state = ''
 local icons_path = windower.package_path .. '\\icons\\'
+
 command.arg.register('set_name', '<set_name:string>')
 
 -- Addon command Handlers
@@ -78,7 +80,7 @@ local save_set = function(set_name)
         head = automaton.head.name,
         frame = automaton.frame.name,
 
-        attachments = {}
+        attachments = {},
     }
 
     for _, attachment in pairs(automaton.attachments) do
