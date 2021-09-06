@@ -1,7 +1,12 @@
 local settings = require('settings')
 local automaton = require('automaton')
 
+local ui = require('core.ui')
 local command = require('core.command')
+local windower = require('core.windower')
+
+local os = require('os')
+local string = require('string')
 
 local defaults = {
     equip_delay = 0.5,
@@ -9,6 +14,21 @@ local defaults = {
 }
 local options = settings.load(defaults)
 
+local window = {}
+window.state = {
+    style = 'chromeless',
+    title = 'pupswap',
+    x = windower.settings.ui_size.width - 240,
+    y = windower.settings.ui_size.height - 20,
+    width = 100,
+    height = 19,
+    color = ui.color.rgb(0,0,0,40),
+    resizable = false,
+    moveable = true,
+    closable = true,
+}
+local state = ''
+local icons_path = windower.package_path .. '\\icons\\'
 command.arg.register('set_name', '<set_name:string>')
 
 -- Addon command Handlers
@@ -20,7 +40,8 @@ local equip_set = function(set_name)
         coroutine.schedule(function()
             automaton:remove_all()
 
-            --TODO: inform user start of set equipping
+            state = 'Equiping...'
+
             coroutine.sleep(options.equip_delay)
             automaton:equip_head(set.head)
 
@@ -32,7 +53,8 @@ local equip_set = function(set_name)
                 coroutine.sleep(options.equip_delay)
                 equip_attachment(automaton, slot, attachment)
             end
-            --TODO: inform user set equip is complete
+            state = set_name
+
         end)
     else
         --TODO: inform user equip failed, automaton is currently active
@@ -120,6 +142,42 @@ settings.settings_change:register(function()
     end
 end)
 
+
+local animate_image = function(image_prefix, image_extenstion, count, duration) --TODO: replace with ui animation solution when avaliable.
+    local images = {}
+    for i = 1, count do
+        images[i] = image_prefix .. i .. image_extenstion
+    end
+
+    local image_color = {}
+    local current_frame = 1
+    local last_time = os.clock()
+    return function()
+
+        if os.clock() - last_time > duration then
+            current_frame = (current_frame % count) + 1
+            last_time = os.clock()
+        end
+        ui.image(images[current_frame], image_color)
+    end
+end
+
+local animated_image = animate_image(icons_path .. 'loading_', '.png', 8, 0.2)
+ui.display(function()
+    local image_color = {}
+    window.state, window.closed = ui.window('window', window.state, function()
+        ui.location(21, 0, 0)
+        ui.text(string.format('[%s]{stroke:"1px"}', state))
+
+        ui.location(0, 0)
+        ui.size(19, 20)
+        if state == 'Equiping...' then
+            animated_image()
+        else
+            ui.image(icons_path .. 'idle.png', image_color)
+        end
+    end)
+end)
 
 --[[
 Copyright © 2021, Windower Dev Team
