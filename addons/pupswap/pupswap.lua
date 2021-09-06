@@ -36,7 +36,7 @@ local ps = command.new('ps')
 
 local equip_set = function(set_name)
     local set = options.sets[set_name]
-    if not automaton.activated then
+    if not automaton.activated and set ~= nil then
         coroutine.schedule(function()
             automaton:remove_all()
 
@@ -119,27 +119,31 @@ local validate_set = function(set)
 
     for _, attachment in pairs(set.attachments) do
         if not automaton.validate_attachment_name(attachment) then
-            print(attachment)
             invalid[#invalid + 1] = attachment
         end
     end
     return invalid
 end
 
-settings.settings_change:register(function()
+local validate_settings = function()
     for name, set in pairs(options.sets) do
         local invalid = validate_set(set)
 
         if #invalid > 0 then
-            local invalid_string = ""
+            local invalid_string = ''
 
             for _, v in ipairs(invalid) do
-                invalid_string = invalid_string .. v .. " "
+                invalid_string = invalid_string .. v .. ' '
             end
 
-            error("Invalid set_name: " .. name .. ", set: " .. invalid_string)
+            error('Invalid set_name: ' .. name .. ', invalid: ' .. invalid_string)
         end
     end
+end
+validate_settings()
+
+settings.settings_change:register(function()
+    validate_settings()
 end)
 
 
