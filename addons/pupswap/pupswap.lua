@@ -60,8 +60,7 @@ local equip_set = function(set_name)
         --TODO: inform user equip failed, automaton is currently active
     end
 end
-ps:register('e', equip_set, '{set_name}')
-ps:register('equipset', equip_set, '{set_name}')
+ps:register('(e)quipset', equip_set, '{set_name}')
 
 local deactivate_equip_activate = function (set_name)
     coroutine.schedule(function ()
@@ -89,23 +88,20 @@ local save_set = function(set_name)
     options.sets[set_name] = set
     settings.save()
 end
-ps:register('s', save_set, '{set_name}')
-ps:register('save', save_set, '{set_name}')
+ps:register('(s)ave', save_set, '{set_name}')
 
 local list_sets = function()
     for set in pairs(options.sets) do
         --TODO: show user list of sets.
     end
 end
-ps:register('l', list_sets)
-ps:register('list', list_sets)
+ps:register('(l)ist', list_sets)
 
 local set_delay = function(delay)
     options.equip_delay = delay
     settings.save()
 end
-ps:register('d', set_delay, '<delay:number>')
-ps:register('delay', set_delay, '<delay:number>')
+ps:register('(d)elay', set_delay, '<delay:number>')
 
 local validate_set = function(set)
     local invalid =  {}
