@@ -36,10 +36,15 @@ command.arg.register('set_name', '<set_name:string>')
 -- Addon command Handlers
 local ps = command.new('ps')
 
-local equip_set = function(set_name)
+local equip_set = function(set_name, deactivate)
     local set = options.sets[set_name]
-    if not automaton.activated and set ~= nil then
-        coroutine.schedule(function()
+    coroutine.schedule(function ()
+        if deactivate then
+            automaton:deactivate()
+            coroutine.sleep(1.5)
+        end
+
+        if not automaton.activated and set ~= nil then
             automaton:remove_all()
 
             state = 'Equipping...'
@@ -56,24 +61,16 @@ local equip_set = function(set_name)
                 equip_attachment(automaton, slot, attachment)
             end
             state = set_name
+        else
+            --TODO: inform user equip failed, automaton is currently active
+        end
 
-        end)
-    else
-        --TODO: inform user equip failed, automaton is currently active
-    end
-end
-ps:register('(e)quipset', equip_set, '{set_name}')
-
-local deactivate_equip_activate = function (set_name)
-    coroutine.schedule(function ()
-        automaton:deactivate()
-        coroutine.sleep(1.5)
-        equip_set(set_name)
-        coroutine.sleep(options.equip_delay * 14)
-        automaton:active()
+        if deactivate then
+            automaton:activate()
+        end
     end)
 end
-ps:register('dea', deactivate_equip_activate, '{set_name}')
+ps:register('(e)quipset', equip_set, '{set_name} [deactivate:one_of(true,t)]')
 
 local save_set = function(set_name)
     local set = {
