@@ -42,7 +42,7 @@ local equip_set = function(set_name)
         coroutine.schedule(function()
             automaton:remove_all()
 
-            state = 'Equiping...'
+            state = 'Equipping...'
 
             coroutine.sleep(options.equip_delay)
             automaton:equip_head(set.head)
@@ -173,7 +173,7 @@ ui.display(function()
 
         ui.location(0, 0)
         ui.size(19, 20)
-        if state == 'Equiping...' then
+        if state == 'Equipping...' then
             animated_image()
         else
             ui.image(icons_path .. 'idle.png', image_color)
