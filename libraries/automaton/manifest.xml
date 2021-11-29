@@ -1,0 +1,14 @@
+<package>
+  <name>automaton</name>
+  <version>0.1.0.0</version>
+  <type>library</type>
+  <dependencies>
+    <dependency>list</dependency>
+    <dependency>items</dependency>
+    <dependency>shared</dependency>
+    <dependency>player</dependency>
+    <dependency>packet</dependency>
+    <dependency>resources</dependency>
+    <dependency>automaton_service</dependency>
+  </dependencies>
+</package>

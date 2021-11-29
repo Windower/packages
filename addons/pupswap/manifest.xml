@@ -1,0 +1,9 @@
+<package>
+  <name>pupswap</name>
+  <version>1.0.0.0</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>settings</dependency>
+    <dependency>automaton</dependency>
+  </dependencies>
+</package>
