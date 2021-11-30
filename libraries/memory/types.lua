@@ -400,7 +400,7 @@ types.target = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&'
     hp_percent              = {0x64, uint8},
 })
 
-types.target_array = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&', offsets = {0x18, 0x2F0}}, {
+types.target_array = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&', offsets = {0x18, 0x2F4}}, {
     targets                 = {0x00, target_array_entry[2]},
     auto_target             = {0x51, bool},
     both_targets_active     = {0x52, bool},
