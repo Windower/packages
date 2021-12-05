@@ -37,19 +37,15 @@ invite_dialog_state.movable = true
 invite_dialog_state.closeable = true
 invite_dialog_state.layout_enabled = true
 
-local leader_dialog = {
-    state = {
-        title = 'Party Leader',
-        style = 'normal',
-        x = options.ui.x,
-        y = options.ui.y,
-        width = 136,
-        height = 66,
-        resizable = true,
-        moveable = true,
-        closable = true,
-    },
-}
+local leader_dialog_state = ui.window_state()
+ leader_dialog_state.title = 'Party Leader'
+ leader_dialog_state.style = 'standard'
+ leader_dialog_state.position = {x = options.ui.x, y = options.ui.y}
+ leader_dialog_state.size = {width = 148, height = 66}
+ leader_dialog_state.resizable = false
+ leader_dialog_state.movable = true
+ leader_dialog_state.closeable = true
+ leader_dialog_state.layout_enabled = true
 
 local unhandled_requests = {}
 local unhandled_leader = false
@@ -376,6 +372,53 @@ local function handle_invite()
     end
 end
 
+local function handle_leader()
+    local height = 36
+    for index, member in pairs(party) do
+        if type(index) == 'number' then
+            local party_member = index <= 6 and member.id ~= player.id
+            local alliance_leader = party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id)
+            if party_member or alliance_leader then
+                height = height + 26
+            end
+        end
+        height = height + 8
+    end
+
+    leader_dialog_state.size = {height = height, width = leader_dialog_state.size.width}
+    ui.window(leader_dialog_state, function(dialog)
+        dialog:move(0, 5):size(200,30):label('    Select your new\nparty | alliance leader')
+
+        local button_y = 50
+        for index, member in pairs(party) do
+            if type(index) == 'number' then
+                local party_member = index <= 6 and member.id ~= player.id
+                local alliance_leader = party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id)
+                local prefix = index <= 6 and 'pcmd' or 'acmd'
+                if party_member or alliance_leader then
+                    if dialog:move(10, button_y):size(90,25):button(member.name) then
+                        command.input(prefix .. ' leader ' .. member.name)
+                        unhandled_leader = false
+                    end
+                    button_y = button_y + 26
+                end
+            end
+        end
+    end)
+
+    if leader_dialog_state.closed then
+        leader_dialog_state.closed = nil
+        unhandled_leader = false
+    end
+
+    if leader_dialog_state.state.x ~= options.ui.x or leader_dialog_state.state.y ~= options.ui.y then
+        options.ui.x = leader_dialog_state.state.x
+        options.ui.y = leader_dialog_state.state.y
+        settings.save()
+    end
+end
+
+
 -- User Interface Dialogs
 -- Pop-Up menus for Invites, Requests, Kick, Leader, and Looter
 ui.display(function()
@@ -386,52 +429,7 @@ ui.display(function()
 
     -- Dialog for Selecting new Party|Alliance Leader
     if unhandled_leader then
-        local height = 36
-        for index, member in pairs(party) do
-            if type(index) == 'number' then
-                local party_member = index <= 6 and member.id ~= player.id
-                local alliance_leader = party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id)
-                if party_member or alliance_leader then
-                    height = height + 24
-                end
-            end
-            height = height + 6
-        end
-        leader_dialog.state.height = height
-
-        leader_dialog.state, leader_dialog.closed = ui.window('leader_dialog', leader_dialog.state, function()
-            ui.location(11, 5)
-            ui.text('    Select your new\nparty | alliance leader')
-
-            --loop members
-            local button_y = 50
-            for index, member in pairs(party) do
-                if type(index) == 'number' then
-                    local party_member = index <= 6 and member.id ~= player.id
-                    local alliance_leader = party.alliance.alliance_leader_id == player.id and (member.id == party.alliance.party_2_leader_id or member.id == party.alliance.party_3_leader_id)
-                    local prefix = index <= 6 and 'pcmd' or 'acmd'
-                    if party_member or alliance_leader then
-                        ui.location(23, button_y)
-                        --TODO: Once button text is fixed for custom sizes use -> ui.size(90,25)
-                        if ui.button(member.name, member.name) then
-                            command.input(prefix .. ' leader ' .. member.name)
-                            unhandled_leader = false
-                        end
-                        button_y = button_y + 24
-                    end
-                end
-            end
-        end)
-
-        if leader_dialog.closed then
-            leader_dialog.closed = nil
-            unhandled_leader = false
-        end
-        if leader_dialog.state.x ~= options.ui.x or leader_dialog.state.y ~= options.ui.y then
-            options.ui.x = leader_dialog.state.x
-            options.ui.y = leader_dialog.state.y
-            settings.save()
-        end
+        handle_leader()
     end
 
     -- Dialog for accepting|declining requests to join your party
