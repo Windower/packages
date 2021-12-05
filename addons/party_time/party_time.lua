@@ -27,17 +27,16 @@ local defaults = {
 local options = settings.load(defaults)
 
 local invite_dialog = {}
-local invite_dialog_state = {
-    title = 'Party Invite',
-    style = 'normal',
-    x = options.ui.x,
-    y = options.ui.y,
-    width = 179,
-    height = 96,
-    resizable = false,
-    moveable = true,
-    closable = true,
-}
+local invite_dialog_state = ui.window_state()
+invite_dialog_state.title = 'Party Invite'
+invite_dialog_state.style = 'standard'
+invite_dialog_state.position = {x = options.ui.x, y = options.ui.y}
+invite_dialog_state.size = {width = 195, height = 105}
+invite_dialog_state.resizable = false
+invite_dialog_state.movable = true
+invite_dialog_state.closeable = true
+invite_dialog_state.layout_enabled = true
+
 local leader_dialog = {
     state = {
         title = 'Party Leader',
@@ -336,54 +335,53 @@ packet.outgoing[0x074]:register(function(p)
     unhandled_invite = false
 end)
 
+local function handle_invite()
+    ui.window(invite_dialog.state, function(dialog)
+        dialog:move(0, 0):size(200, 30):label(invite_dialog.name .. ' has invited\nyou to join their party')
+
+        if options.auto.accept then
+            invite_dialog.add_to_whitelist = dialog:move(0, 45):check('Remember ' .. invite_dialog.name, invite_dialog.add_to_whitelist)
+        else
+            options.auto.accept = dialog:move(0, 45):check('Turn auto accept on', options.auto.accept)
+        end
+
+        local accept = dialog:move(0, 67):button('Accept')
+        if accept then
+            command.input('/join')
+            unhandled_invite = false
+            if invite_dialog.add_to_whitelist then
+                options.whitelist:add(invite_dialog.name)
+                settings.save()
+            end
+        end
+
+        local decline = dialog:move(82, 67):button('Decline')
+        if decline then
+            command.input('/decline')
+            unhandled_invite = false
+        end
+    end)
+
+    if invite_dialog.closed then
+        invite_dialog.closed = nil
+        unhandled_invite = false
+    end
+
+    if invite_dialog.state.position.x ~= options.ui.x or invite_dialog.state.position.y ~= options.ui.y then
+        options.ui.x = invite_dialog.state.position.x
+        options.ui.y = invite_dialog.state.position.y
+        invite_dialog_state.x = invite_dialog.state.position.x
+        invite_dialog_state.y = invite_dialog.state.position.y
+        settings.save()
+    end
+end
+
 -- User Interface Dialogs
 -- Pop-Up menus for Invites, Requests, Kick, Leader, and Looter
 ui.display(function()
     -- Dialog for accepting|declining a party invite
     if unhandled_invite then
-        invite_dialog.state, invite_dialog.closed = ui.window('invite_dialog', invite_dialog.state, function()
-            ui.location(11, 5)
-            ui.text(invite_dialog.name .. ' has invited\nyou to join their party')
-
-            ui.location(11, 50)
-            if options.auto.accept then
-                if ui.check('add_to_whitelist', 'Remember ' .. invite_dialog.name, invite_dialog.add_to_whitelist) then
-                    invite_dialog.add_to_whitelist = not invite_dialog.add_to_whitelist
-                end
-            else
-                if ui.check('add_to_whitelist', 'Turn auto accept on', options.auto.accept) then
-                    options.auto.accept = true
-                end
-            end
-
-            ui.location(11, 72)
-            if ui.button('accept', 'Accept') then
-                command.input('/join')
-                unhandled_invite = false
-                if invite_dialog.add_to_whitelist then
-                    options.whitelist:add(invite_dialog.name)
-                    settings.save()
-                end
-            end
-
-            ui.location(93, 72)
-            if ui.button('decline', 'Decline') then
-                command.input('/decline')
-                unhandled_invite = false
-            end
-
-        end)
-        if invite_dialog.closed then
-            invite_dialog.closed = nil
-            unhandled_invite = false
-        end
-        if invite_dialog.state.x ~= options.ui.x or invite_dialog.state.y ~= options.ui.y then
-            options.ui.x = invite_dialog.state.x
-            options.ui.y = invite_dialog.state.y
-            invite_dialog_state.x = invite_dialog.state.x
-            invite_dialog_state.y = invite_dialog.state.y
-            settings.save()
-        end
+        handle_invite()
     end
 
     -- Dialog for Selecting new Party|Alliance Leader
