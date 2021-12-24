@@ -11,6 +11,10 @@ local defaults = {
 
 local options = settings.load(defaults)
 
+local window_state = ui.window_state()
+window_state.style = 'chromeless'
+window_state.position = options
+
 local times = {}
 
 ui.display(function()
@@ -18,10 +22,9 @@ ui.display(function()
         table.remove(times, 1)
     end
     times[#times + 1] = os.clock()
-
-    ui.location(options.x, options.y)
-
-    ui.text(string.format('%.1f', (#times - 1) / (times[#times] - times[1])))
+    ui.window(window_state, function(window)
+      window:label(string.format('%.1f', (#times - 1) / (times[#times] - times[1])))
+    end)
 end)
 
 --[[
