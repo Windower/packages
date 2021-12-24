@@ -28,7 +28,7 @@ ui.display(function()
 end)
 
 --[[
-Copyright © 2018, Windower Dev Team
+Copyright © 2018, 2021 Windower Dev Team
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
