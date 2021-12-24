@@ -29,7 +29,7 @@ ui.display(function()
 end)
 
 --[[
-Copyright © 2018, 2020 Chiaia
+Copyright © 2018, 2021 Chiaia
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
