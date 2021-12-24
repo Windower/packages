@@ -362,10 +362,7 @@ local function handle_invite()
     end
 
     if invite_dialog.state.position.x ~= options.ui.x or invite_dialog.state.position.y ~= options.ui.y then
-        options.ui.x = invite_dialog.state.position.x
-        options.ui.y = invite_dialog.state.position.y
-        invite_dialog_state.x = invite_dialog.state.position.x
-        invite_dialog_state.y = invite_dialog.state.position.y
+        options.ui = invite_dialog.state.position
         settings.save()
     end
 end
