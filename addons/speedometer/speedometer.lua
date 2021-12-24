@@ -4,20 +4,20 @@ local entities = require('entities')
 local string = require('string')
 local windower = require('core.windower')
 
-local speedometer = {
-    style = 'chromeless',
-    height = 20,
-    width = 35,
-    x = windower.settings.ui_size.width - 200,
-    y = windower.settings.ui_size.height - 18,
-}
+local window_state = ui.window_state()
+window_state.style = 'chromeless'
+window_state.height = 20
+window_state.width = 35
+window_state.x = windower.settings.ui_size.width - 200
+window_state.y = windower.settings.ui_size.height - 18
+
 
 ui.display(function()
-    speedometer = ui.window('speedometer', speedometer, function()
+    ui.window(window_state, function(window)
         local entity = entities[player.index]
         local speed = entity.movement_speed
         local base = entity.movement_speed_base
-        ui.text(string.format('%+.0f %%', 100 * (speed / base - 1)))
+        window:label(string.format('%+.0f %%', 100 * (speed / base - 1)))
     end)
 end)
 
