@@ -3,26 +3,25 @@ local string = require('string')
 local ui = require('core.ui')
 local target = require('target')
 
-local config_state = {
-    style = 'chromeless',
-    x = 35,
-    y = 0,
-    width = 32,
-    height = 18,
-    color = ui.color.black,
-}
+local config_state = ui.window_state()
+config_state.style = 'chromeless'
+config_state.x = 35
+config_state.y = 0
+config_state.width = 32
+config_state.height = 18
+config_state.color = ui.color.black
+
 
 ui.display(function()
-    ui.window('distance', config_state, function()
+    ui.window(config_state, function(window)
         local entity = target.st or target.t
 
         if entity then
-            if config_state.color ~= 'ui.color.black' then
+            if window.color ~= ui.color.black then
                 config_state['color'] = ui.color.black
             end
 
-            ui.location(2, 1)
-            ui.text(string.format('%.2f', (math.sqrt(entity.distance))))
+            window:move(2, 1):label(string.format('%.2f', (math.sqrt(entity.distance))))
         else
             config_state['color'] = ui.color.transparent
         end
@@ -30,7 +29,7 @@ ui.display(function()
 end)
 
 --[[
-Copyright © 2018, Chiaia
+Copyright © 2018, 2020 Chiaia
 All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
