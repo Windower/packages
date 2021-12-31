@@ -16,44 +16,6 @@ local data = server.new(struct.struct({
     mp_percent      = {struct.int32},
     tp              = {struct.int32},
     active          = {struct.bool},
-    automaton       = {struct.struct({
-        active = {struct.bool},
-        equipment = {struct.struct({
-            head_id        = {struct.int32},
-            frame_id       = {struct.int32},
-            attachment_ids = {struct.int32[12]},
-        })},
-        inventory = {struct.struct({
-            _heads       = {struct.bool[32]},
-            _frames      = {struct.bool[32]},
-            _attachments = {struct.bool[256]},
-        })},
-        name        = {struct.string(0x10)},
-        hp          = {struct.int32},
-        hp_max      = {struct.int32},
-        mp          = {struct.int32},
-        mp_max      = {struct.int32},
-        melee       = {struct.int32},
-        melee_max   = {struct.int32},
-        ranged      = {struct.int32},
-        ranged_max  = {struct.int32},
-        magic       = {struct.int32},
-        magic_max   = {struct.int32},
-        str_base    = {struct.int32},
-        str_bonus   = {struct.int32},
-        dex_base    = {struct.int32},
-        dex_bonus   = {struct.int32},
-        vit_base    = {struct.int32},
-        vit_bonus   = {struct.int32},
-        agi_base    = {struct.int32},
-        agi_bonus   = {struct.int32},
-        int_base    = {struct.int32},
-        int_bonus   = {struct.int32},
-        mnd_base    = {struct.int32},
-        mnd_bonus   = {struct.int32},
-        chr_base    = {struct.int32},
-        chr_bonus   = {struct.int32},
-    })}
 }))
 
 packet.incoming:register_init({
@@ -96,48 +58,6 @@ packet.incoming:register_init({
                 data.active = false
             end
         end
-    end,
-    [{0x044,0x12}] = function(p)
-        data.automaton.equipment.head_id  = p.automaton_head + 0x2000
-        data.automaton.equipment.frame_id = p.automaton_frame + 0x2000
-        local i
-        for i=0, 11 do
-            data.automaton.equipment.attachment_ids[i] = p.attachments[i] + 0x2100
-        end
-        for i = 0, 31 do
-            data.automaton.inventory._heads[i] = p.available_heads[i]
-            data.automaton.inventory._frames[i] = p.available_frames[i]
-        end
-        for i = 0, 255 do
-            data.automaton.inventory._attachments[i] = p.available_attach[i]
-        end
-        data.automaton.name         = p.pet_name
-        data.automaton.hp           = p.hp
-        data.automaton.hp_max       = p.hp_max
-        data.automaton.mp           = p.mp
-        data.automaton.mp_max       = p.mp_max
-        data.automaton.melee        = p.melee
-        data.automaton.melee_max    = p.melee_max
-        data.automaton.ranged       = p.ranged
-        data.automaton.ranged_max   = p.ranged_max
-        data.automaton.magic        = p.magic
-        data.automaton.magic_max    = p.magic_max
-        data.automaton.str_base     = p.str
-        data.automaton.str_bonus    = p.str_modifier
-        data.automaton.dex_base     = p.dex
-        data.automaton.dex_bonus    = p.dex_modifier
-        data.automaton.vit_base     = p.vit
-        data.automaton.vit_bonus    = p.vit_modifier
-        data.automaton.agi_base     = p.agi
-        data.automaton.agi_bonus    = p.agi_modifier
-        data.automaton.int_base     = p.int
-        data.automaton.int_bonus    = p.int_modifier
-        data.automaton.mnd_base     = p.mnd
-        data.automaton.mnd_bonus    = p.mnd_modifier
-        data.automaton.chr_base     = p.chr
-        data.automaton.chr_bonus    = p.chr_modifier
-
-        data.automaton.active = data.active and (data.name == data.automaton.name)
     end,
 })
 
