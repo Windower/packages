@@ -1,9 +1,10 @@
-local os = require("os")
-local set = require("set")
-local player = require("player")
-local packet = require("packet")
-local equipment = require("equipment")
-local status_effects = require("status_effects")
+local os = require('os')
+
+local equipment = require('equipment')
+local packet = require('packet')
+local player = require('player')
+local set = require('set')
+local status_effects = require('status_effects')
 
 local o = {
     fire = 0,
@@ -74,18 +75,18 @@ local thresholdModifiers =
 burden.threshold = 30
 
 local pet_actions = {
-    [136] = "activate",
-    [139] = "deactivate",
-    [141] = "fire",
-    [142] = "ice",
-    [143] = "wind",
-    [144] = "earth",
-    [145] = "thunder",
-    [146] = "water",
-    [147] = "light",
-    [148] = "dark",
-    [309] = "cooldown",
-    [310] = "deus_ex_automata",
+    [136] = 'activate',
+    [139] = 'deactivate',
+    [141] = 'fire',
+    [142] = 'ice',
+    [143] = 'wind',
+    [144] = 'earth',
+    [145] = 'thunder',
+    [146] = 'water',
+    [147] = 'light',
+    [148] = 'dark',
+    [309] = 'cooldown',
+    [310] = 'deus_ex_automata',
 }
 
 local maneuvers = set(
@@ -142,14 +143,14 @@ function updaters.maneuver(self, type)
     end
 end
 
-function updaters.ice(self) updaters.maneuver(self, "ice") end
-function updaters.fire(self) updaters.maneuver(self, "fire") end
-function updaters.wind(self) updaters.maneuver(self, "wind") end
-function updaters.dark(self) updaters.maneuver(self, "dark") end
-function updaters.earth(self) updaters.maneuver(self, "earth") end
-function updaters.water(self) updaters.maneuver(self, "water") end
-function updaters.light(self) updaters.maneuver(self, "light") end
-function updaters.thunder(self) updaters.maneuver(self, "thunder") end
+function updaters.ice(self) updaters.maneuver(self, 'ice') end
+function updaters.fire(self) updaters.maneuver(self, 'fire') end
+function updaters.wind(self) updaters.maneuver(self, 'wind') end
+function updaters.dark(self) updaters.maneuver(self, 'dark') end
+function updaters.earth(self) updaters.maneuver(self, 'earth') end
+function updaters.water(self) updaters.maneuver(self, 'water') end
+function updaters.light(self) updaters.maneuver(self, 'light') end
+function updaters.thunder(self) updaters.maneuver(self, 'thunder') end
 
 burden.decay_rate = 1
 function burden.decay()

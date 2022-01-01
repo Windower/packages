@@ -3330,18 +3330,42 @@ types.outgoing[0x100] = struct({
 -- Untraditional Equip
 -- Currently only commented for changing instincts in Monstrosity. Refer to the doku wiki for information on Autos/BLUs. #BYRTH#
 -- https://gist.github.com/nitrous24/baf9980df69b3dc7d3cf
-types.outgoing[0x102] = struct({
-    -- 0x00~0x01: 00 00 for Monipulators
-    -- 0x02~0x03: Varies by Monster family for the species change packet. Monipulators that share the same tnl seem to have the same value. 00 00 for instinct changing.
-    main_job_id         = {0x04, job}, -- 00x17 for Monipulators
-    sub_job_id          = {0x05, job}, -- 00x00 for Monipulators
-    flag                = {0x06, uint16}, -- 04 00 for Monipulators changing instincts. 01 00 for changing Monipulators. Possibly the type byte.
-    species             = {0x08, uint16}, -- True both for species change and instinct change packets
-    -- 0x0A~0x0B: 00 00 for Monipulators
-    instincts           = {0x0C, item[0x0C]},
-    name_1              = {0x24, uint8}, -- Indicates your monster's first name
-    name_2              = {0x25, uint8}, -- Indicates your moster's middle name
-    -- 0x25~*: All 00s for Monipulators
+types.outgoing[0x102] = multiple({
+    base = struct({
+        job          = {0x04, job},  -- 00x17 for Monipulators
+        is_sub       = {0x05, bool}, -- 00x00 for Monipulators
+    }),
+
+    key = 'job',
+    lookups = {
+        --PUP
+        [0x12] = struct({
+            item_index          = {0x00, uint8},        -- appears to be the index of the item in the menu.
+            unknown_0           = {0x01, uint8},
+            unknown_1           = {0x02, uint16},       -- seems to only change when attempting to equip already equiped attachments. seen 0x00, 0x01, 0x02, 0x3A83
+            head                = {0x08, uint8},        -- value can be 0x01 - 0x06
+            frame               = {0x09, uint8},        -- value can be 0x20 - 0x23
+            slots               = {0x0A, uint8[0x0C]},  -- Only 1 attachment can be set per packet, To clear set item_index to 0 and set slots[slot] to current value.
+            unused              = {0x16, uint8[0x8A]},  -- All 00s.
+        }),
+        --BLU
+        [0x13] = struct({
+            --TODO: fill out blue mage packet strtucture.
+        }),
+        --MON
+        [0x17] = struct({
+            flag                = {0x06, uint16},      -- MON: 01 00 for species changes,
+                                                       --      04 00 for instincts changes,
+                                                       --      08 00 for name_1 changes,
+                                                       --      10 00 for name_2 changes. Possibly the type byte.
+
+            species             = {0x08, uint16},      -- Indicates your spieces, always sent.
+            instincts           = {0x0C, item[0x0C]},  -- Only instinct being set should be sent, send 0xFF FF to remove.
+            name_1              = {0x24, uint8},       -- Indicates your monster's first name, always sent.
+            name_2              = {0x25, uint8},       -- Indicates your moster's middle name, always sent.
+            unused              = {0x26, uint8[0x7A]}, -- All 00s.
+        }),
+    }
 })
 
 -- Open Bazaar

@@ -1,8 +1,12 @@
+local ffi = require('ffi')
 local string = require('string')
 local table = require('table')
 
 local pairs = pairs
 local tostring = tostring
+local ffi_new = ffi.new
+local ffi_string = ffi.string
+local ffi_typeof = ffi.typeof
 local string_byte = string.byte
 local string_char = string.char
 local string_find = string.find
@@ -77,8 +81,32 @@ string.join = function(str, enumerable)
     return table_concat(values, str)
 end
 
-string.normalize = function(str)
-    return (string_gsub(string_lower(str), '%W+', ''))
+do
+    local buffer_type = ffi_typeof('uint8_t[?]')
+
+    local modifiers = ffi_new(buffer_type, 0x100)
+    for i = 0, 0xFF do
+        modifiers[i] = (i >= 0x41 and i <= 0x5A) and i + 0x20 or i
+    end
+
+    local increment = ffi_new(buffer_type, 0x100)
+    for i = 0, 0xFF do
+        increment[i] = (i < 0x30 or i > 0x39 and i < 0x41 or i > 0x5A and i < 0x61 or i > 0x7A and i < 0x80) and 1 or 0
+    end
+
+    local buffer = ffi_new(buffer_type, 0x100)
+
+    string.normalize = function(str)
+        local length = #str
+        local offset = 0
+        for i = 1, length do
+            local byte = string_byte(str, i)
+            buffer[i - offset - 1] = modifiers[byte]
+            offset = offset + increment[byte]
+        end
+
+        return ffi_string(buffer, length - offset)
+    end
 end
 
 do

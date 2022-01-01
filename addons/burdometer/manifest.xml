@@ -1,13 +1,13 @@
 <package>
   <name>burdometer</name>
-  <version>0.9.1.1</version>
+  <version>0.9.1.3</version>
   <type>addon</type>
   <dependencies>
-    <dependency>set</dependency>
-    <dependency>player</dependency>
-    <dependency>packet</dependency>
-    <dependency>settings</dependency>
     <dependency>equipment</dependency>
+    <dependency>packet</dependency>
+    <dependency>player</dependency>
+    <dependency>set</dependency>
+    <dependency>settings</dependency>
     <dependency>status_effects</dependency>
   </dependencies>
 </package>

@@ -359,14 +359,14 @@ types.language_filter = struct({signature = '84C0750333C0C38B0D', offsets = {0x2
 
 types.graphics = struct({signature = '83EC205355568BF18B0D'}, {
     gamma                   = {0x000, ptr(gamma)},
-    render                  = {0x28C, ptr(render)},
-    footstep_effects        = {0x400, bool},
-    clipping_plane_entity   = {0x438, float},
-    clipping_plane_map      = {0x448, float},
-    aspect_ratio_option     = {0x578, uint32},
-    animation_framerate     = {0x590, uint32},
-    view_matrix             = {0xBB8, matrix},
-    projection_matrix       = {0xDF8, matrix},
+    render                  = {0x290, ptr(render)},
+    footstep_effects        = {0x404, bool},
+    clipping_plane_entity   = {0x43C, float},
+    clipping_plane_map      = {0x44C, float},
+    aspect_ratio_option     = {0x57C, uint32},
+    animation_framerate     = {0x594, uint32},
+    view_matrix             = {0xBBC, matrix},
+    projection_matrix       = {0xDFC, matrix},
 })
 
 types.volumes = struct({signature = '33DBF3AB6A10881D????????C705'}, {
@@ -400,7 +400,7 @@ types.target = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&'
     hp_percent              = {0x64, uint8},
 })
 
-types.target_array = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&', offsets = {0x18, 0x2F0}}, {
+types.target_array = struct({signature = '53568BF18B480433DB3BCB75065E33C05B59C38B0D&', offsets = {0x18, 0x2F4}}, {
     targets                 = {0x00, target_array_entry[2]},
     auto_target             = {0x51, bool},
     both_targets_active     = {0x52, bool},
