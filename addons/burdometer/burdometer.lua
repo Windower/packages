@@ -14,31 +14,26 @@ local defaults = {
         x = 145,
         y = 200,
     },
-    window_style = 'normal',
+    window_style = 'standard',
 }
 
 local options = settings.load(defaults)
 
-local burden_window = {
-    state = {
-        title = 'Burden',
-        style = options.window_style,
-        x = options.ui.x,
-        y = options.ui.y,
-        width = 118,
-        height = 144,
-        color = options.window_style == 'chromeless' and ui.color.transparent or nil,
-        resizable = false,
-        moveable = true,
-    }
-}
+local burden_window_state = ui.window_state()
+burden_window_state.title = 'Burden'
+burden_window_state.style = options.window_style
+burden_window_state.position = {x = options.ui.x, y = options.ui.y}
+burden_window_state.size = {width = 120, height = 200}
+burden_window_state.resizable = false
+burden_window_state.movable = true
+
+local progress_entries = ui.progress_entries(3)
 
 do
     local handle_options_change = function(options)
-        burden_window.state.x = options.ui.x
-        burden_window.state.y = options.ui.y
-        burden_window.state.style = options.window_style
-        burden_window.state.color = options.window_style == 'chromeless' and ui.color.transparent or nil
+        burden_window_state.position = {options.ui.x, y = options.ui.y}
+        burden_window_state.style = options.window_style
+        burden_window_state.color = options.window_style == 'chromeless' and ui.color.transparent or nil
     end
 
     settings.settings_change:register(handle_options_change)
@@ -47,54 +42,38 @@ end
 local cmd = command.new('burden')
 
 local function move_window(x,y)
-    burden_window.state.x = x
-    burden_window.state.y = y
+    burden_window_state.position = {x = x, y = y}
 end
 cmd:register('pos', move_window, '<x:number> <y:number>')
 
 local function set_window_style(style)
     options.window_style = style
 
-    burden_window.state.style = style
-    burden_window.state.color = options.window_style == 'chromeless' and ui.color.transparent or nil
+    burden_window_state.style = style
 
     settings.save()
 end
-cmd:register('style', set_window_style, '<window_style:one_of(chromeless,normal,layout)>')
+cmd:register('style', set_window_style, '<window_style:one_of(chromeless,standard,layout)>')
 
 
-local function draw_burden(element, value, y)
-    local image_color = {}
-
-    ui.location(18, 7 + y)
-    ui.size(100, 10)
-
-    local remaining_time = (value / burden.decay_rate) * 3
-    local progress = (value/burden.threshold)
+local function draw_burden(element, value, y, meter)
     local risk = value - burden.threshold
 
-    local color
-    if risk > 32 then
-        color = ui.color.red
-    elseif risk > 24 then
-        color = ui.color.orange
-    elseif risk > 0 then
-        color = ui.color.rgb(255,204,0)
-    else
-        color = ui.color.limegreen
-    end
+    progress_entries[1].value = value
+    progress_entries[2].max = burden.threshold
+    progress_entries[1].color = risk < 0 and ui.color.limegreen or ui.color.rgb(255,204,0)
 
-    ui.progress(progress, {color = color})
+    progress_entries[2].value = risk
+    progress_entries[2].max = 100
+    progress_entries[2].color = ui.color.red
 
-    ui.location(18, -2 + y)
-    ui.text(string.format('[%s]{stroke:"1px"}', value))
+    meter:padding(0,0,0,0):move(18, y + 7):size(100, 10):progress(progress_entries)
 
-    ui.location(92, -2 + y)
-    ui.text(string.format('[%s%%]{stroke:"1px"}', risk > 0 and risk or 0))
+    meter:padding(0,0,0,0):move(18, y):label(tostring(value))
 
-    ui.location(0, 0 + y)
-    ui.size(16, 16)
-    ui.image(windower.package_path .. '\\icons\\' .. element .. '.png', image_color)
+    meter:padding(0,0,0,0):move(92, y):label(tostring(risk > 0 and risk or 0))
+
+    ui.primitive.rectangle(0, y + 2, 16, 16, windower.package_path .. '\\icons\\' .. element .. '.png');
 end
 
 local ele_order = {
@@ -109,34 +88,35 @@ local ele_order = {
 }
 
 ui.display(function()
-    if not (player.main_job_id == 0x12 or player.sub_job_id == 0x12 or burden_window.state.style == 'layout') then
+    if not (player.main_job_id == 0x12 or player.sub_job_id == 0x12 or burden_window_state.style == 'layout') then
         return
     end
+
     local height = 0
-    for _, v in pairs(burden) do
+    for _, v in ipairs(burden) do
         if v ~= 0 then
-            height = height + 18
+            height = height + 20
         end
     end
-    if burden_window.state.style == 'layout' then
-        height = 144
-    end
-    burden_window.state.height = height
 
-    burden_window.state, burden_window.closed = ui.window('burden_window', burden_window.state, function()
+    if burden_window_state.style == 'layout' then
+        height = 200
+    end
+
+    ui.window(burden_window_state, function(meter)
         local y = 0
-        for _, ele in pairs(ele_order) do
+        for _, ele in ipairs(ele_order) do
             if burden[ele] ~= 0 then
-                draw_burden(ele, burden[ele], y)
-                y = y + 18
+                draw_burden(ele, burden[ele], y, meter)
+                y = y + 20
             end
         end
-        burden_window.state.height = y
+        burden_window_state.size = {width = burden_window_state.size.width, height = y}
     end)
 
-    if burden_window.state.x ~= options.ui.x or burden_window.state.y ~= options.ui.y then
-        options.ui.x = burden_window.state.x
-        options.ui.y = burden_window.state.y
+    if burden_window_state.position.x ~= options.ui.x or burden_window_state.position.y ~= options.ui.y then
+        options.ui.x = burden_window_state.position.x
+        options.ui.y = burden_window_state.position.y
         settings.save()
     end
 end)

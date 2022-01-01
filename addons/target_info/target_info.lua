@@ -4,22 +4,20 @@ local ui = require('core.ui')
 local target = require('target')
 
 local text_color = ui.color.grey
-local config_state = {
-    title = 'Target Info',
-    style = 'chromeless',
-    x = 100,
-    y = 0,
-    width = 130,
-    height = 48,
-    color = ui.color.black,
-}
+local config_state = ui.window_state()
+config_state.style = 'chromeless'
+config_state.x = 100
+config_state.y = 0
+config_state.width = 130
+config_state.height = 48
+config_state.color = ui.color.black
 
 local round = function(num)
     return math.floor(num + 0.5)
 end
 
 ui.display(function()
-    ui.window('target_info', config_state, function()
+    ui.window(config_state, function(window)
         local entity = target.st or target.t
         if entity then
             local entity_speed = ((entity.state_id == 5 or entity.state_id == 85) and round(100 * (entity.movement_speed / 4))) or round(100 * (entity.movement_speed / 5 - 1))
@@ -32,22 +30,16 @@ ui.display(function()
                 text_color = ui.color.grey
             end
 
-            if config_state.color ~= 'ui.color.black' then
+            if window.color ~= ui.color.black then
                 config_state['color'] = ui.color.black
             end
 
-            ui.location(2, 1)
-            ui.text('ID:')
-            ui.location(45, 1)
-            ui.text(tostring(entity.id))
-            ui.location(2, 16)
-            ui.text('Hex:')
-            ui.location(45, 16)
-            ui.text(string.format('%03X', entity.index))
-            ui.location(2, 31)
-            ui.text('Speed:')
-            ui.location(45, 31)
-            ui.text(tostring(entity_speed..'%'), {color = text_color})
+            window:move(2, 1):label('ID:')
+            window:move(45, 1):label(tostring(entity.id))
+            window:move(2, 16):label('Hex:')
+            window:move(45, 16):label(string.format('%03X', entity.index))
+            window:move(2, 31):label('Speed:')
+            window:move(45, 31):label(tostring(entity_speed..'%'), {color = text_color})
         else
             config_state['color'] = ui.color.transparent
         end
@@ -55,7 +47,7 @@ ui.display(function()
 end)
 
 --[[
-Copyright © 2018, Chiaia
+Copyright © 2018, 2021 Chiaia
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
