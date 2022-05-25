@@ -22,12 +22,12 @@ local modules = {}
 
 local null = {}
 local error_t = {
-    lua = {},
-    warning = {},
+    error = {},
+    print = {},
     ignore = {},
 }
-local error_type_lua = error_t.lua
-local error_type_warning = error_t.warning
+local error_type_error = error_t.error
+local error_type_print = error_t.print
 local error_type_ignore = error_t.ignore
 
 local get_check_fn = function(definition)
@@ -60,24 +60,24 @@ end
 
 local get_error_fn = function(definition)
     local error_type = definition.error_type
-    if error_type == nil or error_type == error_type_lua then
+    if error_type == error_type_error then
         return error
     end
 
-    if error_type == error_type_warning then
-        return function(...)
-            print('[Warning]', ...)
-        end
+    if error_type == error_type_print then
+        return print
     end
 
     if type(error_type) == 'function' then
         return error_type
     end
+
+    return nil
 end
 
 local wrap_fn = function(definition, module)
     local name = definition.name
-    if definition.error_type == error_type_ignore or definition.success == nil and definition.failure == nil then
+    if definition.error_type == error_type_ignore then
         return function(...)
             return module[name](...)
         end
@@ -112,6 +112,8 @@ end
 ffi.cdef[[
     typedef uint16_t WORD;
     typedef uint32_t DWORD;
+    typedef int32_t INT;
+    typedef uint32_t UINT;
     typedef int32_t LONG;
     typedef uint32_t ULONG;
     typedef void* HANDLE;
@@ -144,7 +146,17 @@ return {
     null = null,
     error_type = error_t,
     def = function(definition)
-        ffi_cdef(definition.returns .. ' ' .. definition.name .. '(' .. table_concat(definition.parameters, ', ') .. ');')
+        if type(definition) == 'string' then
+            definition = {
+                cdef = definition,
+            }
+        end
+
+        definition.cdef = definition.cdef or definition.returns .. ' ' .. definition.name .. '(' .. table_concat(definition.parameters, ', ') .. ');'
+        definition.error_type = definition.error_type or (definition.success ~= nil or definition.failure ~= nil) and error_type_error or error_type_ignore
+        definition.ignore_codes = definition.ignore_codes or {0}
+
+        ffi_cdef(definition.cdef)
 
         local module_name = definition.module
         local module = modules[module_name]
