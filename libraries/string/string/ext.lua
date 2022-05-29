@@ -13,7 +13,6 @@ local string_find = string.find
 local string_format = string.format
 local string_gmatch = string.gmatch
 local string_gsub = string.gsub
-local string_lower = string.lower
 local string_match = string.match
 local string_rep = string.rep
 local string_sub = string.sub
@@ -27,7 +26,7 @@ string.ends_with = function(str, sub)
     return string_sub(str, -#sub, #str) == sub
 end
 
-string.split = function(str, delim)
+string.split = function(str, delim, max)
     local split = {}
     local split_count = 0
 
@@ -35,9 +34,9 @@ string.split = function(str, delim)
     repeat
         local from, to = string_find(str, delim, start)
         split_count = split_count + 1
-        split[split_count] = string_sub(str, start, from and from - 1)
+        split[split_count] = string_sub(str, start, (max == nil or split_count < max) and from and from - 1 or nil)
         start = to and to + 1
-    until not from
+    until not from or split_count == max
 
     return split
 end
