@@ -165,9 +165,9 @@ local entity = struct({
     index                   = {0x074, entity_index},
     id                      = {0x078, entity_id},
     name                    = {0x07C, npc_name},
-    _unknown_ptr_1          = {0x094, ptr()},
-    movement_speed          = {0x098, float},
-    movement_speed_base     = {0x09C, float},
+    _unknown_0x094          = {0x094, ptr()},
+    dupe_movement_speed     = {0x098, float},
+    _unknown_0x09C          = {0x09C, float}, -- Movement speed "base"?
     display                 = {0x0A0, ptr(display)},
     distance                = {0x0D8, float},
     _dupe_heading2          = {0x0E4, float},
@@ -210,18 +210,20 @@ local entity = struct({
         hp_cloak                = 0x94,
         level_sync              = 0x97,
     })},
-    _unkonwn_ptr_2          = {0x150, ptr()}, -- Sometimes same as _unknown_1
-    _unknown_float_1        = {0x158, float}, -- Always 4?
-    _unknown_short_1        = {0x15C, uint16}, -- Flags?
-    _unknown_short_2        = {0x15E, uint16}, -- Duplicate of _unknown_short_1
-    state_id                = {0x168, uint32}, -- Is this type correct?
-    claim_id                = {0x184, entity_id},
-    animation               = {0x18C, fourcc[0x0A]},
-    animation_time          = {0x1B4, uint16},
-    animation_step          = {0x1B6, uint16},
-    emote_id                = {0x1BC, uint16},
-    emote_name              = {0x1C0, fourcc},
-    entity_flags            = {0x1CC, flags({size = 0x02}, {
+    _unkonwn_0x150          = {0x150, ptr()}, -- Sometimes same as _unknown_1, sometimes nullptr
+    _unknown_0x154          = {0x154, float}, -- -60.0 observed
+    _unknown_0x158          = {0x158, float}, -- Always 4.0? Old movement speed "base"?
+    movement_speed          = {0x15C, float},
+    state_id                = {0x16C, uint32}, -- Is this type correct?
+    _dupe_state_id          = {0x170, uint32}, -- Is this type correct?
+    _unknown_0x174          = {0x174, float}, -- 1000000.0 observed
+    claim_id                = {0x188, entity_id},
+    animation               = {0x190, fourcc[0x0A]},
+    animation_time          = {0x1B8, uint16},
+    animation_step          = {0x1BA, uint16},
+    emote_id                = {0x1C0, uint16},
+    emote_name              = {0x1C4, fourcc},
+    entity_flags            = {0x1D0, flags({size = 0x02}, {
         pc                      = 0x00,
         npc                     = 0x01,
         party                   = 0x02,
@@ -235,29 +237,24 @@ local entity = struct({
         fellow                  = 0x0B,
         trust                   = 0x0C,
     })},
-    linkshell_color         = {0x1D0, linkshell_color},
-    campaign_mode           = {0x1D6, bool},
-    fishing_timer           = {0x1D8, uint32}, -- counts down during fishing, goes 0xFFFFFFFF after 0, time until the fish bites
-    target_index            = {0x1F4, entity_index},
-    pet_index               = {0x1F6, entity_index},
-    model_scale             = {0x200, float},
-    model_size              = {0x204, float},
-    fellow_index            = {0x29C, entity_index},
-    owner_index             = {0x29E, entity_index},
+    linkshell_color         = {0x1D4, linkshell_color},
+    campaign_mode           = {0x1DA, bool},
+    fishing_timer           = {0x1DC, uint32}, -- counts down during fishing, goes 0xFFFFFFFF after 0, time until the fish bites
+    target_index            = {0x1F8, entity_index},
+    pet_index               = {0x1FA, entity_index},
+    model_scale             = {0x204, float},
+    model_size              = {0x208, float},
+    monstrosity_flags       = {0x20C, uint16},
+    monstrosity_name_id_1   = {0x20E, uint8},
+    monstrosity_name_id_2   = {0x20F, uint8},
+    monstrosity_name        = {0x210, string(0x1C)},
+    monstrosity_name_short  = {0x231, string(0x18)},
+    fellow_index            = {0x2A0, entity_index},
+    owner_index             = {0x2A2, entity_index},
     heading                 = {
         get = function(cdata) return cdata.rotation.z end,
         set = function(cdata, value) cdata.rotation.z = value end,
     },
-    -- TODO: Verify
-    -- npc_talking             = {0x0AC, uint32},
-    -- pos_move                = {0x054, world_coord}
-    -- status_server           = {0x16C, uint32},
-    -- pets_owners_index       = {0x2A0, entity_index},
-    -- npc_speech_loop         = {0x13E, uint16},
-    -- npc_speech_frame        = {0x140, uint16},
-    -- npc_walk_pos_1          = {0x15C, uint16},
-    -- npc_walk_pos_2          = {0x15E, uint16},
-    -- npc_walk_mode           = {0x160, uint16},
 })
 
 local target_array_entry = struct({size = 0x28}, {
@@ -374,7 +371,7 @@ types.volumes = struct({signature = '33DBF3AB6A10881D????????C705'}, {
     footsteps               = {0x20, float},
 })
 
-types.auto_disconnect = struct({signature = '6A00E8????????8B44240883C40485C07505A3'}, {
+types.auto_disconnect = struct({signature = '6A00E8????????8B44240883C40485C07505A3', module = 'polcore.dll'}, {
     enabled                 = {0x00, bool},
     last_active_time        = {0x04, uint32}, -- in ms, unknown offset
     timeout_time            = {0x08, uint32}, -- in ms

@@ -285,6 +285,7 @@ do
 
         if info.signature then
             ftype.signature = info.signature
+            ftype.module = info.module or 'FFXiMain.dll'
             ftype.offsets = info.offsets or {}
         end
 
