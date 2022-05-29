@@ -51,38 +51,56 @@ local math_ceil = math.ceil
 
 coroutine.schedule(function()
     while true do
-        do -- graphics
+        do -- Graphics
             local graphics = memory.graphics
-            local gamma = graphics.gamma
-            local render = graphics.render
-
             local graphics_options = options.graphics
-            local aspect_ratio_options = graphics_options.aspect_ratio
-            local gamma_options = graphics_options.gamma
 
-            gamma.red = gamma_options.red
-            gamma.green = gamma_options.green
-            gamma.blue = gamma_options.blue
+            do -- Gamma Adjustment
+                local gamma = graphics.gamma
+                local gamma_options = graphics_options.gamma
 
-            render.aspect_ratio = aspect_ratio_options.auto and window_aspect_ratio or ((4 / 3) / aspect_ratio_options.value)
-            render.framerate_divisor = graphics_options.framerate == 'unlimited' and 0 or math_ceil(60 / graphics_options.framerate)
+                gamma.red = gamma_options.red
+                gamma.green = gamma_options.green
+                gamma.blue = gamma_options.blue
+            end
 
-            graphics.clipping_plane_entity = graphics_options.clipping_plane
-            graphics.clipping_plane_map = graphics_options.clipping_plane
+            do -- Rendering options
+                local render = graphics.render
+
+                do -- Background Aspect Ratio
+                    local aspect_ratio_options = graphics_options.aspect_ratio
+
+                    render.aspect_ratio = aspect_ratio_options.auto and window_aspect_ratio or ((4 / 3) / aspect_ratio_options.value)
+                end
+
+                do -- (Animation) Frame Rate
+                    render.framerate_divisor = graphics_options.framerate == 'unlimited' and 0 or math_ceil(60 / graphics_options.framerate)
+                end
+            end
+
+            do -- Clipping Plane
+                graphics.clipping_plane_entity = graphics_options.clipping_plane
+                graphics.clipping_plane_map = graphics_options.clipping_plane
+            end
         end
 
-        do -- system
-            local auto_disconnect = memory.auto_disconnect
-            local language_filter = memory.language_filter
-
+        do -- System
             local system_options = options.system
-            local auto_disconnect_options = system_options.auto_disconnect
-            local language_filter_options = system_options.language_filter
 
-            auto_disconnect.enabled = auto_disconnect_options.enabled
-            auto_disconnect.timeout_time = auto_disconnect_options.time
+            do -- Auto-Disconnect
+                local auto_disconnect = memory.auto_disconnect
+                local auto_disconnect_options = system_options.auto_disconnect
 
-            language_filter.disabled = not language_filter_options.enabled
+                auto_disconnect.enabled = auto_disconnect_options.enabled
+                auto_disconnect.timeout_time = auto_disconnect_options.time
+            end
+
+            do -- Language Filter
+                local language_filter = memory.language_filter
+                local language_filter_options = system_options.language_filter
+
+                language_filter.disabled = not language_filter_options.enabled
+            end
         end
 
         coroutine.sleep_frame()
