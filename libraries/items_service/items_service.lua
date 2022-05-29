@@ -232,7 +232,7 @@ packet.incoming:register_init({
     end,
 
     [{0x01C}] = function(p)
-        for bag = 0, bag_count - 1 do
+        for bag = 0, #p.size - 1 do
             items_sizes[bag] = p.size[bag] - 1
         end
     end,
