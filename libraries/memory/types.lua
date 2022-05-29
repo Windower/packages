@@ -371,7 +371,7 @@ types.volumes = struct({signature = '33DBF3AB6A10881D????????C705'}, {
     footsteps               = {0x20, float},
 })
 
-types.auto_disconnect = struct({signature = '6A00E8????????8B44240883C40485C07505A3'}, {
+types.auto_disconnect = struct({signature = '6A00E8????????8B44240883C40485C07505A3', module = 'polcore.dll'}, {
     enabled                 = {0x00, bool},
     last_active_time        = {0x04, uint32}, -- in ms, unknown offset
     timeout_time            = {0x08, uint32}, -- in ms
