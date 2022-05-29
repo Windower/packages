@@ -1,6 +1,6 @@
 <package>
   <name>config</name>
-  <version>1.0.2.1</version>
+  <version>1.0.2.2</version>
   <type>addon</type>
   <dependencies>
     <dependency>memory</dependency>
