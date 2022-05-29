@@ -130,7 +130,6 @@ local item_status = tag(uint8, 'item_status')
 local title = tag(uint16, 'titles')
 local nation = tag(uint8, 'nation') -- 0 sandy, 1 bastok, 2 windy
 local status_effect = tag(uint8, 'buffs')
-local indi = tag(uint8, 'indi')
 local ip = tag(uint32, 'ip')
 local chat = tag(uint8, 'chat')
 local action_message = tag(uint16, 'action_messages')
@@ -181,14 +180,14 @@ local resistances = struct({
 })
 
 local combat_skill = struct({
-    level               = {0x00, bit(uint16, 15), offset=0},
-    capped              = {0x00, boolbit(uint16), offset=15},
+    level               = {0x00, bit(uint16, 15), offset = 0},
+    capped              = {0x00, boolbit(uint16), offset = 15},
 })
 
 local crafting_skill = struct({
-    rank_id             = {0x00, bit(uint16, 5), offset=0},
-    level               = {0x00, bit(uint16, 10), offset=5},
-    capped              = {0x00, boolbit(uint16), offset=15},
+    rank_id             = {0x00, bit(uint16, 5), offset = 0},
+    level               = {0x00, bit(uint16, 10), offset = 5},
+    capped              = {0x00, boolbit(uint16), offset = 15},
 })
 
 local party_status_effects = struct({
@@ -201,10 +200,10 @@ local party_status_effects = struct({
 local rmap_region_info = struct({
     influence_ranking   = {0x00, uint8},
     influence_ranking_no_beastmen   = {0x01, uint8},
-    beastmen_ranking    = {0x02, bit(uint8,2), offset=0},
-    windurst_ranking    = {0x02, bit(uint8,2), offset=2},
-    bastok_ranking      = {0x02, bit(uint8,2), offset=4},
-    sandoria_ranking    = {0x02, bit(uint8,2), offset=6},
+    beastmen_ranking    = {0x02, bit(uint8,2), offset = 0},
+    windurst_ranking    = {0x02, bit(uint8,2), offset = 2},
+    bastok_ranking      = {0x02, bit(uint8,2), offset = 4},
+    sandoria_ranking    = {0x02, bit(uint8,2), offset = 6},
     ownership           = {0x03, uint8}, -- 0: Neutral, 1: San'doria, 2: Bastok, 3: Windurst, 0xFF: Jeuno
 })
 
@@ -216,17 +215,17 @@ local bmap_region_info = struct({
     -- 3 = Retreating
     -- 4 = Defending
     -- 5 = Preparing
-    status              = {0x00, bit(uint32, 3), offset=0},
-    number_of_forces    = {0x00, bit(uint32, 8), offset=3},
-    level               = {0x00, bit(uint32, 4), offset=11},
-    number_of_mirrors   = {0x00, bit(uint32, 4), offset=15},
-    number_of_prisoners = {0x00, bit(uint32, 4), offset=19},
+    status              = {0x00, bit(uint32, 3), offset = 0},
+    number_of_forces    = {0x00, bit(uint32, 8), offset = 3},
+    level               = {0x00, bit(uint32, 4), offset = 11},
+    number_of_mirrors   = {0x00, bit(uint32, 4), offset = 15},
+    number_of_prisoners = {0x00, bit(uint32, 4), offset = 19},
     -- No clear purpose for the remaining 9 bits
 })
 
 local roe_quest_entry = struct({
     roe_quest_id        = {0x00, roe_quest},
-    roe_quest_progress  = {0x00, bit(uint32, 20), offset=12},
+    roe_quest_progress  = {0x00, bit(uint32, 20), offset = 12},
 })
 
 local guild_entry = struct({
@@ -238,8 +237,9 @@ local guild_entry = struct({
 
 local unity = struct({
     -- 0=None, 1=Pieuje, 2=Ayame, 3=Invincible Shield, 4=Apururu, 5=Maat, 6=Aldo, 7=Jakoh Wahcondalo, 8=Naja Salaheem, 9=Flavira
-    id                  = {0x00, bit(uint32, 5), offset=0},
-    points              = {0x00, bit(uint32, 16), offset=10},
+    id                  = {0x00, bit(uint32, 5), offset = 0},
+    rank                = {0x00, bit(uint32, 5), offset = 5},
+    points              = {0x00, bit(uint32, 17), offset = 10},
 })
 
 local alliance_member = struct({
@@ -272,8 +272,8 @@ local merit_entry = struct({
 
 local job_point_entry = struct({
     job_point_id        = {0x00, uint16},
-    _known1             = {0x02, bit(uint16,10), offset=0},
-    value               = {0x02, bit(uint16, 6), offset=10},
+    _known1             = {0x02, bit(uint16,10), offset = 0},
+    value               = {0x02, bit(uint16, 6), offset = 10},
 })
 
 local job_point_info = struct({
@@ -288,8 +288,8 @@ local blacklist_entry = struct({
 })
 
 local equipset_build = struct({
-    active              = {0x00, boolbit(uint8), offset=0},
-    bag_id              = {0x00, bit(bag, 6), offset=2},
+    active              = {0x00, boolbit(uint8), offset = 0},
+    bag_id              = {0x00, bit(bag, 6), offset = 2},
     bag_index           = {0x01, uint8},
     item_id             = {0x02, item},
 })
@@ -354,14 +354,14 @@ types.incoming[0x00A] = struct({
     menu_id             = {0x60, uint16},
     weather_id          = {0x64, weather},
     flags               = {0x7C, struct({size = 0x04}, {
-        mog_house           = {0x01, boolbit(uint8), offset=1},
+        mog_house           = {0x01, boolbit(uint8), offset = 1},
     })},
     player_name         = {0x80, pc_name},
     abyssea_timestamp   = {0x9C, time()},
     zone_model          = {0xA6, uint16},
     main_job_id         = {0xB0, job},
     sub_job_id          = {0xB3, job},
-    job_levels          = {0xB8, uint8[0x10], key_lookup='jobs'},
+    job_levels          = {0xB8, uint8[0x10], key_lookup = 'jobs'},
     stats_base          = {0xC8, stats},
     stats_bonus         = {0xD6, stats},
     hp_max              = {0xE4, uint32},
@@ -435,8 +435,8 @@ types.incoming[0x00D] = struct({
     x                   = {0x08, float},
     z                   = {0x0C, float},
     y                   = {0x10, float},
-    run_count           = {0x14, bit(uint16, 13), offset=0},
-    target_index        = {0x16, bit(entity_index, 15), offset=1},
+    run_count           = {0x14, bit(uint16, 13), offset = 0},
+    target_index        = {0x16, bit(entity_index, 15), offset = 1},
     movement_speed      = {0x18, uint8}, -- 32 represents 100%
     animation_speed     = {0x19, uint8}, -- 32 represents 100%
     hp_percent          = {0x1A, percent},
@@ -487,7 +487,7 @@ types.incoming[0x00E] = struct({
     x                   = {0x08, float},
     z                   = {0x0C, float},
     y                   = {0x10, float},
-    run_count           = {0x14, bit(uint16, 13), offset=0},
+    run_count           = {0x14, bit(uint16, 13), offset = 0},
     -- target index?
     hp_percent          = {0x1A, percent},
     state_id            = {0x1B, state},
@@ -516,15 +516,18 @@ types.incoming[0x01B] = struct({
     -- 0x05~0x06 were 0x0101 for me
     sub_job_id          = {0x07, job},
     sub_job_unlocked    = {0x08, boolbit(uint32)},
-    sub_jobs_unlocked   = {0x08, bit(uint32, 0x16), offset=1}, -- flags field
-    job_levels_pre_toau = {0x0C, uint8[0x10], key_lookup='jobs'},
+    sub_jobs_unlocked   = {0x08, bit(uint32, 0x16), offset = 1}, -- flags field
+    job_levels_pre_toau = {0x0C, uint8[0x10], key_lookup = 'jobs'},
     stats_base          = {0x1C, stats}, -- Altering these stat values has no impact on your equipment menu.
     hp_max              = {0x38, uint32},
     mp_max              = {0x3C, uint32},
-    job_levels          = {0x44, uint8[0x18], key_lookup='jobs'},
+    job_levels          = {0x44, uint8[0x18], key_lookup = 'jobs'},
     monster_level       = {0x5B, uint8},
     encumbrance_flags   = {0x5C, uint32}, -- [legs, hands, body, head, ammo, range, sub, main,] [back, right_ring, left_ring, right_ear, left_ear, waist, neck, feet] [HP, CHR, MND, INT, AGI, VIT, DEX, STR,] [X X X X X X X MP]
+    mentor_icon         = {0x61, uint8},
     mastery_rank        = {0x62, uint16},
+    mastered_jobs       = {0x64, boolbit(uint8)[24], key_lookup = 'jobs'},
+    mastery_job_levels  = {0x68, uint8[24], key_lookup = 'jobs'},
 })
 
 -- Inventory Count
@@ -535,11 +538,11 @@ types.incoming[0x01B] = struct({
 -- for now.
 -- There appears to be space for another 8 bags.
 types.incoming[0x01C] = struct({
-    size                = {0x00, uint8[13], key_lookup='bags'},
-    -- These "dupe" sizes are set to 0 if the inventory disabled.
+    size                = {0x00, uint8[18], key_lookup = 'bags'},
+    -- These "other" sizes are set to 0 if the inventory disabled.
     -- storage: The accumulated storage from all items (uncapped) -1
     -- wardrobe 3/4: This is not set to 0 despite being disabled for whatever reason
-    other_size          = {0x10, uint16[13], key_lookup='bags'},
+    other_size          = {0x14, uint16[18], key_lookup = 'bags'},
 })
 
 -- Finish Inventory
@@ -624,7 +627,7 @@ types.incoming[0x026] = struct({
 types.incoming[0x027] = struct({
     player_id           = {0x00, entity}, -- 0x0112413A in Omen, 0x010B7083 in Legion, Layer Reserve ID for Ambuscade queue, 0x01046062 for Chocobo circuit
     player_index        = {0x04, entity_index}, -- 0x013A in Omen, 0x0083 in Legion , Layer Reserve Index for Ambuscade queue, 0x0062 for Chocobo circuit
-    message_id          = {0x06, bit(uint16, 15), offset=0},
+    message_id          = {0x06, bit(uint16, 15), offset = 0},
     type                = {0x08, uint32}, -- 0x04 for Fishing/Salvage, 0x05 for Omen/Legion/Ambuscade queue/Chocobo Circuit
     param_1             = {0x0C, uint32}, -- Parameter 0 on the display messages dat files
     param_2             = {0x10, uint32}, -- Parameter 1 on the display messages dat files
@@ -861,7 +864,7 @@ types.incoming[0x02A] = struct({
     param_3             = {0x0C, uint32},
     param_4             = {0x10, uint32},
     player_index        = {0x14, entity_index},
-    message_id          = {0x16, bit(uint16,15), offset=0}, -- The high bit is occasionally set, though the reason for it is unclear.
+    message_id          = {0x16, bit(uint16,15), offset = 0}, -- The high bit is occasionally set, though the reason for it is unclear.
     -- 0x18   Possibly flags, 0x06000000 and 0x02000000 observed
 })
 
@@ -978,7 +981,7 @@ types.incoming[0x034] = struct({
 types.incoming[0x036] = struct({
     actor               = {0x00, entity},
     actor_index         = {0x04, entity_index},
-    message_id          = {0x06, bit(uint16, 15), offset=0},
+    message_id          = {0x06, bit(uint16, 15), offset = 0},
 })
 
 -- Player update
@@ -1079,18 +1082,34 @@ types.incoming[0x037] = struct({
     player_id           = {0x20, entity},
     hp_percent          = {0x26, percent},
     movement_speed      = {0x28, uint8},
-    yalms_per_step      = {0x2A, bit(uint16, 9), offset=0}, -- Determines how quickly your animation walks
+    yalms_per_step      = {0x2A, bit(uint16, 9), offset = 0}, -- Determines how quickly your animation walks
     state_id            = {0x2C, state},
     linkshell1_red      = {0x2D, uint8},
     linkshell1_green    = {0x2E, uint8},
     linkshell1_blue     = {0x2F, uint8},
-    pet_index           = {0x30, bit(uint32, 16), offset=3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
-    ballista_stuff      = {0x30, bit(uint32, 9), offset=21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
+    pet_index           = {0x30, bit(uint32, 16), offset = 3}, -- From 0x08 of byte 0x34 to 0x04 of byte 0x36
+    ballista_stuff      = {0x30, bit(uint32, 9), offset = 21}, -- The first few bits seem to determine the icon, but the icon appears to be tied to the type of fight, so it's more than just an icon.
     home_point_ticks    = {0x38, uint32}, -- This value is at 1h 6min and upoon death starts counting down to 6min
     home_point_timestamp= {0x3C, time()}, -- This is the game-offset timestamp of the home point countdown, including the 6min from home_point_ticks, keeps counting up until the player dies, then it freezes
+    costume             = {0x40, uint32},
+    fellow_index        = {0x44, uint16},
     fish_hook_delay     = {0x46, uint8}, -- number of seconds between casting and hooking a fish, only set when state_id changes to 56
     status_effect_mask  = {0x48, data(8)},
-    indi_status_effect  = {0x54, indi},
+    monstrosity_species = {0x50, uint16}, -- High bit is always set while in monstrosity and determines the display of the third name
+    monstrosity_name_id_1={0x52, uint8},
+    monstrosity_name_id_2={0x53, uint8},
+    indi_status_effect  = {0x54, bit(uint8, 7), offset = 0},
+    job_master_flag     = {0x54, bit(uint8, 1), offset = 1},
+    face_flags          = {0x55, uint8},
+    mount               = {0x57, uint8}, -- Related to Mounts, seems to be mount id + 1, except for chocobo. The value doesn't get zeroed after dismount
+    wardrobe            = {0x58, flags({size = 0x01}, {
+        wardrobe_3          = 0x00,
+        wardrobe_4          = 0x01,
+        wardrobe_5          = 0x03,
+        wardrobe_6          = 0x04,
+        wardrobe_7          = 0x05,
+        wardrobe_8          = 0x06,
+    })},
 })
 
 -- Entity Animation
@@ -1158,7 +1177,7 @@ types.incoming[0x03F] = struct({
 -- Blacklist
 types.incoming[0x041] = struct({
     blacklist_entries   = {0x00, blacklist_entry[0x12]},
-    _known1             = {0xF0, uint8, const=3},
+    _known1             = {0xF0, uint8, const = 3},
     size                = {0xF1, uint8},
 })
 
@@ -1710,9 +1729,9 @@ types.incoming[0x056] = multiple({ -- #BYRTH# unadjusted for the base offset
             current_nation_mission  = {0x04, uint32},
             current_rotz_mission    = {0x08, uint32},
             current_cop_mission     = {0x0C, uint32}, -- doesn't correspond directly to .dat
-            current_acp_mission     = {0x14, bit(uint16, 4), offset=0},
-            current_mkd_mission     = {0x14, bit(uint16, 4), offset=4},
-            current_asa_mission     = {0x14, bit(uint16, 4), offset=8},
+            current_acp_mission     = {0x14, bit(uint16, 4), offset = 0},
+            current_mkd_mission     = {0x14, bit(uint16, 4), offset = 4},
+            current_asa_mission     = {0x14, bit(uint16, 4), offset = 8},
             current_soa_mission     = {0x18, uint32},
             current_rov_mission     = {0x1C, uint32},
         }),
@@ -1740,7 +1759,7 @@ types.incoming[0x05A] = struct({
     target_index        = {0x0A, entity_index},
     emote_id            = {0x0C, uint16},
     _known1             = {0x0E, uint16, const = 0x0002},
-    motion              = {0x12, boolbit(uint8), offset=1},
+    motion              = {0x12, boolbit(uint8), offset = 1},
 })
 
 -- Spawn
@@ -1780,9 +1799,9 @@ types.incoming[0x05C] = struct({
     -- 0xFF = Jeuno
 types.incoming[0x05E] = struct({
     -- First two bits have an unknown function, but might indicate beastman influence?
-    windurst_ranking    = {0x00, bit(uint8, 2), offset=2},
-    bastok_ranking      = {0x00, bit(uint8, 2), offset=4},
-    sandoria_ranking    = {0x00, bit(uint8, 2), offset=6},
+    windurst_ranking    = {0x00, bit(uint8, 2), offset = 2},
+    bastok_ranking      = {0x00, bit(uint8, 2), offset = 4},
+    sandoria_ranking    = {0x00, bit(uint8, 2), offset = 6},
     alliance_indicator  = {0x01, bool}, -- Indicates whether the bottom two nations are allied.
     --0x02~0x15: All Zeros, and changed nothing when 0xFF'd. 4 bytes larger than we would expect if there was empty space left for the town regions
     ronfaure_info       = {0x16, rmap_region_info},
@@ -1823,19 +1842,19 @@ types.incoming[0x05E] = struct({
     -- 1 = MMJ
     -- 2 = Halvung
     -- 3 = Arrapago
-    astral_candescence_owner    = {0x9C, bit(uint32,2), offset=0},
+    astral_candescence_owner    = {0x9C, bit(uint32,2), offset = 0},
 -- Orders:
     -- 0 = Defend Al Zahbi
     -- 1 = Intercept Enemy
     -- 2 = Invade Enemy Base
     -- 3 = Recover the Orb
-    current_orders      = {0x9C, bit(uint32,2), offset=2},
-    mamool_ja_level     = {0x9C, bit(uint32,4), offset=4},
-    halvung_level       = {0x9C, bit(uint32,4), offset=8},
-    arrapago_level      = {0x9C, bit(uint32,4), offset=12},
-    mamool_ja_orders    = {0x9C, bit(uint32,3), offset=16}, -- #BYRTH# Why is this three bits when there are only 3 recorded states for orders?
-    halvung_orders      = {0x9C, bit(uint32,3), offset=19},
-    arrapago_orders     = {0x9C, bit(uint32,3), offset=22},
+    current_orders      = {0x9C, bit(uint32,2), offset = 2},
+    mamool_ja_level     = {0x9C, bit(uint32,4), offset = 4},
+    halvung_level       = {0x9C, bit(uint32,4), offset = 8},
+    arrapago_level      = {0x9C, bit(uint32,4), offset = 12},
+    mamool_ja_orders    = {0x9C, bit(uint32,3), offset = 16}, -- #BYRTH# Why is this three bits when there are only 3 recorded states for orders?
+    halvung_orders      = {0x9C, bit(uint32,3), offset = 19},
+    arrapago_orders     = {0x9C, bit(uint32,3), offset = 22},
 
     -- This is for the stronghold information:
     mamool_ja_stronghold    = {0xA0, bmap_region_info},
@@ -1876,12 +1895,16 @@ types.incoming[0x061] = struct({
     item_level_over_99  = {0x51, uint8},
     item_level_main     = {0x52, uint8},
     unity               = {0x54, unity},
+    master_level        = {0x61, uint8},
+    master_breaker      = {0x62, boolbit(uint8), offset = 0},
+    exemplar_points_current={0x64, uint32},
+    exemplar_points_required={0x68, uint32},
 })
 
 -- Skills Update
 types.incoming[0x062] = struct({
-    combat_skills       = {0x7C, combat_skill[0x30], key_lookup='skills', lookup_index=0x00},
-    crafting_skills     = {0xDC, crafting_skill[0x0A], key_lookup='skills', lookup_index=0x30},
+    combat_skills       = {0x7C, combat_skill[0x30], key_lookup = 'skills', lookup_index = 0x00},
+    crafting_skills     = {0xDC, crafting_skill[0x0A], key_lookup = 'skills', lookup_index = 0x30},
 })
 
 -- Set Update
@@ -1900,12 +1923,11 @@ types.incoming[0x063] = multiple({
 
         [0x02] = struct({
             limit_points    = {0x04, uint16},
-            merit_points    = {0x06, uint8},
-            flags           = {0x07, flags({size = 0x01}, {
-                merits_availabe = 0x05, -- True when the Merit Points menu is enabled. Flase when it's greyed out (i.e. main_job_level < 75).
-                exp_capped      = 0x06, -- True when the player's job name is blue meaning their exp is capped, either due to reaching the max or from the merit switch being on.
-                merit_switch    = 0x07, -- True when the Merit Switch is set to Limit Points
-            })},
+            merit_points    = {0x06, bit(uint16, 7), offset = 0},
+            assimilation    = {0x06, bit(uint16, 6), offset = 7},
+            merits_availabe = {0x06, boolbit(uint16), offset = 13}, -- True when the Merit Points menu is enabled. Flase when it's greyed out (i.e. main_job_level < 75).
+            exp_capped      = {0x06, boolbit(uint16), offset = 14}, -- True when the player's job name is blue meaning their exp is capped, either due to reaching the max or from the merit switch being on.
+            merit_switch    = {0x06, boolbit(uint16), offset = 15}, -- True when the Merit Switch is set to Limit Points
             merit_points_max= {0x08, uint8},
         }),
 
@@ -1926,7 +1948,7 @@ types.incoming[0x063] = multiple({
         }),
 
         [0x05] = struct({
-            job_points      = {0x08, job_point_info[0x18], key_lookup='jobs'}
+            job_points      = {0x08, job_point_info[0x18], key_lookup = 'jobs'}
         }),
 
         [0x09] = struct({
@@ -1954,8 +1976,8 @@ types.incoming[0x067] = struct({
 -- 2 occurs often even with no pet, contains player index, id and main job level
 -- 3 identifies (potential) pets and who owns them
 -- 4 gives status information about your pet
-        type                = {0x00, bit(uint16, 6), offset=0},
-        packet_length       = {0x00, bit(uint16, 10), offset=6}, -- Length of packet in bytes excluding the header and any padding after the pet name
+        type                = {0x00, bit(uint16, 6), offset = 0},
+        packet_length       = {0x00, bit(uint16, 10), offset = 6}, -- Length of packet in bytes excluding the header and any padding after the pet name
         pet_index           = {0x02, entity_index},
         pet_id              = {0x04, entity},
         owner_index         = {0x08, entity_index},
@@ -1968,8 +1990,8 @@ types.incoming[0x067] = struct({
 -- Pet Status
 -- It is sent every time a pet performs an action, every time anything about its vitals changes (HP, MP, TP) and every time its target changes
 types.incoming[0x068] = struct({
-    type                = {0x00, bit(uint16, 6), offset=0}, -- Seems to always be 4
-    packet_length       = {0x00, bit(uint16, 10), offset=6},
+    type                = {0x00, bit(uint16, 6), offset = 0}, -- Seems to always be 4
+    packet_length       = {0x00, bit(uint16, 10), offset = 6},
     owner_index         = {0x02, entity_index},
     owner_id            = {0x04, entity},
     pet_index           = {0x08, entity_index},
@@ -2006,14 +2028,20 @@ types.incoming[0x070] = struct({
 })
 
 -- Unity Start
--- Only observed being used for Unity fights.
+-- Only observed being used for Unity fights. Also observed on DynaD, Odyssey for mask/weapon/neck/izzat progression bars, Escutcheons progression and mandragora minigame.
 types.incoming[0x075] = struct({
     fight_designation   = {0x00, uint32}, -- Anything other than 0 makes a timer. 0 deletes the timer.
-    timestamp_offset    = {0x04, time()}, -- Number of seconds since 15:00:00 GMT 31/12/2002 (0x3C307D70)
+    timestamp_offset    = {0x04, time()}, -- Number of seconds since 15:00:00 GMT 31/12/2002 (0x3C307D70).
     fight_duration      = {0x08, time()},
     --0x0C~0x17: This packet clearly needs position information, but it's unclear how these bytes carry it.
-    battlefield_radius  = {0x18, uint32}, -- Yalms*1000, so a 50 yalm battlefield would have 50,000 for this field
-    render_radius       = {0x1C, uint32}, -- Yalms*1000, so a fence that renders when you're 25 yalms away would have 25,000 for this field
+    battlefield_radius  = {0x18, uint32}, -- Yalms*1000, so a 50 yalm battlefield would have 50,000 for this field.
+    render_radius       = {0x1C, uint32}, -- Yalms*1000, so a fence that renders when you're 25 yalms away would have 25,000 for this field.
+    timer_active        = {0x20, boolbit(uint8), offset = 0},
+    bars_active         = {0x20, boolbit(uint8), offset = 1},
+    bars                = {0x24, struct({
+        progress            = {0x00, uint8},
+        name                = {0x04, string(0x10)},
+    })[5]}, -- Only valid if bars_active is true.
 })
 
 types.incoming[0x076] = struct({
@@ -2151,15 +2179,17 @@ types.incoming[0x0C9] = multiple({
         [0x01] = struct({
             icon_set_subtype= {0x0A, uint8},
             icon_set_id     = {0x0B, uint8},
-            linkshell_red   = {0x0C, bit(uint16, 4), offset=0},
-            linkshell_green = {0x0C, bit(uint16, 4), offset=4},
-            linkshell_blue  = {0x0C, bit(uint16, 4), offset=8},
-            main_job_id     = {0x0E, job},
-            sub_job_id      = {0x0F, job},
-            linkshell_name  = {0x10, ls_name},
+            linkshell       = {0x0C, ls_name},
+            linkshell_red   = {0x1C, bit(uint16, 4), offset = 4},
+            linkshell_green = {0x1C, bit(uint16, 4), offset = 8},
+            linkshell_blue  = {0x1C, bit(uint16, 4), offset = 12},
+            sub_job_id      = {0x1F, job},
             main_job_level  = {0x20, uint8},
             sub_job_level   = {0x21, uint8},
-            -- 0x1A~0x46: At least the first two bytes and the last twelve bytes are junk, possibly more.
+            main_job_id     = {0x22, job},
+            master_level    = {0x23, uint8},
+            master_breaker  = {0x24, boolbit(uint8), offset = 0},
+            -- 0x25: At least the first two bytes and the last twelve bytes are junk, possibly more.
         }),
 
         -- Equipment listing
@@ -2179,7 +2209,7 @@ types.incoming[0x0CA] = struct({
 
 -- LS Message
 types.incoming[0x0CC] = struct({cache = {'linkshell_index'}}, {
-    linkshell_index         = {0x00, bit(uint32, 1), offset=14},
+    linkshell_index         = {0x00, bit(uint32, 1), offset = 14},
     message                 = {0x04, string(0x80)},
     timestamp               = {0x84, time()},
     player_name             = {0x88, pc_name},
@@ -2208,8 +2238,8 @@ types.incoming[0x0D3] = struct({cache = {'pool_index'}}, {
     lotter_id           = {0x04, entity},
     highest_lotter_index= {0x08, entity_index},
     highest_lot         = {0x0A, uint16},
-    lotter_index        = {0x0C, bit(uint16, 15), offset=0}, -- Not a normal index somehow
-    --_known1             = {0x0C, bit(uint16, 1 ), offset=15, const = 1}, -- Always seems set
+    lotter_index        = {0x0C, bit(uint16, 15), offset = 0}, -- Not a normal index somehow
+    --_known1             = {0x0C, bit(uint16, 1 ), offset = 15, const = 1}, -- Always seems set
     lot                 = {0x0E, uint16}, -- 0xFFFF if passing
     pool_index          = {0x10, uint8},
     drop                = {0x11, uint8}, -- 0 if no drop, 1 if dropped to player, 3 if floored
@@ -2240,7 +2270,8 @@ types.incoming[0x0DD] = struct({
     main_job_level      = {0x1F, uint8},
     sub_job_id          = {0x20, job},
     sub_job_level       = {0x21, uint8},
-    player_name         = {0x22, pc_name},
+    master_level        = {0x22, uint8},
+    master_breaker      = {0x23, boolbit(uint8), offset = 0},
 })
 
 -- Unnamed 0xDE packet
@@ -2263,6 +2294,8 @@ types.incoming[0x0DF] = struct({
     main_job_level      = {0x1D, uint8},
     sub_job_id          = {0x1E, job},
     sub_job_level       = {0x1F, uint8},
+    master_level        = {0x20, uint8},
+    master_breaker      = {0x21, boolbit(uint8), offset = 0},
 })
 
 -- Linkshell Equip
@@ -2425,7 +2458,7 @@ types.incoming[0x112] = struct({
 
 --Currency Info (Currencies I)
 types.incoming[0x113] = struct({
-    conquest_points         = {0x00, int32[3], key_lookup='nations', lookup_index=0x00},
+    conquest_points         = {0x00, int32[3], key_lookup = 'nations', lookup_index = 0x00},
     beastmens_seals         = {0x0C, uint16},
     kindred_seals           = {0x0E, uint16},
     kindred_crests          = {0x10, uint16},
@@ -2434,12 +2467,12 @@ types.incoming[0x113] = struct({
     ancient_beastcoins      = {0x16, uint16},
     valor_points            = {0x18, uint16},
     scylds                  = {0x1A, uint16},
-    guild_points            = {0x1C, int32[0x09], key_lookup='skills', lookup_index=0x30},
+    guild_points            = {0x1C, int32[0x09], key_lookup = 'skills', lookup_index = 0x30},
     cinders                 = {0x40, int32},
-    fewell                  = {0x44, uint8[0x08], key_lookup='elements', lookup_index=0x00},
+    fewell                  = {0x44, uint8[0x08], key_lookup = 'elements', lookup_index = 0x00},
     ballista_points         = {0x4C, int32},
     fellow_points           = {0x50, int32},
-    chocobucks              = {0x54, uint16[3], key_lookup='nations', lookup_index=0x00},
+    chocobucks              = {0x54, uint16[3], key_lookup = 'nations', lookup_index = 0x00},
     daily_tally             = {0x5A, uint16},
     research_marks          = {0x5C, uint32},
     wizened_tunnel_worms    = {0x60, uint8},
@@ -2481,11 +2514,11 @@ types.incoming[0x113] = struct({
     rems_tale_chapter_8     = {0xD1, uint8},
     rems_tale_chapter_9     = {0xD2, uint8},
     rems_tale_chapter_10    = {0xD3, uint8},
-    -- bloodshed_plans         = {0xD4, bit(uint64, 9), offset=0},
-    -- umbrage_plans           = {0xD4, bit(uint64, 9), offset=9},
-    -- ritualistic_plans       = {0xD4, bit(uint64, 9), offset=18},
-    -- tutelary_plans          = {0xD4, bit(uint64, 9), offset=27},
-    -- primacy_plans           = {0xD4, bit(uint64, 9), offset=36}, -- Upper two bytes here aren't used.
+    -- bloodshed_plans         = {0xD4, bit(uint64, 9), offset = 0},
+    -- umbrage_plans           = {0xD4, bit(uint64, 9), offset = 9},
+    -- ritualistic_plans       = {0xD4, bit(uint64, 9), offset = 18},
+    -- tutelary_plans          = {0xD4, bit(uint64, 9), offset = 27},
+    -- primacy_plans           = {0xD4, bit(uint64, 9), offset = 36}, -- Upper two bytes here aren't used.
     reclamation_marks       = {0xDC, int32},
     unity_accolades         = {0xE0, int32},
     fire_crystals           = {0xE4, uint16},
@@ -2509,14 +2542,14 @@ types.incoming[0x115] = struct({
     damage              = {0x08, uint16}, -- amount of damage done when correctly picking the arrow direction
     healing             = {0x0a, uint16}, -- amount of healing given when incorrectly picking the arrow direction
     time_limit          = {0x0c, uint16}, -- amount of time you have to reel in the fish
-    danger_music        = {0x0e, boolbit(uint8), offset=0}, -- if true the more intense fishing music is used
-    critical_bite       = {0x0e, boolbit(uint8), offset=1}, -- if true the light bulb graphic will appear over the players head
+    danger_music        = {0x0e, boolbit(uint8), offset = 0}, -- if true the more intense fishing music is used
+    critical_bite       = {0x0e, boolbit(uint8), offset = 1}, -- if true the light bulb graphic will appear over the players head
     gold_arrows         = {0x10, uint32}, -- percentage chance of getting a gold arrow, used in the outgoing 0x110 packet when attempting to catch
 })
 
 -- Equipset Build Response
 types.incoming[0x116] = struct({
-    equipment           = {0x00, equipset_build[0x10], key_lookup='slots'}, -- Ordered according to equipment slot ID
+    equipment           = {0x00, equipset_build[0x10], key_lookup = 'slots'}, -- Ordered according to equipment slot ID
 })
 
 -- Equipset
@@ -2928,7 +2961,7 @@ types.outgoing[0x052] = struct({
     new_equipment       = {0x04, equipset_build},
 
     -- The next 16 are the entire current equipset, excluding the newly changed item
-    previous_equipment  = {0x08, equipset_build[0x10], key_lookup='slots'},
+    previous_equipment  = {0x08, equipset_build[0x10], key_lookup = 'slots'},
 })
 
 -- lockstyleset
@@ -2937,7 +2970,7 @@ types.outgoing[0x053] = struct({
     count               = {0x00, uint8},
     type                = {0x01, uint8}, -- 0 = "Stop locking style", 1 = "Continue locking style", 3 = "Lock style in this way". Might be flags?
     _known1             = {0x02, uint16, const = 0},
-    lockstyle_equipment = {0x04, lockstyle_entry[0x10], key_lookup='slots'},
+    lockstyle_equipment = {0x04, lockstyle_entry[0x10], key_lookup = 'slots'},
 })
 
 -- End Synth
@@ -2980,7 +3013,7 @@ types.outgoing[0x05D] = struct({
     target_id           = {0x00, entity},
     target_index        = {0x04, entity_index},
     emote_id            = {0x06, uint8},
-    motion              = {0x07, boolbit(uint8), offset=1},
+    motion              = {0x07, boolbit(uint8), offset = 1},
     _known1             = {0x08, uint32, const = 0},
 })
 
@@ -2993,7 +3026,7 @@ types.outgoing[0x05E] = struct({
                                           -- Zone-specific char ('u' for Port Jeuno, 't' for Lower Jeuno, 's' for Upper Jeuno, etc.)
                                           -- Zone line identifier ('4' for Port Jeuno > Qufim Island, '2' for Port Jeuno > Lower Jeuno, etc.)
     _known1             = {0x04, data(14), const = 0},
-    _known2             = {0x12, uint8, const=4}, -- Seemed to never vary for me
+    _known2             = {0x12, uint8, const = 4}, -- Seemed to never vary for me
     type                = {0x13, uint8}, -- 03 for leaving the MH, 00 otherwise
 })
 
@@ -3157,14 +3190,14 @@ types.outgoing[0x0B5] = struct({
 
 -- Tell
 types.outgoing[0x0B6] = struct({
-    _known1             = {0x00, uint8, const = 0}, -- Varying this does nothing.
-    target_name         = {0x01, string(15)},
-    message             = {0x10, string()},
+    _unknown1           = {0x00, uint16, const = 3}, -- Varying this did nothing.
+    target_name         = {0x02, string(0x0F)},
+    message             = {0x11, string()},
 })
 
 -- Merit Point Increase
 types.outgoing[0x0BE] = struct({
-    _known1             = {0x00, uint8, const=3}, -- No idea what it is, but it's always 0x03 for me
+    _known1             = {0x00, uint8, const = 3}, -- No idea what it is, but it's always 0x03 for me
     increasing          = {0x01, bool}, -- 1 when you're increasing a merit point. 0 when you're decreasing it.
     merit_point_id      = {0x02, uint16}, -- No known mapping, but unique to each merit point. Could be an int.
     _known2             = {0x04, uint32, const = 0},
@@ -3172,8 +3205,8 @@ types.outgoing[0x0BE] = struct({
 
 -- Job Point Increase
 types.outgoing[0x0BF] = struct({
-    type                = {0x00, bit(uint16, 5), offset=0},
-    job_id              = {0x00, bit(uint16, 11), offset=5},
+    type                = {0x00, bit(uint16, 5), offset = 0},
+    job_id              = {0x00, bit(uint16, 11), offset = 5},
     _known1             = {0x00, uint16, const = 0}, -- No values seen so far
 })
 
