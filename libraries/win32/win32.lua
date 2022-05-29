@@ -117,6 +117,7 @@ ffi.cdef[[
     typedef int32_t LONG;
     typedef uint32_t ULONG;
     typedef void* HANDLE;
+    typedef void* HMODULE;
     typedef void* HWND;
     typedef wchar_t WCHAR;
     typedef int32_t* LONG_PTR;
@@ -146,12 +147,6 @@ return {
     null = null,
     error_type = error_t,
     def = function(definition)
-        if type(definition) == 'string' then
-            definition = {
-                cdef = definition,
-            }
-        end
-
         definition.cdef = definition.cdef or definition.returns .. ' ' .. definition.name .. '(' .. table_concat(definition.parameters, ', ') .. ');'
         definition.error_type = definition.error_type or (definition.success ~= nil or definition.failure ~= nil) and error_type_error or error_type_ignore
         definition.ignore_codes = definition.ignore_codes or {0}
