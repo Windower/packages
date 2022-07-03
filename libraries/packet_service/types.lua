@@ -2322,12 +2322,6 @@ types.incoming[0x0E2] = struct({
     name                = {0x1E, string()},
 })
 
--- Toggle Heal
-types.incoming[0x0E8] = struct({
-    reason              = {0x00, uint8}, -- 02 if caused by movement
-    -- 0x000000 observed
-})
-
 -- Widescan Mob
 types.incoming[0x0F4] = struct({
     index               = {0x00, entity_index},
@@ -2981,7 +2975,8 @@ types.outgoing[0x059] = struct({
 })
 
 -- Conquest
-types.outgoing[0x05A] = struct({ })
+types.outgoing[0x05A] = struct({
+})
 
 -- Dialogue options
 types.outgoing[0x05B] = struct({
@@ -3030,8 +3025,9 @@ types.outgoing[0x05E] = struct({
     type                = {0x13, uint8}, -- 03 for leaving the MH, 00 otherwise
 })
 
--- Equipment Screen (0x02 length) -- Also observed when zoning
-types.outgoing[0x061] = struct({ })
+-- Equipment Screen, also observed when zoning
+types.outgoing[0x061] = struct({size = 4}, {
+})
 
 -- Digging Finished
 -- This packet alone is responsible for generating the digging result, meaning that anyone that can inject
@@ -3094,7 +3090,8 @@ types.outgoing[0x077] = struct({
 })
 
 -- Party list request (4 byte packet)
-types.outgoing[0x078] = struct({ })
+types.outgoing[0x078] = struct({
+})
 
 -- Guild NPC Buy
 -- Sent when buying an item from a guild NPC
@@ -3168,7 +3165,8 @@ types.outgoing[0x0AA] = struct({
 
 -- Get Guild Inv List
 -- It's unclear how the server figures out which guild you're asking about, but this triggers 0x83 Incoming.
-types.outgoing[0x0AB] = struct({ })
+types.outgoing[0x0AB] = struct({
+})
 
 -- Guild Sell Item
 -- Sent when selling an item to a guild NPC
@@ -3179,7 +3177,8 @@ types.outgoing[0x0AC] = struct({
 
 -- Get Guild Sale List
 -- It's unclear how the server figures out which guild you're asking about, but this triggers 0x85 Incoming.
-types.outgoing[0x0AD] = struct({ })
+types.outgoing[0x0AD] = struct({
+})
 
 -- Speech
 types.outgoing[0x0B5] = struct({
@@ -3212,7 +3211,8 @@ types.outgoing[0x0BF] = struct({
 
 -- Job Point Menu
 -- This packet has no content bytes
-types.outgoing[0x0C0] = struct({ })
+types.outgoing[0x0C0] = struct({
+})
 
 -- /makelinkshell
 types.outgoing[0x0C3] = struct({
@@ -3275,6 +3275,12 @@ types.outgoing[0x0E7] = struct({
     -- 0x00~0x01: Observed to be 00 00
     logout_type         = {0x02, uint8}, -- /logout = 01, /pol == 02 (removed), /shutdown = 03
     -- 0x03: Observed to be 00
+})
+
+-- Toggle Heal
+types.outgoing[0x0E8] = struct({size = 4}, {
+    reason              = {0x00, uint8}, -- 02 if caused by movement
+    -- 0x000000 observed
 })
 
 -- Sit
@@ -3417,7 +3423,8 @@ types.outgoing[0x106] = struct({
 
 -- Close own Bazaar
 -- Sent when you close your bazaar window
-types.outgoing[0x109] = struct({ })
+types.outgoing[0x109] = struct({
+})
 
 -- Bazaar price set
 -- Sent when you set the price of an item in your bazaar
@@ -3448,7 +3455,8 @@ types.outgoing[0x10E] = struct({
 })
 
 -- Currency Menu
-types.outgoing[0x10F] = struct({ })
+types.outgoing[0x10F] = struct({
+})
 
 -- Fishing Minigame Action
 types.outgoing[0x110] = struct({
@@ -3465,13 +3473,16 @@ types.outgoing[0x111] = struct({
 })
 
 -- ROE quest log request
-types.outgoing[0x112] = struct({ })
+types.outgoing[0x112] = struct({
+})
 
 -- Homepoint Map Trigger :: 4 bytes, sent when entering a specific zone's homepoint list to cause maps to appear.
-types.outgoing[0x114] = struct({ })
+types.outgoing[0x114] = struct({
+})
 
 -- Currency 2 Menu
-types.outgoing[0x115] = struct({ })
+types.outgoing[0x115] = struct({
+})
 
 -- Open Unity Menu :: Two of these are sent whenever I open my unity menu. The first one has a bool of 0 and the second of 1.
 types.outgoing[0x116] = struct({
@@ -3479,7 +3490,8 @@ types.outgoing[0x116] = struct({
 })
 
 -- Unity Ranking Results  :: Sent when I open my Unity Ranking Results menu. Triggers a Sparks Update packet and may trigger ranking packets that I could not record.
-types.outgoing[0x117] = struct({ })
+types.outgoing[0x117] = struct({
+})
 
 -- Open Chat status
 types.outgoing[0x118] = struct({
