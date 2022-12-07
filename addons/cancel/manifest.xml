@@ -1,0 +1,11 @@
+<package>
+  <name>cancel</name>
+  <version>221207</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>packet</dependency>
+    <dependency>resources</dependency>
+    <dependency>status_effects</dependency>
+    <dependency>string</dependency>
+  </dependencies>
+</package>

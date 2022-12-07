@@ -1,0 +1,10 @@
+<package>
+  <name>set_target</name>
+  <version>221207</version>
+  <type>addon</type>
+  <dependencies>
+    <dependency>entities</dependency>
+    <dependency>packet</dependency>
+    <dependency>player</dependency>
+  </dependencies>
+</package>
