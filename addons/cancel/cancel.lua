@@ -6,7 +6,6 @@ local string = require('string.ext')
 
 local string_match = string.match
 local string_normalize = string.normalize
-local table_insert = table.insert
 
 local cancel_buff = function (buff)
     buff = string_normalize(buff)
