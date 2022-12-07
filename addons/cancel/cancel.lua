@@ -12,7 +12,6 @@ local table_insert = table.insert
 local cancel_buff = function (buff)
     buff = string_normalize(buff)
 
-    local active_buffs = {};
     for _, v in ipairs(status_effects.array) do
         if v.duration == 0 then
             break
