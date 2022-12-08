@@ -4,7 +4,6 @@
   <type>addon</type>
   <dependencies>
     <dependency>entities</dependency>
-    <dependency>packet</dependency>
-    <dependency>player</dependency>
+    <dependency>target</dependency>
   </dependencies>
 </package>

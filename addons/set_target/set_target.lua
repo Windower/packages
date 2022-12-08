@@ -1,19 +1,16 @@
 local command = require('core.command')
 local entities = require('entities')
-local packet = require('packet')
-local player = require('player')
+local target = require('target')
 
-local assist_response = function (id)
+local target_set = target.set
+
+local set_target = function (id)
     if entities:by_id(id) then
-        packet.incoming[0x058]:inject{
-            player_id = player.id,
-            target_id = id,
-            player_index = player.index,
-        };
+        target_set(id)
     end
 end
 
-command.new('set_target'):register(assist_response, '<id:number>')
+command.new('set_target'):register(set_target, '<id:number>')
 
 --[[
 Copyright © 2022, Aliquis
