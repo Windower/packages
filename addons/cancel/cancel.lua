@@ -24,6 +24,7 @@ local cancel_buff = function (...)
         end
     end
 end
+
 command.arg.register('buff', '<buff:string>')
 command.new('cancel'):register(cancel_buff, '{buff}*')
 
