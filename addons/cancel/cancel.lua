@@ -18,7 +18,6 @@ local cancel_buff = function (...)
 
             v = resources.buffs[v.id]
             if string_match(string_normalize(v.en), buff) or string_match(string_normalize(v.enl), buff) then
-                print(buff)
                 packet.outgoing[0x0f1]:inject{buff = v.id}
                 break
             end
