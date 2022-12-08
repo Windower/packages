@@ -7,23 +7,26 @@ local string = require('string.ext')
 local string_match = string.match
 local string_normalize = string.normalize
 
-local cancel_buff = function (buff)
-    buff = string_normalize(buff)
+local cancel_buff = function (...)
+    for _, buff in ipairs{...} do
+        buff = string_normalize(buff)
 
-    for _, v in ipairs(status_effects.array) do
-        if v.duration == 0 then
-            break
-        end
+        for _, v in ipairs(status_effects.array) do
+            if v.duration == 0 then
+                break
+            end
 
-        v = resources.buffs[v.id]
-        if string_match(string_normalize(v.en), buff) or string_match(string_normalize(v.enl), buff) then
-            packet.outgoing[0x0f1]:inject{buff = v.id}
-            return
+            v = resources.buffs[v.id]
+            if string_match(string_normalize(v.en), buff) or string_match(string_normalize(v.enl), buff) then
+                print(buff)
+                packet.outgoing[0x0f1]:inject{buff = v.id}
+                break
+            end
         end
     end
 end
-
-command.new('cancel'):register(cancel_buff, '<buff:string>')
+command.arg.register('buff', '<buff:string>')
+command.new('cancel'):register(cancel_buff, '{buff}*')
 
 --[[
 Copyright © 2022, Aliquis
