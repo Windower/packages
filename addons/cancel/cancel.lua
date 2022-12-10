@@ -4,7 +4,7 @@ local resources = require('resources')
 local status_effects = require('status_effects')
 local string = require('string.ext')
 
-local resource_buffs = resources.buffs
+local buffs_resource = resources.buffs
 local string_match = string.match
 local string_normalize = string.normalize
 
@@ -19,11 +19,11 @@ local cancel = function(...)
                 break
             end
 
-            local id = status.id
-            local res = resource_buffs[id]
+            local status_id = status.id
+            local enl_norm = string_normalize(buffs_resource[status_id].enl)
 
-            if string_match(string_normalize(res.en), arg_norm) or string_match(string_normalize(res.enl), arg_norm) then
-                packet.outgoing[0x0F1]:inject({buff = id})
+            if string_match(enl_norm, arg_norm) then
+                packet.outgoing[0x0F1]:inject({buff = status_id})
                 break
             end
         end
