@@ -304,6 +304,7 @@ local ability_recast = struct({size = 8}, {
     duration            = {0x00, uint16},
     _known1             = {0x02, uint8, const = 0},
     recast_id           = {0x03, uint8},
+    recast_modifier     = {0x04, int16},
 })
 
 local lockstyle_entry = struct({size = 8}, {
