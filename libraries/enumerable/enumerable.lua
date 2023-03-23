@@ -1115,13 +1115,35 @@ local empty_meta = {}
 empty_constructor = configure_metatable(empty_meta, {})
 local empty_converter = empty_meta.__convert
 
+local function_cache = setmetatable({}, {__mode = 'k'})
+local function_meta = {
+    __pairs = function(t)
+        local fn = function_cache[t]
+        return function(t, ...)
+            local key, value = fn()
+            return key, value == nil and key or value
+        end, t, unpack(t)
+    end,
+}
+configure_metatable(function_meta, {})
+
 local result = {
     init_type = configure_metatable,
-    wrap = function(t)
-        --TODO: Or just ignore existing metatable? Or copy? Or initialize fully?
-        assert(getmetatable(t) == nil, 'Cannot wrap enumerable around existing metatable')
+    wrap = function(t, ...)
+        if type(t) == 'function' then
+            local key_table = {}
+            function_cache[key_table] = t
+            return setmetatable(key_table, function_meta)
+        end
 
-        return empty_converter(t, {})
+        if type(t) == 'table' then
+            --TODO: Or just ignore existing metatable? Or copy? Or initialize fully?
+            assert(getmetatable(t) == nil, 'Cannot wrap enumerable around existing metatable')
+
+            return empty_converter(t, {})
+        end
+
+        error('Invalid type to wrap')
     end,
     is_enumerable = function(t)
         local meta = getmetatable(t)
