@@ -574,6 +574,12 @@ local entity_chat_info = flags({size = 0x04}, {
 
 types.entity_chat_info_array = array({signature = 'C1E20224FB33D089148D'}, entity_chat_info, 0x900)
 
+types.selected_item = struct({signature = '668B56208D4E2C518B0D', offsets = {0x00}}, {
+    id                      = {0x24, uint16},
+    index                   = {0x26, uint8},
+    bag                     = {0x340, uint8},
+})
+
 return types
 
 --[[
