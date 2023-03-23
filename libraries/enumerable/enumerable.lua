@@ -1119,17 +1119,17 @@ local function_cache = setmetatable({}, {__mode = 'k'})
 local function_meta = {
     __pairs = function(t)
         local fn = function_cache[t]
-        return function(t, ...)
-            local key, value = fn()
+        return function(_, k)
+            local key, value = fn(k)
             return key, value == nil and key or value
-        end, t, unpack(t)
+        end, nil, nil
     end,
 }
 configure_metatable(function_meta, {})
 
 local result = {
     init_type = configure_metatable,
-    wrap = function(t, ...)
+    wrap = function(t)
         if type(t) == 'function' then
             local key_table = {}
             function_cache[key_table] = t
