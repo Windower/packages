@@ -1,10 +1,11 @@
 local bit = require('bit')
 local chat = require('core.chat')
-local list = require('list');
+local fn = require('expression')
 local os = require('os')
 local settings = require('settings')
 local string = require('string')
 local table = require('table')
+local enumerable = require('enumerable')
 
 local defaults = {
     format = '[%H:%M:%S]',
@@ -64,12 +65,7 @@ do
         end
 
         local time = os_date(format, os_time())
-        local lines = list()
-        for line in string_gmatch(obj.text, '[^\r\n\x07]+') do
-            lines:add(line)
-        end
-
-        obj.text = table_concat(lines:select(function(line) return time .. line end):to_list(), '\n')
+        obj.text = table_concat(enumerable.wrap(string_gmatch(obj.text, '[^\r\n\x07]+')):select(fn.prepend(time)):to_table(), '\n')
     end)
 end
 
