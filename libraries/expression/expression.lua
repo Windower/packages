@@ -16,6 +16,13 @@ local expression_lt
 local expression_leq
 local expression_gt
 local expression_geq
+local expression_add
+local expression_sub
+local expression_mul
+local expression_div
+local expression_pow
+local expression_append
+local expression_prepend
 local expression_index
 local expression_lookup
 local expression_method
@@ -124,6 +131,50 @@ expression_geq = function(lhs, rhs)
     return lhs >= rhs
 end
 
+-- operators
+
+expression_add = function(base)
+    return function(value)
+        return base + value
+    end
+end
+
+expression_sub = function(base)
+    return function(value)
+        return base - value
+    end
+end
+
+expression_mul = function(base)
+    return function(value)
+        return base * value
+    end
+end
+
+expression_div = function(base)
+    return function(value)
+        return base / value
+    end
+end
+
+expression_pow = function(base)
+    return function(value)
+        return base ^ value
+    end
+end
+
+expression_append = function(base)
+    return function(value)
+        return value .. base
+    end
+end
+
+expression_prepend = function(base)
+    return function(value)
+        return base .. value
+    end
+end
+
 -- accessors
 
 local selector
@@ -222,6 +273,13 @@ expression.lt = expression_lt
 expression.leq = expression_leq
 expression.gt = expression_gt
 expression.geq = expression_geq
+expression.add = expression_add
+expression.sub = expression_sub
+expression.mul = expression_mul
+expression.div = expression_div
+expression.pow = expression_pow
+expression.append = expression_append
+expression.prepend = expression_prepend
 expression.index = expression_index
 expression.lookup = expression_lookup
 expression.method = expression_method
