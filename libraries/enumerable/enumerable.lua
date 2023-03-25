@@ -1027,9 +1027,16 @@ local configure_metatable = function(meta, methods, name)
         return original_result
     end
 
-    -- __len
+    -- Default implementations
+
     if meta.__len == nil then
         meta.__len = enumerable.count
+    end
+
+    if meta.__concat == nil then
+        meta.__concat = function(t, other)
+            return lazy_functions.concat(constructor, t, other)
+        end
     end
 
     -- Lazy evaluation
