@@ -574,10 +574,16 @@ local entity_chat_info = flags({size = 0x04}, {
 
 types.entity_chat_info_array = array({signature = 'C1E20224FB33D089148D'}, entity_chat_info, 0x900)
 
-types.selected_item = struct({signature = '668B56208D4E2C518B0D', offsets = {0x00}}, {
+types.item_display = struct({signature = '668B56208D4E2C518B0D', offsets = {0x00}}, {
+    _active_ptr             = {0x14, ptr()},
     id                      = {0x24, uint16},
     index                   = {0x26, uint8},
+    signature               = {0x2C, string(0x80)},
+    augment                 = {0x1B8, string(0xC0)},
     bag                     = {0x340, uint8},
+    active                  = {get = function(cdata)
+        return cdata._active_ptr ~= nil
+    end},
 })
 
 return types
