@@ -18,7 +18,7 @@
 * 3: breakup [party|alliance] - Disband your party | alliance.
 * 4: leave - Leave party or alliance.
 * 5: leader [name] - Pass party | alliance leader player.
-* 6: looter [name] - Send an invite request to a player.
+* 6: looter [name] - Set quartermaster for party.
 * 7: (k)ick [names] - Kick player from your party.
 * 8: whitelist (a)dd|(r)emove [names] - Add or remove player from your auto accept whitelist.
 * 9: blacklist (a)dd|(r)emove [names] - Add or remove player from your auto decline blacklist.
