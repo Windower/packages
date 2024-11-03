@@ -65,12 +65,6 @@ jobs:
         run: .github/scripts/build-native-binaries
       - name: Build package index
         run: .github/scripts/build-package-index
-      - name: Upload build artifacts
-        if: github.event_name == 'push'
-        uses: actions/upload-artifact@v2
-        with:
-          name: packages
-          path: .staging
       - name: Check out API repo
         if: github.event_name == 'push'
         uses: actions/checkout@v4
