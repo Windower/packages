@@ -1,10 +1,10 @@
-name: Build
+name: Build;
 
 on:
   push:
-    branches: master
+    branches: ["master"]
   pull_request:
-    branches: master
+    branches: ["master"]
 
 defaults:
   run:
@@ -13,7 +13,7 @@ defaults:
 jobs:
   manifest_check:
     name: Validate Manifest
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -21,7 +21,7 @@ jobs:
         run: .github/scripts/check-manifests
   syntax_check:
     name: Validate Syntax
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -34,7 +34,7 @@ jobs:
         run: .github/scripts/check-syntax
   license_check:
     name: Validate License Text
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -42,7 +42,7 @@ jobs:
         run: .github/scripts/check-license
   version_check:
     name: Check Version
-    runs-on: windows-2019
+    runs-on: windows-latest
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
@@ -53,12 +53,12 @@ jobs:
         run: .github/scripts/check-versions
   build:
     name: Build
-    runs-on: windows-2019
+    runs-on: windows-latest
     steps:
       - name: Set up environment
         uses: microsoft/setup-msbuild@v1.0.2
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Stage files
         run: .github/scripts/stage-files
       - name: Build native binaries
@@ -71,36 +71,17 @@ jobs:
         with:
           name: packages
           path: .staging
-  deploy:
-    name: Deploy
-    needs: build
-    runs-on: windows-2019
-    if: github.event_name == 'push'
-    steps:
-      - name: Set up environment
-        run: |
-          # Set up environment
-          Write-Output 'Starting ssh-agent service...'
-          Get-Service -Name 'ssh-agent' | Set-Service -StartupType Manual
-          Start-Service -Name 'ssh-agent'
-          New-Item -ItemType Directory -Force -Path '~/.ssh' *>$null
-          $env:SSH_KEY | &ssh-add -
-          &ssh-keyscan -H "$(
-            @($env:SSH_HOST) + (Resolve-DnsName $env:SSH_HOST).IPAddress -Join ','
-          )" | Add-Content '~/.ssh/known_hosts'
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_KEY: ${{ secrets.SSH_KEY }}
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Download build artifacts
-        uses: actions/download-artifact@v2
+      - name: Check out API repo
+        if: github.event_name == 'push'
+        uses: actions/checkout@v4
         with:
-          name: packages
-          path: .staging
-      - name: Deploy to server
-        run: .github/scripts/deploy
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-          FILES_PATH: ${{ secrets.FILES_PATH }}
+          repository: Windower/Api
+          path: .api
+      - name: Upload artifacts to Windower server
+        if: github.event_name == 'push'
+        uses: ./.api/.github/actions/upload
+        with:
+          url: https://api.windower.net/gh
+          api-key: ${{secrets.WINDOWER_SERVER_API_KEY}}
+          repository: ${{github.event.repository.name}}
+          directory: .staging
