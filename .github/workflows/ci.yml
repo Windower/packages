@@ -65,17 +65,17 @@ jobs:
         run: .github/scripts/build-native-binaries
       - name: Build package index
         run: .github/scripts/build-package-index
-      - name: Check out API repo
+      - name: Check out Windower server repo
         if: github.event_name == 'push'
         uses: actions/checkout@v4
         with:
-          repository: Windower/Api
-          path: .api
+          repository: Windower/Server
+          path: .server
+          token: ${{secrets.WINDOWER_SERVER_REPO_PAT}}
       - name: Upload artifacts to Windower server
         if: github.event_name == 'push'
-        uses: ./.api/.github/actions/upload
+        uses: ./.server/.github/actions/upload
         with:
-          url: https://api.windower.net/gh
           api-key: ${{secrets.WINDOWER_SERVER_API_KEY}}
           repository: ${{github.event.repository.name}}
           directory: .staging
